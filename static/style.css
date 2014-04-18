@@ -1,0 +1,78 @@
+table 
+{
+	border-collapse:collapse;
+	height=100%;
+}
+
+table, th, td 
+{
+	border: 1px solid black;
+	padding-left: 1em;
+	padding-right: 1em;
+}
+
+tr.header
+{
+	background-color:#5882FA;
+}
+
+tr.odd
+{
+	background-color:#FFFFFF;
+}
+
+tr.even
+{
+	background-color:#D8D8D8;
+}
+
+td.winner
+{
+}
+
+
+td.soft
+{
+	/*color: #848484;*/
+	color: #6E6E6E;
+	font-style:italic;
+}
+
+input.score
+{
+	margin-left: 1em;
+}
+
+a.update
+{
+	text-decoration:none;
+	color: #0000FF;
+}
+
+h1 {
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+body {
+	background-color: #cccccc;
+
+}
+
+#wrap {
+	width: 90%;
+	margin: 5px;
+}
+
+#schedule 
+{
+	float:left;
+	width: 60%;
+	margin-bottom: 20px;
+}
+
+#standings
+{
+	float: right;
+	width: 40%;
+}
