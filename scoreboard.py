@@ -33,6 +33,69 @@ def close_db(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
 
+def standings():
+	standings = {}
+
+	db = get_db()
+	cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
+	team_ids = cur.fetchall()
+
+	for row in team_ids:
+		team_id = row['team_id']
+		standings[team_id]=dict([('name',row['name']),('games_played', 0), ('wins', 0), ('losses', 0), ('ties', 0), ('goals_allowed', 0), ('points',0)])
+
+
+	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE tid=?', app.config['TID'])
+	games = cur.fetchall()
+
+	for game in games:
+		black_tid = game['black_tid']
+		white_tid = game['white_tid']
+		score_b = game['score_b']
+		score_w = game['score_w']
+	
+		standings[black_tid]['games_played'] += 1
+		standings[white_tid]['games_played'] += 1
+
+		if (score_b >= 0 & score_w >= 0 ): 
+			standings[black_tid]['goals_allowed'] += score_w
+			standings[white_tid]['goals_allowed'] += score_b
+
+		if (score_b == -1): #black forfit
+			standings[black_tid]['points'] -= 2
+			standings[black_tid]['losses'] += 1
+
+			standings[white_tid]['wins'] += 1
+			standings[white_tid]['points'] += 2
+
+		elif (score_w == -1): #white forfit
+			standings[white_tid]['points'] -= 2
+			standings[white_tid]['losses'] += 1
+		
+			standings[black_tid]['wins'] += 1
+			standings[black_tid]['points'] += 2
+	
+		elif ( score_b > score_w ):
+			standings[black_tid]['wins'] += 1
+			standings[white_tid]['losses'] += 1
+	
+			standings[black_tid]['points'] += 2
+				
+		elif (score_w > score_b): 
+			standings[white_tid]['wins'] +=1 
+			standings[black_tid]['losses'] += 1 
+	
+			standings[white_tid]['points'] += 2
+
+		elif (score_w == score_b):
+			standings[black_tid]['ties'] += 1;
+			standings[white_tid]['ties'] += 1;
+		
+			standings[black_tid]['points'] += 1;
+			standings[white_tid]['points'] += 1;
+
+	return standings
+
 def get_team(team_id):
 	db = get_db()
 	cur = db.execute('SELECT name FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
@@ -95,10 +158,12 @@ def render_main():
 	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
 	games = expand_games(cur.fetchall())
 
-	cur = db.execute('select name from teams WHERE tid=?', app.config['TID'])
-	teams = cur.fetchall()
+	#cur = db.execute('select name from teams WHERE tid=?', app.config['TID'])
+	#teams = cur.fetchall()
 
-	return render_template('show_main.html', teams=teams, games=games)
+	teams=standings()
+
+	return render_template('show_main.html', standings=teams, games=games)
 
 
 if __name__ == '__main__':
