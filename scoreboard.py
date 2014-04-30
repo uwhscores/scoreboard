@@ -2,7 +2,7 @@ import os
 import sqlite3
 import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-	render_template, flash
+	render_template, flash, jsonify, json 
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -17,6 +17,26 @@ app.config.update(dict(
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
+
+class stats(object):
+	def __init__(self, name, team_id):
+		self.name = name
+		self.team_id = team_id
+		self.points = 0
+		self.wins = 0
+		self.losses = 0
+		self.ties = 0
+		self.goals_allowed = 0
+		self.games_played = 0
+
+	def __repr__(self):
+		return '{}({}): {} {}-{}-{}'.format(self.name,self.team_id, self.points, self.wins, self.losses, self.ties)
+
+	def __cmp__(self, other):
+		#if hasattr(other, 'points'):
+		#	return self.points.__cmp__(other.points)
+		if hasattr(other, 'goals_allowed'):
+			return self.points.__cmp__(other.points)
 
 def connect_db():
 	rv = sqlite3.connect(app.config['DATABASE'])
@@ -33,7 +53,38 @@ def close_db(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
 
-def standings():
+def who_won(team_a, team_b):
+	db = get_db()
+	net_wins = 0
+
+	cur = db.execute('SELECT black_tid, white_tid, score_w, score_b FROM scores WHERE ((black_tid=? AND white_tid=?) OR (black_tid=? AND white_tid=?)) AND tid=?',team_a, team_b, team_b, team_a, app.config['TID'])
+
+	games = cur.fetchall()
+
+	for game in games:
+		black_tid = game['black_tid']
+		white_tid = game['white_tid']
+		score_b = game['score_b']
+		score_w = game['score_w']
+
+		if ( score_b > score_w):
+			if ( black_tid == team_a):
+				net_wins += 1
+			elif ( black_tid == team_b):
+				net_wins -= 1
+		elif ( score_w > score_b):
+			if ( white_tid == team_a):
+				net_wins += 1
+			elif ( white_tid == team_b):
+				net_wins -= 1
+			
+	
+	return net_wins
+
+def get_points(stats):
+	return stats.points
+
+def get_standings():
 	standings = {}
 
 	db = get_db()
@@ -42,8 +93,8 @@ def standings():
 
 	for row in team_ids:
 		team_id = row['team_id']
-		standings[team_id]=dict([('name',row['name']),('games_played', 0), ('wins', 0), ('losses', 0), ('ties', 0), ('goals_allowed', 0), ('points',0)])
-
+		#standings[team_id]=dict([('name',row['name']),('games_played', 0), ('wins', 0), ('losses', 0), ('ties', 0), ('goals_allowed', 0), ('points',0)])
+		standings[team_id]=stats(row['name'], row['team_id'])
 
 	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE tid=?', app.config['TID'])
 	games = cur.fetchall()
@@ -54,47 +105,63 @@ def standings():
 		score_b = game['score_b']
 		score_w = game['score_w']
 	
-		standings[black_tid]['games_played'] += 1
-		standings[white_tid]['games_played'] += 1
+		standings[black_tid].games_played += 1
+		standings[white_tid].games_played += 1
 
 		if (score_b >= 0 & score_w >= 0 ): 
-			standings[black_tid]['goals_allowed'] += score_w
-			standings[white_tid]['goals_allowed'] += score_b
+			standings[black_tid].goals_allowed += score_w
+			standings[white_tid].goals_allowed += score_b
 
 		if (score_b == -1): #black forfit
-			standings[black_tid]['points'] -= 2
-			standings[black_tid]['losses'] += 1
+			standings[black_tid].points -= 2
+			standings[black_tid].losses += 1
 
-			standings[white_tid]['wins'] += 1
-			standings[white_tid]['points'] += 2
+			standings[white_tid].wins += 1
+			standings[white_tid].points += 2
 
 		elif (score_w == -1): #white forfit
-			standings[white_tid]['points'] -= 2
-			standings[white_tid]['losses'] += 1
-		
-			standings[black_tid]['wins'] += 1
-			standings[black_tid]['points'] += 2
+			standings[white_tid].points -= 2
+			standings[white_tid].losses += 1
+	
+			standings[black_tid].wins += 1
+			standings[black_tid].points += 2
 	
 		elif ( score_b > score_w ):
-			standings[black_tid]['wins'] += 1
-			standings[white_tid]['losses'] += 1
-	
-			standings[black_tid]['points'] += 2
+			standings[black_tid].wins += 1
+			standings[white_tid].losses += 1
+
+			standings[black_tid].points += 2
 				
 		elif (score_w > score_b): 
-			standings[white_tid]['wins'] +=1 
-			standings[black_tid]['losses'] += 1 
+			standings[white_tid].wins +=1 
+			standings[black_tid].losses += 1 
 	
-			standings[white_tid]['points'] += 2
+			standings[white_tid].points += 2
 
 		elif (score_w == score_b):
-			standings[black_tid]['ties'] += 1;
-			standings[white_tid]['ties'] += 1;
+			standings[black_tid].ties += 1;
+			standings[white_tid].ties += 1;
 		
-			standings[black_tid]['points'] += 1;
-			standings[white_tid]['points'] += 1;
+			standings[black_tid].points += 1;
+			standings[white_tid].points += 1;
 
-	return standings
+#        @rankings = ( sort { 
+#                                $standings{$b}{points} <=> $standings{$a}{points} 
+#                                or who_won($b,$a) <=> who_won($a,$b) 
+#                                or $standings{$b}{wins} <=> $standings{$a}{wins}
+#                                or $standings{$a}{losses} <=> $standings{$b}{losses}
+#                                or $standings{$a}{goals_allowed} <=> $standings{$b}{goals_allowed}
+#                                or $message = "$message We have a real tie! Coin flip $teams{$a} and $teams{$b}."
+#                        } keys %standings);
+
+
+	temp = sorted(standings.values())
+
+	#temp.g = 0
+
+	return temp
+
+
 
 def get_team(team_id):
 	db = get_db()
@@ -150,21 +217,40 @@ def expand_games(games):
 
 	return expanded 
 		
-
-
-@app.route('/')
-def render_main():
+def get_games():
 	db = get_db()
 	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
 	games = expand_games(cur.fetchall())
 
+	return games;
+
+@app.route('/')
+def render_main():
+
 	#cur = db.execute('select name from teams WHERE tid=?', app.config['TID'])
 	#teams = cur.fetchall()
 
-	teams=standings()
+	games = get_games()
+	teams = get_standings()
 
-	return render_template('show_main.html', standings=teams, games=games)
+	standings = [] 
+	for team in teams:
+		standings.append(team.__dict__)
+	
+	return render_template('show_main.html', standings=standings, games=games)
 
+@app.route('/api/get_games')
+def api_get_games():
+	games = get_games()
 
+	#return jsonify(games)
+	return json.dumps(games)
+
+@app.route('/api/get_standings')
+def api_get_standings():
+	teams = get_standings()
+
+	return json.dumps(teams)
+	
 if __name__ == '__main__':
-	app.run(host='0.0.0.0')
+	app.run(host='0.0.0.0 ')

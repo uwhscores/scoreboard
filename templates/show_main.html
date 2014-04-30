@@ -35,8 +35,7 @@
 	<tr class=header><td>Rank</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
 
 	{% set rank = 1 %}
-	{% for id in standings %}
-		{% set team = standings[id] %}
+	{% for team in standings %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
 		{% else %}
