@@ -33,10 +33,8 @@ class stats(object):
 		return '{}({}): {} {}-{}-{}'.format(self.name,self.team_id, self.points, self.wins, self.losses, self.ties)
 
 	def __cmp__(self, other):
-		#if hasattr(other, 'points'):
-		#	return self.points.__cmp__(other.points)
-		if hasattr(other, 'goals_allowed'):
-			return self.points.__cmp__(other.points)
+		if hasattr(other, 'points'):
+			return other.points.__cmp__(self.points)
 
 def connect_db():
 	rv = sqlite3.connect(app.config['DATABASE'])
@@ -57,7 +55,12 @@ def who_won(team_a, team_b):
 	db = get_db()
 	net_wins = 0
 
-	cur = db.execute('SELECT black_tid, white_tid, score_w, score_b FROM scores WHERE ((black_tid=? AND white_tid=?) OR (black_tid=? AND white_tid=?)) AND tid=?',team_a, team_b, team_b, team_a, app.config['TID'])
+	tid_a = team_a.team_id
+	tid_b = team_b.team_id
+
+	cur = db.execute('SELECT black_tid, white_tid, score_w, score_b FROM scores \
+				WHERE ((black_tid=? AND white_tid=?) OR (black_tid=? AND white_tid=?)) AND tid=?', \
+				(tid_a, tid_b, tid_b, tid_a, app.config['TID']) )
 
 	games = cur.fetchall()
 
@@ -68,14 +71,14 @@ def who_won(team_a, team_b):
 		score_w = game['score_w']
 
 		if ( score_b > score_w):
-			if ( black_tid == team_a):
+			if ( black_tid == tid_a):
 				net_wins += 1
-			elif ( black_tid == team_b):
+			elif ( black_tid == tid_b):
 				net_wins -= 1
 		elif ( score_w > score_b):
-			if ( white_tid == team_a):
+			if ( white_tid == tid_a):
 				net_wins += 1
-			elif ( white_tid == team_b):
+			elif ( white_tid == tid_b):
 				net_wins -= 1
 			
 	
@@ -83,6 +86,20 @@ def who_won(team_a, team_b):
 
 def get_points(stats):
 	return stats.points
+
+def sort_teams(team_b, team_a):
+	if (team_a.points != team_b.points):
+		return team_a.points - team_b.points
+	elif ( who_won(team_a, team_b) != who_won(team_b, team_a) ):
+		return who_won(team_a, team_b) - who_won(team_b, team_a)
+	elif (team_a.wins != team_b.wins):
+		return team_a.wins - team_b.wins
+	elif (team_a.losses != team_b.losses):
+		return team_b.losses - team_b.losses
+	elif (team_a.goals_allowed != team_b.goals_allowed):
+		return team_a.gaols_allowed - team_b.goals_allowed
+	else:
+		return 0
 
 def get_standings():
 	standings = {}
@@ -93,7 +110,6 @@ def get_standings():
 
 	for row in team_ids:
 		team_id = row['team_id']
-		#standings[team_id]=dict([('name',row['name']),('games_played', 0), ('wins', 0), ('losses', 0), ('ties', 0), ('goals_allowed', 0), ('points',0)])
 		standings[team_id]=stats(row['name'], row['team_id'])
 
 	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE tid=?', app.config['TID'])
@@ -145,23 +161,8 @@ def get_standings():
 			standings[black_tid].points += 1;
 			standings[white_tid].points += 1;
 
-#        @rankings = ( sort { 
-#                                $standings{$b}{points} <=> $standings{$a}{points} 
-#                                or who_won($b,$a) <=> who_won($a,$b) 
-#                                or $standings{$b}{wins} <=> $standings{$a}{wins}
-#                                or $standings{$a}{losses} <=> $standings{$b}{losses}
-#                                or $standings{$a}{goals_allowed} <=> $standings{$b}{goals_allowed}
-#                                or $message = "$message We have a real tie! Coin flip $teams{$a} and $teams{$b}."
-#                        } keys %standings);
 
-
-	temp = sorted(standings.values())
-
-	#temp.g = 0
-
-	return temp
-
-
+	return sorted(standings.values(), cmp=sort_teams)
 
 def get_team(team_id):
 	db = get_db()
@@ -250,7 +251,13 @@ def api_get_games():
 def api_get_standings():
 	teams = get_standings()
 
-	return json.dumps(teams)
+	standings = {}
+	place = 1
+	for team in teams:
+		standings[place]=team.__dict__
+		place += 1
+
+	return json.dumps(standings)
 	
 if __name__ == '__main__':
 	app.run(host='0.0.0.0 ')
