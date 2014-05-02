@@ -18,7 +18,7 @@ app.config.update(dict(
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
 
-class stats(object):
+class Stats(object):
 	def __init__(self, name, team_id):
 		self.name = name
 		self.team_id = team_id
@@ -36,23 +36,23 @@ class stats(object):
 		if hasattr(other, 'points'):
 			return other.points.__cmp__(self.points)
 
-def connect_db():
+def connectDB():
 	rv = sqlite3.connect(app.config['DATABASE'])
 	rv.row_factory = sqlite3.Row
 	return rv
 
-def get_db():
+def getDB():
 	if not hasattr(g, 'sqlite_db'):
-		g.sqlite_db = connect_db()
+		g.sqlite_db = connectDB()
 	return g.sqlite_db
 
 @app.teardown_appcontext
-def close_db(error):
+def closeDB(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
 
-def who_won(team_a, team_b):
-	db = get_db()
+def whoWon(team_a, team_b):
+	db = getDB()
 	net_wins = 0
 
 	tid_a = team_a.team_id
@@ -84,14 +84,14 @@ def who_won(team_a, team_b):
 	
 	return net_wins
 
-def get_points(stats):
+def getPoints(stats):
 	return stats.points
 
-def sort_teams(team_b, team_a):
+def sortTeams(team_b, team_a):
 	if (team_a.points != team_b.points):
 		return team_a.points - team_b.points
-	elif ( who_won(team_a, team_b) != who_won(team_b, team_a) ):
-		return who_won(team_a, team_b) - who_won(team_b, team_a)
+	elif ( whoWon(team_a, team_b) != whoWon(team_b, team_a) ):
+		return whoWon(team_a, team_b) - whoWon(team_b, team_a)
 	elif (team_a.wins != team_b.wins):
 		return team_a.wins - team_b.wins
 	elif (team_a.losses != team_b.losses):
@@ -101,16 +101,16 @@ def sort_teams(team_b, team_a):
 	else:
 		return 0
 
-def get_standings():
+def getStandings():
 	standings = {}
 
-	db = get_db()
+	db = getDB()
 	cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
 	team_ids = cur.fetchall()
 
 	for row in team_ids:
 		team_id = row['team_id']
-		standings[team_id]=stats(row['name'], row['team_id'])
+		standings[team_id]= Stats(row['name'], row['team_id'])
 
 	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE tid=?', app.config['TID'])
 	games = cur.fetchall()
@@ -162,21 +162,21 @@ def get_standings():
 			standings[white_tid].points += 1;
 
 
-	return sorted(standings.values(), cmp=sort_teams)
+	return sorted(standings.values(), cmp=sortTeams)
 
-def get_team(team_id):
-	db = get_db()
+def getTeam(team_id):
+	db = getDB()
 	cur = db.execute('SELECT name FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
 	team = cur.fetchone()
 
 	return team['name']
 
-def parse_game(g):
+def praseGame(g):
 	game = g
 
 	match = re.search( '^T(\d+)$', g)
 	if match:
-		game = get_team(match.group(1))
+		game = getTeam(match.group(1))
 
 	match = re.search( '^S(\d+)$', g )
 	if match:
@@ -192,17 +192,17 @@ def parse_game(g):
 
 	return game
 
-def expand_games(games):
+def expandGames(games):
 	expanded = []
-	db = get_db()
+	db = getDB()
 	
 	for info in games:
 		game = {}
 		game["gid"] = info['gid']
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
-		game["black"] = parse_game(info['black'])
-		game["white"] = parse_game(info['white'])
+		game["black"] = praseGame(info['black'])
+		game["white"] = praseGame(info['white'])
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
@@ -218,21 +218,21 @@ def expand_games(games):
 
 	return expanded 
 		
-def get_games():
-	db = get_db()
+def getGames():
+	db = getDB()
 	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
-	games = expand_games(cur.fetchall())
+	games = expandGames(cur.fetchall())
 
 	return games;
 
 @app.route('/')
-def render_main():
+def renderMain():
 
 	#cur = db.execute('select name from teams WHERE tid=?', app.config['TID'])
 	#teams = cur.fetchall()
 
-	games = get_games()
-	teams = get_standings()
+	games = getGames()
+	teams = getStandings()
 
 	standings = [] 
 	for team in teams:
@@ -240,16 +240,16 @@ def render_main():
 	
 	return render_template('show_main.html', standings=standings, games=games)
 
-@app.route('/api/get_games')
-def api_get_games():
-	games = get_games()
+@app.route('/api/getGames')
+def apiGetGames():
+	games = getGames()
 
 	#return jsonify(games)
 	return json.dumps(games)
 
-@app.route('/api/get_standings')
-def api_get_standings():
-	teams = get_standings()
+@app.route('/api/getStandings')
+def apiGetStandings():
+	teams = getStandings()
 
 	standings = {}
 	place = 1
