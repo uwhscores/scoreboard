@@ -2,7 +2,7 @@ import os
 import sqlite3
 import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-	render_template, flash, jsonify, json 
+	render_template, flash, jsonify, json, request
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -101,7 +101,7 @@ def sortTeams(team_b, team_a):
 	else:
 		return 0
 
-def getStandings():
+def calcStandings():
 	standings = {}
 
 	db = getDB()
@@ -164,12 +164,47 @@ def getStandings():
 
 	return sorted(standings.values(), cmp=sortTeams)
 
+def getStandings():
+	if not hasattr(g, 'standings'):
+		g.standings = calcStandings()
+	return g.standings
+
 def getTeam(team_id):
 	db = getDB()
 	cur = db.execute('SELECT name FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
 	team = cur.fetchone()
 
 	return team['name']
+
+def endRoundRobin():
+	db = getDB()
+	cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
+	row = cur.fetchone()
+	rr_games = row['rr_games']
+
+	cur = db.execute('SELECT count(gid) as count FROM scores WHERE gid <= ? AND tid=?', (rr_games, app.config['TID']))
+	row = cur.fetchone()
+	games_played = row['count']
+
+	if (games_played >= rr_games):
+		return 1
+	else:
+		return 0
+
+def getSeed(seed):
+	if ( endRoundRobin() ):
+		standings = getStandings()
+		seed = int(seed) - 1	
+		return standings[seed].team_id
+	else:
+		return -1
+
+def getWinner(game_id):
+	return -1
+
+def getLooser(game_id):
+	return -1
+
 
 def praseGame(g):
 	game = g
@@ -180,15 +215,33 @@ def praseGame(g):
 
 	match = re.search( '^S(\d+)$', g )
 	if match:
-		game = "Seed " + match.group(1)
+		seed = match.group(1)
+		team_id = getSeed( seed )
+		if ( team_id < 0 ):
+			game = "Seed " + seed
+		else:
+			team = getTeam(team_id)
+			game = team + " (S" + seed + ")"
 	
 	match = re.search( '^W(\d+)$', g)
 	if match:
-		game = "Winner of " + match.group(1)
+		gid = match.group(1)
+		team_id = getWinner(gid)
+		if (team_id < 0):
+			game = "Winner of " + gid
+		else:
+			team = getTeam(team_id)
+			game = team + " (W" + gid + ")"
 
 	match = re.search( '^L(\d+)$', g)
 	if match:
-		game = "Looser of " + match.group(1)
+		gid = match.group(1)
+		team_id = getLooser(gid)
+		if (team_id < 0):
+			game = "Looser of " + gid
+		else:
+			team = getTeam(team_id)
+			game = team + " (L" + gid + ")"
 
 	return game
 
@@ -258,6 +311,17 @@ def apiGetStandings():
 		place += 1
 
 	return json.dumps(standings)
+
+
+@app.route('/update', methods=['POST','GET'])
+def renderUpdate():
+
+	if request.method == 'POST':
+		game = getGame( request.form['gid'] ) 
+		return render_update('show_single.html', game=game)
+	else:
+		games = getGames()
+		return render_template('show_update.html', games=games)
 	
 if __name__ == '__main__':
 	app.run(host='0.0.0.0 ')
