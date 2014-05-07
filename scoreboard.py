@@ -2,7 +2,7 @@ import os
 import sqlite3
 import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-	render_template, flash, jsonify, json, request
+	render_template, flash, jsonify, json
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -211,7 +211,8 @@ def praseGame(g):
 
 	match = re.search( '^T(\d+)$', g)
 	if match:
-		game = getTeam(match.group(1))
+		team_id = match.group(1)
+		game = getTeam(team_id)
 
 	match = re.search( '^S(\d+)$', g )
 	if match:
@@ -243,7 +244,7 @@ def praseGame(g):
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
 
-	return game
+	return (team_id,game)
 
 def expandGames(games):
 	expanded = []
@@ -254,8 +255,8 @@ def expandGames(games):
 		game["gid"] = info['gid']
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
-		game["black"] = praseGame(info['black'])
-		game["white"] = praseGame(info['white'])
+		(game["black_tid"],game["black"]) = praseGame(info['black'])
+		(game["white_tid"],game["white"]) = praseGame(info['white'])
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
@@ -277,6 +278,29 @@ def getGames():
 	games = expandGames(cur.fetchall())
 
 	return games;
+
+def getGame(gid):
+	db = getDB()
+	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	game = expandGames(cur.fetchall())
+
+	return game;
+
+def updateGame(form):
+	db = getDB()
+	gid = form['gid']
+	score_b = form['score_b']
+	score_w = form['score_w']
+	black_tid = form['btid']
+	white_tid = form['wtid']
+
+        cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid) VALUES(?,?,?,?,?,?)", \
+			(black_tid,white_tid,score_w,score_b,app.config['TID'],gid))
+        db.commit()
+	cur = db.execute("UPDATE scores SET score_b=?,score_w=? WHERE tid=? AND gid=?", (score_b,score_w,app.config['TID'],gid))
+	db.commit()
+
+	return 1
 
 @app.route('/')
 def renderMain():
@@ -315,13 +339,17 @@ def apiGetStandings():
 
 @app.route('/update', methods=['POST','GET'])
 def renderUpdate():
-
+	if request.method =='GET':
+		if request.args.get('gid'):
+			game = getGame( request.args.get('gid') ) 
+			return render_template('update_single.html', game=game[0])
+		else:
+			games = getGames()
+			return render_template('show_update.html', games=games)
 	if request.method == 'POST':
-		game = getGame( request.form['gid'] ) 
-		return render_update('show_single.html', game=game)
-	else:
-		games = getGames()
-		return render_template('show_update.html', games=games)
+		updateGame(request.form)
+		return redirect("/update")
+
 	
 if __name__ == '__main__':
 	app.run(host='0.0.0.0 ')

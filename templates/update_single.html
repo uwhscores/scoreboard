@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block games %}
+<div id="update">
+<h1>Update Score</h1>
+        <form action='/update' method=post>
+                <input type=hidden name=gid value={{ game.gid }}>
+                <input type=hidden name=btid value={{ game.black_tid }}>
+                <input type=hidden name=wtid value={{ game.white_tid }}>
+                <table id=games>
+                <tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td>White</td></tr>
+        
+                <tr>
+                        <td>{{ game.gid}}</td> 
+			<td>{{ game.day }} {{ game.start_time }}</td>
+                        <td>{{ game.black }} 
+                        <input class=score type=text name=score_b autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'></td>
+                        <td>{{ game.white }}
+                        <input class=score type=text name=score_w autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'></td>
+                </tr>
+
+                </table>
+                <input type='submit' value=Update>
+        </form>
+
+</div>
+{% endblock games %}
