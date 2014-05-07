@@ -18,6 +18,8 @@ app.config.update(dict(
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
 
+# class used for calculating standings, stat object has all the values
+# for the things standings are calculator against
 class Stats(object):
 	def __init__(self, name, team_id):
 		self.name = name
@@ -36,6 +38,7 @@ class Stats(object):
 		if hasattr(other, 'points'):
 			return other.points.__cmp__(self.points)
 
+# DB logic for setting up database connection and teardown
 def connectDB():
 	rv = sqlite3.connect(app.config['DATABASE'])
 	rv.row_factory = sqlite3.Row
@@ -51,6 +54,8 @@ def closeDB(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
 
+# simple function for calculating the win/loss ration between two teams
+# returns number of wins team_a has over team_b, negative number if more losses
 def whoWon(team_a, team_b):
 	db = getDB()
 	net_wins = 0
@@ -84,9 +89,13 @@ def whoWon(team_a, team_b):
 	
 	return net_wins
 
+# dumb function, think its left over, clean it out
 def getPoints(stats):
 	return stats.points
 
+# function used for sorting Stats class for standings
+# Sorts on most points, head to head, most wins, least losses, goals allowed
+# Returns for coin toss in all tied <- not done
 def sortTeams(team_b, team_a):
 	if (team_a.points != team_b.points):
 		return team_a.points - team_b.points
@@ -97,10 +106,13 @@ def sortTeams(team_b, team_a):
 	elif (team_a.losses != team_b.losses):
 		return team_b.losses - team_b.losses
 	elif (team_a.goals_allowed != team_b.goals_allowed):
-		return team_a.gaols_allowed - team_b.goals_allowed
+		return team_b.goals_allowed - team_a.goals_allowed
 	else:
 		return 0
 
+# master function for calculating standings of all teams
+# shouldn't be called directly, use getStandings() to avoid
+# recalculating multiple times per load
 def calcStandings():
 	standings = {}
 
@@ -168,11 +180,14 @@ def calcStandings():
 
 	return sorted(standings.values(), cmp=sortTeams)
 
+# wrapper function for standings, use to ger dictionary of standings
+# dictionary indexed by rank and contains all the team information in Stat class
 def getStandings():
 	if not hasattr(g, 'standings'):
 		g.standings = calcStandings()
 	return g.standings
 
+# simple function for converting team ID index to real name
 def getTeam(team_id):
 	db = getDB()
 	cur = db.execute('SELECT name FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
@@ -180,6 +195,7 @@ def getTeam(team_id):
 
 	return team['name']
 
+# true false function for determining if round robin play has been completed
 def endRoundRobin():
 	db = getDB()
 	cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
@@ -195,6 +211,7 @@ def endRoundRobin():
 	else:
 		return 0
 
+# gets team ID back from seed ranking, returns -1 if seeding isn't final
 def getSeed(seed):
 	if ( endRoundRobin() ):
 		standings = getStandings()
@@ -203,6 +220,7 @@ def getSeed(seed):
 	else:
 		return -1
 
+# returns winner team ID of game by ID
 def getWinner(game_id):
 	db = getDB()
 	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
@@ -217,6 +235,7 @@ def getWinner(game_id):
 	else:
 		return -1 
 
+# returns looser team ID of game by ID
 def getLooser(game_id):
 	db = getDB()
 	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
@@ -231,16 +250,17 @@ def getLooser(game_id):
 	else:
 		return -1 
 	
-
-def praseGame(g):
-	game = g
-
-	match = re.search( '^T(\d+)$', g)
+# Converts short hand notation for game schedule into human readable names
+# Team IDs, seeding games and "winner/looser of" games
+def praseGame(game):
+	# Team notation
+	match = re.search( '^T(\d+)$', game)
 	if match:
 		team_id = match.group(1)
 		game = getTeam(team_id)
 
-	match = re.search( '^S(\d+)$', g )
+	# Seed notation
+	match = re.search( '^S(\d+)$', game )
 	if match:
 		seed = match.group(1)
 		team_id = getSeed( seed )
@@ -249,29 +269,37 @@ def praseGame(g):
 		else:
 			team = getTeam(team_id)
 			game = team + " (S" + seed + ")"
-	
-	match = re.search( '^W(\d+)$', g)
+
+	# Winner of	
+	match = re.search( '^W(\d+)$', game)
 	if match:
 		gid = match.group(1)
 		team_id = getWinner(gid)
-		if (team_id < 0):
+		if (team_id == -1):
 			game = "Winner of " + gid
+		elif (team_id == -2):
+			game = "TIE IN BRACKET!!"
 		else:
 			team = getTeam(team_id)
 			game = team + " (W" + gid + ")"
 
-	match = re.search( '^L(\d+)$', g)
+	# Looser of
+	match = re.search( '^L(\d+)$', game)
 	if match:
 		gid = match.group(1)
 		team_id = getLooser(gid)
-		if (team_id < 0):
+		if (team_id == -1):
 			game = "Looser of " + gid
+		elif (team_id == -2):
+			game = "TIE IN BRACKET!!"
 		else:
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
 
 	return (team_id,game)
 
+# loops through all games and creates expanded dictionary of games
+# expands database short hand into human readable form
 def expandGames(games):
 	expanded = []
 	db = getDB()
@@ -297,7 +325,9 @@ def expandGames(games):
 		expanded.append(game)
 
 	return expanded 
-		
+	
+# gets full list of games for display	
+# returns list of dictionaries for each game
 def getGames():
 	db = getDB()
 	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
@@ -305,13 +335,15 @@ def getGames():
 
 	return games;
 
+# gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
 	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
-	return game;
+	return game[0];
 
+# takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
 	db = getDB()
 	gid = form['gid']
@@ -368,7 +400,7 @@ def renderUpdate():
 	if request.method =='GET':
 		if request.args.get('gid'):
 			game = getGame( request.args.get('gid') ) 
-			return render_template('update_single.html', game=game[0])
+			return render_template('update_single.html', game=game)
 		else:
 			games = getGames()
 			return render_template('show_update.html', games=games)
