@@ -108,11 +108,15 @@ def calcStandings():
 	cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
 	team_ids = cur.fetchall()
 
+	cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
+	row = cur.fetchone()
+	rr_games = row['rr_games']
+	
 	for row in team_ids:
 		team_id = row['team_id']
 		standings[team_id]= Stats(row['name'], row['team_id'])
 
-	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE tid=?', app.config['TID'])
+	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid <= ? AND tid=?', (rr_games,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -200,11 +204,33 @@ def getSeed(seed):
 		return -1
 
 def getWinner(game_id):
-	return -1
+	db = getDB()
+	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
+	game = cur.fetchone()
+	if game:
+		if (game['score_b'] > game['score_w']):
+			return game['black_tid']
+		elif ( game['score_b'] < game['score_w']):
+			return game['white_tid']
+		else:
+			return -2
+	else:
+		return -1 
 
 def getLooser(game_id):
-	return -1
-
+	db = getDB()
+	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
+	game = cur.fetchone()
+	if game:
+		if (game['score_b'] < game['score_w']):
+			return game['black_tid']
+		elif ( game['score_b'] > game['score_w']):
+			return game['white_tid']
+		else:
+			return -2
+	else:
+		return -1 
+	
 
 def praseGame(g):
 	game = g
