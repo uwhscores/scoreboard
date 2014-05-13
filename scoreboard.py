@@ -371,7 +371,7 @@ def getGames(division= None ):
 # gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
 	return game[0];
