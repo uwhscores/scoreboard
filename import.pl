@@ -3,7 +3,7 @@
 use DBI;
 #use strict;
 
-$tid=1;
+$tid=2;
 
 my $db = DBI->connect("dbi:SQLite:dbname=scores.db","","");
 
@@ -13,10 +13,15 @@ $db->do("DELETE FROM games WHERE tid=$tid");
 
 
 while (<FILE>) {
-	($gid,$day,$time,$black,$white)  = split(/,/, $_);
-	$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, black, white) VALUES(?,?,?,?,?,?)");
-
-	$add->execute($tid, $gid, $day, $time, $black, $white);		
+	($gid,$day,$time,$pool,$black,$white,$div,$type)  = split(/,/, $_);
+	
+	if ($type){
+		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, type) VALUES(?,?,?,?,?,?,?,?,?)");
+		$add->execute($tid, $gid, $day, $time, $pool, $black, $white, $div, $type);		
+	} else{
+		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white) VALUES(?,?,?,?,?,?,?)");
+		$add->execute($tid, $gid, $day, $time, $pool, $black, $white);		
+	}
 }
 
 close($fh);

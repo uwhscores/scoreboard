@@ -13,7 +13,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='1'
+	TID='2'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -108,27 +108,45 @@ def sortTeams(team_b, team_a):
 	elif (team_a.goals_allowed != team_b.goals_allowed):
 		return team_b.goals_allowed - team_a.goals_allowed
 	else:
+		addTie(team_a.team_id, team_b.team_id)
 		return 0
+
+# creates flash for tie only if the round robin for the division is finished
+def addTie(tid_a, tid_b):
+	db = getDB()
+	cur = db.execute('SELECT division FROM teams WHERE team_id=? AND TID=?',(tid_a,app.config['TID']))
+	row = cur.fetchone()
+	division = row['division']
+
+	if endRoundRobin(division):
+		flash("We have a real tie " + str(tid_a) + " & " + str(tid_b))
+	
+	return 0
+
 
 # master function for calculating standings of all teams
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
-def calcStandings():
+def calcStandings(division):
 	standings = {}
 
 	db = getDB()
-	cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
+	if (division == None):
+		cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
+	else:
+		cur = db.execute('SELECT team_id, name FROM teams WHERE division LIKE ? AND tid=?', (division, app.config['TID']))
+		
 	team_ids = cur.fetchall()
 
-	cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
-	row = cur.fetchone()
-	rr_games = row['rr_games']
+	#cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
+	#row = cur.fetchone()
+	#rr_games = row['rr_games']
 	
 	for row in team_ids:
 		team_id = row['team_id']
 		standings[team_id]= Stats(row['name'], row['team_id'])
 
-	cur = db.execute('SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid <= ? AND tid=?', (rr_games,app.config['TID']))
+	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.division LIKE ? AND g.type="RR" AND s.tid=?', (division,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -182,10 +200,12 @@ def calcStandings():
 
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
-def getStandings():
-	if not hasattr(g, 'standings'):
-		g.standings = calcStandings()
-	return g.standings
+def getStandings(division=None):
+	#if not hasattr(g, 'standings'):
+	#	g.standings = calcStandings(division)
+	#return g.standings
+
+	return  calcStandings(division)
 
 # simple function for converting team ID index to real name
 def getTeam(team_id):
@@ -196,13 +216,20 @@ def getTeam(team_id):
 	return team['name']
 
 # true false function for determining if round robin play has been completed
-def endRoundRobin():
+def endRoundRobin(division=None):
 	db = getDB()
-	cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
+	if (division == None):
+		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', app.config['TID'])
+	else:
+		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', (division, app.config['TID']))
 	row = cur.fetchone()
-	rr_games = row['rr_games']
+	rr_games = row['games']
 
-	cur = db.execute('SELECT count(gid) as count FROM scores WHERE gid <= ? AND tid=?', (rr_games, app.config['TID']))
+	if (division == None):
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND s.tid=?', app.config['TID'])
+	else:
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.division=? AND s.tid=?', (division, app.config['TID']))
+	
 	row = cur.fetchone()
 	games_played = row['count']
 
@@ -212,9 +239,9 @@ def endRoundRobin():
 		return 0
 
 # gets team ID back from seed ranking, returns -1 if seeding isn't final
-def getSeed(seed):
-	if ( endRoundRobin() ):
-		standings = getStandings()
+def getSeed(seed, division=None):
+	if ( endRoundRobin(division) ):
+		standings = getStandings(division)
 		seed = int(seed) - 1	
 		return standings[seed].team_id
 	else:
@@ -260,10 +287,11 @@ def praseGame(game):
 		game = getTeam(team_id)
 
 	# Seed notation
-	match = re.search( '^S(\d+)$', game )
+	match = re.search( '^S([A|B|C])(\d+)$', game )
 	if match:
-		seed = match.group(1)
-		team_id = getSeed( seed )
+		division = match.group(1)
+		seed = match.group(2)
+		team_id = getSeed( seed, division )
 		if ( team_id < 0 ):
 			game = "Seed " + seed
 		else:
@@ -309,6 +337,7 @@ def expandGames(games):
 		game["gid"] = info['gid']
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
+		game["pool"] = info['pool']
 		(game["black_tid"],game["black"]) = praseGame(info['black'])
 		(game["white_tid"],game["white"]) = praseGame(info['white'])
 
@@ -328,9 +357,13 @@ def expandGames(games):
 	
 # gets full list of games for display	
 # returns list of dictionaries for each game
-def getGames():
+def getGames(division= None ):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, start_time, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
+	if (division == None):
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
+	else:
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE division LIKE ? AND tid=? ORDER BY gid', (division, app.config['TID']))
+
 	games = expandGames(cur.fetchall())
 
 	return games;
@@ -375,16 +408,36 @@ def renderMain():
 	
 	return render_template('show_main.html', standings=standings, games=games)
 
+@app.route('/div/<division>')
+def renderDivision(division):
+	games = getGames(division)
+	teams = getStandings(division)
+
+	standings = []
+	for team in teams:
+		standings.append(team.__dict__)
+
+	return render_template('show_division.html', standings=standings, games=games, division=division.upper())
+
+
 @app.route('/api/getGames')
-def apiGetGames():
-	games = getGames()
+@app.route('/api/getGames/<division>')
+def apiGetGames(division=None):
+	if (division == None):
+		games = getGames()
+	else:
+		games = getGames(division)
 
 	#return jsonify(games)
 	return json.dumps(games)
 
 @app.route('/api/getStandings')
-def apiGetStandings():
-	teams = getStandings()
+@app.route('/api/getStandings/<division>')
+def apiGetStandings(division=None):
+	if (division == None):
+		teams = getStandings()
+	else:
+		teams = getStandings(division)
 
 	standings = {}
 	place = 1

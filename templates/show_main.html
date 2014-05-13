@@ -4,7 +4,7 @@
 <div id="schedule">
 <h1>Schedule</h1>
 <table>
-	<tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td></td><td>White</td><td></td></tr>
+	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Black</td><td></td><td>White</td><td></td></tr>
 
 	{% set rank = 1 %}
 	{% for game in games %}
@@ -17,6 +17,7 @@
 		<tr class={{ class }} >
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
+			<td>{{ game.pool }}</td>
 			<td>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
 			<td>{{ game.white }}</td>
