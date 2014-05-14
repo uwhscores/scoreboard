@@ -18,9 +18,9 @@
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td>{{ game.pool }}</td>
-			<td>{{ game.black }}</td>
+			<td class={{game.style_b}}>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
-			<td>{{ game.white }}</td>
+			<td class={{game.style_w}}>{{ game.white }}</td>
 			<td>{{game.score_w}}</td>
 		</tr>
 		{% set rank = rank + 1 %}
@@ -37,6 +37,9 @@
 
 	{% set rank = 1 %}
 	{% for team in standings %}
+		{% if lastDiv != team.division %}
+			{% set rank = 1 %}
+		{% endif %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
 		{% else %}
@@ -44,7 +47,7 @@
 		{% endif %}
 	
 		<tr class={{ class }} >
-			<td>{{ rank }}</td>
+			<td>{{ team.division}}{{ rank }}</td>
 			<td>{{ team.name }}</td>
 			<td>{{ team.points }} </td>
 			<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
@@ -52,6 +55,7 @@
 			<td>{{ team.games_played }} </td>
 		</tr>
 		{% set rank = rank + 1 %}
+		{% set lastDiv = team.division %}
 	{% endfor %}
 </table>
 </div>

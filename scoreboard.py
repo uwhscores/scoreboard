@@ -21,9 +21,10 @@ app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 class Stats(object):
-	def __init__(self, name, team_id):
+	def __init__(self, name, team_id, div=None):
 		self.name = name
 		self.team_id = team_id
+		self.division = div
 		self.points = 0
 		self.wins = 0
 		self.losses = 0
@@ -93,18 +94,32 @@ def whoWon(team_a, team_b):
 def getPoints(stats):
 	return stats.points
 
+# quick funciton used to convert divisions to an integer used in rankings
+# makes an A team above a B team 
+def divToInt(div):
+	if (div.lower() == 'a'):
+		return 3
+	elif (div.lower() == 'b'):
+		return 2
+	elif (div.lower() == 'c'):
+		return 1
+	else:
+		return 0
+
 # function used for sorting Stats class for standings
 # Sorts on most points, head to head, most wins, least losses, goals allowed
 # Returns for coin toss in all tied <- not done
 def sortTeams(team_b, team_a):
-	if (team_a.points != team_b.points):
+	if (team_a.division.lower() != team_b.division.lower()):
+		return divToInt(team_a.division) - divToInt(team_b.division)
+	elif (team_a.points != team_b.points):
 		return team_a.points - team_b.points
 	elif ( whoWon(team_a, team_b) != whoWon(team_b, team_a) ):
 		return whoWon(team_a, team_b) - whoWon(team_b, team_a)
 	elif (team_a.wins != team_b.wins):
 		return team_a.wins - team_b.wins
 	elif (team_a.losses != team_b.losses):
-		return team_b.losses - team_b.losses
+		return team_b.losses - team_a.losses
 	elif (team_a.goals_allowed != team_b.goals_allowed):
 		return team_b.goals_allowed - team_a.goals_allowed
 	else:
@@ -113,13 +128,13 @@ def sortTeams(team_b, team_a):
 
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
-	db = getDB()
-	cur = db.execute('SELECT division FROM teams WHERE team_id=? AND TID=?',(tid_a,app.config['TID']))
-	row = cur.fetchone()
-	division = row['division']
+	#db = getDB()
+	#cur = db.execute('SELECT division FROM teams WHERE team_id=? AND TID=?',(tid_a,app.config['TID']))
+	#row = cur.fetchone()
+	#division = row['division']
 
-	if endRoundRobin(division):
-		flash("We have a real tie " + str(tid_a) + " & " + str(tid_b))
+	#if endRoundRobin(division):
+	#	flash("We have a real tie " + str(tid_a) + " & " + str(tid_b))
 	
 	return 0
 
@@ -132,9 +147,9 @@ def calcStandings(division):
 
 	db = getDB()
 	if (division == None):
-		cur = db.execute('SELECT team_id, name FROM teams WHERE tid=?',app.config['TID'])
+		cur = db.execute('SELECT team_id, name, division FROM teams WHERE tid=?',app.config['TID'])
 	else:
-		cur = db.execute('SELECT team_id, name FROM teams WHERE division LIKE ? AND tid=?', (division, app.config['TID']))
+		cur = db.execute('SELECT team_id, name, division FROM teams WHERE division LIKE ? AND tid=?', (division, app.config['TID']))
 		
 	team_ids = cur.fetchall()
 
@@ -144,9 +159,12 @@ def calcStandings(division):
 	
 	for row in team_ids:
 		team_id = row['team_id']
-		standings[team_id]= Stats(row['name'], row['team_id'])
+		standings[team_id]= Stats(row['name'], row['team_id'], row['division'])
 
-	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.division LIKE ? AND g.type="RR" AND s.tid=?', (division,app.config['TID']))
+	if (division == None):
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND s.tid=?', (app.config['TID']))
+	else:
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.division LIKE ? AND g.type="RR" AND s.tid=?', (division,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -279,7 +297,8 @@ def getLooser(game_id):
 	
 # Converts short hand notation for game schedule into human readable names
 # Team IDs, seeding games and "winner/looser of" games
-def praseGame(game):
+def parseGame(game):
+	style = ""
 	# Team notation
 	match = re.search( '^T(\d+)$', game)
 	if match:
@@ -293,10 +312,11 @@ def praseGame(game):
 		seed = match.group(2)
 		team_id = getSeed( seed, division )
 		if ( team_id < 0 ):
-			game = "Seed " + seed
+			game = "Seed " + division + seed
+			style="soft"
 		else:
 			team = getTeam(team_id)
-			game = team + " (S" + seed + ")"
+			game = team + " (S" + division + seed + ")"
 
 	# Winner of	
 	match = re.search( '^W(\d+)$', game)
@@ -305,6 +325,7 @@ def praseGame(game):
 		team_id = getWinner(gid)
 		if (team_id == -1):
 			game = "Winner of " + gid
+			style="soft"
 		elif (team_id == -2):
 			game = "TIE IN BRACKET!!"
 		else:
@@ -318,13 +339,14 @@ def praseGame(game):
 		team_id = getLooser(gid)
 		if (team_id == -1):
 			game = "Looser of " + gid
+			style="soft"
 		elif (team_id == -2):
 			game = "TIE IN BRACKET!!"
 		else:
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
 
-	return (team_id,game)
+	return (team_id,game,style)
 
 # loops through all games and creates expanded dictionary of games
 # expands database short hand into human readable form
@@ -338,8 +360,8 @@ def expandGames(games):
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
 		game["pool"] = info['pool']
-		(game["black_tid"],game["black"]) = praseGame(info['black'])
-		(game["white_tid"],game["white"]) = praseGame(info['white'])
+		(game["black_tid"],game["black"],game["style_b"]) = parseGame(info['black'])
+		(game["white_tid"],game["white"],game["style_w"]) = parseGame(info['white'])
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
