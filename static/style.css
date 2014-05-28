@@ -11,7 +11,7 @@
 
 #jsddm li a, li.no_link, li.dummy {
 	display: block;
-	background: #324143;
+	background-color: #4671D5;
 	padding: 5px 12px;
 	text-decoration: none;
 	border-right: 1px solid white;
@@ -20,7 +20,7 @@
 	white-space: nowrap;
 }
 
-#jsddm li a:hover { background: #24313C }
+#jsddm li a:hover { background: #1240AB }
 
 #jsddm li ul {
 	margin: 0;
@@ -38,11 +38,10 @@
 
 #jsddm li ul li a {
 	width: auto;
-	background: #A9C251;
-	color: #24313C;
+	background: #4671D5;
 }
 
-#jsddm li ul li a:hover { background: #8EA344 }
+#jsddm li ul li a:hover { background: #1240AB }
 
 table 
 {
@@ -59,7 +58,7 @@ table, th, td
 
 tr.header
 {
-	background-color:#5882FA;
+	background-color:#4671D5;
 }
 
 tr.odd
@@ -111,7 +110,9 @@ body {
 }
 
 #nav {
-	height: 40px;
+	background-color: #6C8CD5;
+	height: 1.5em;
+	margin-bottom: 10px; 
 }
 
 #tabs {
