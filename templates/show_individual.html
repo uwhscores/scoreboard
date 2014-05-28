@@ -3,14 +3,16 @@
 {% include "nav_bar.html" with context %}
 
 {% block tabs %}
+
                 <ul>
                         <li><a href="#schedule">Schedule</a></li>
                         <li><a href="#standings">Standings</a></li>
                 </ul>
 {% endblock tabs %}
+
 {% block games %}
 <div id="schedule">
-<h1>Schedule</h1>
+<h1>Schedule for {{ division }} Division</h1>
 <table>
 	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Black</td><td></td><td>White</td><td></td></tr>
 
@@ -26,9 +28,9 @@
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td>{{ game.pool }}</td>
-			<td class={{game.style_b}}>{{ game.black }}</td>
+			<td class="{{game.style_b}}">{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
-			<td class={{game.style_w}}>{{ game.white }}</td>
+			<td class="{{game.style_w}}">{{ game.white }}</td>
 			<td>{{game.score_w}}</td>
 		</tr>
 		{% set rank = rank + 1 %}
@@ -45,9 +47,6 @@
 
 	{% set rank = 1 %}
 	{% for team in standings %}
-		{% if lastDiv != team.division %}
-			{% set rank = 1 %}
-		{% endif %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
 		{% else %}
@@ -55,7 +54,7 @@
 		{% endif %}
 	
 		<tr class={{ class }} >
-			<td>{{ team.division}}{{ rank }}</td>
+			<td>{{ rank }}</td>
 			<td>{{ team.name }}</td>
 			<td>{{ team.points }} </td>
 			<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
@@ -63,8 +62,16 @@
 			<td>{{ team.games_played }} </td>
 		</tr>
 		{% set rank = rank + 1 %}
-		{% set lastDiv = team.division %}
 	{% endfor %}
 </table>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
 </div>
 {% endblock %}

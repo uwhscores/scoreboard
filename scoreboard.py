@@ -346,6 +346,7 @@ def parseGame(game):
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
 
+	team_id = int(team_id)
 	return (team_id,game,style)
 
 # loops through all games and creates expanded dictionary of games
@@ -398,6 +399,32 @@ def getGame(gid):
 
 	return game[0];
 
+def getTeamGames(team_id):
+	db = getDB()
+
+	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=?',(app.config['TID']))
+	allGames = expandGames(cur.fetchall())
+
+	games = []
+	for game in allGames: 
+		if game['black_tid'] == team_id or game['white_tid'] == team_id: 
+		#if (game['black_tid'] == team_id or game['white_tid'] == team_id) or (game['black_tid'] < 0 or game['white_tid'] < 0):
+			if game['black_tid'] == team_id:
+				game['style_b'] = "strong"
+			elif game['white_tid'] == team_id:
+				game['style_w'] = "strong"
+			games.append(game)
+
+	return games;
+
+# return division as string from team_id
+def getDivision(team_id):
+	db = getDB()
+	cur = db.execute('SELECT division FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
+	row = cur.fetchone()
+
+	return row['division']
+
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
 	db = getDB()
@@ -415,6 +442,13 @@ def updateGame(form):
 
 	return 1
 
+def getTournamentName():
+	db = getDB()
+	cur = db.execute("SELECT name FROM tournaments WHERE tid=?", app.config['TID'])
+	row = cur.fetchone()
+
+	return row['name']
+
 @app.route('/')
 def renderMain():
 
@@ -428,7 +462,7 @@ def renderMain():
 	for team in teams:
 		standings.append(team.__dict__)
 	
-	return render_template('show_main.html', standings=standings, games=games)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games)
 
 @app.route('/div/<division>')
 def renderDivision(division):
@@ -439,8 +473,21 @@ def renderDivision(division):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	return render_template('show_division.html', standings=standings, games=games, division=division.upper())
+	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, division=division.upper())
 
+@app.route('/team/<team_id>')
+def renderTeam(team_id):
+	team_id = int(team_id)
+	division = getDivision(team_id)
+	games = getTeamGames(team_id)
+
+	teams = getStandings(division)
+	
+	standings = []
+	for team in teams:
+		standings.append(team.__dict__)
+
+	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, division=division.upper())
 
 @app.route('/api/getGames')
 @app.route('/api/getGames/<division>')

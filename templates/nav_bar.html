@@ -1,0 +1,23 @@
+
+{% block nav %}
+        <div id="nav">
+        <ul id="jsddm">
+		<li><a href="/">Main</a>
+                <li>
+                <a href="#">By Division</a>
+                        <ul>
+                                <li><a href="/div/a">A Division</a></li>
+                                <li><a href="/div/b">B Division</a></li>
+                        </ul>
+                </li>
+                <li><a href="#">Teams</a>
+		<ul>
+		{% for team in standings|sort(attribute='name') %}
+			<li><a href="/team/{{ team.team_id  }}">{{ team.name }}</a></li>
+		{% endfor %}
+        	</ul>
+		</li>
+	</ul>
+        </div>
+
+{% endblock nav %}
