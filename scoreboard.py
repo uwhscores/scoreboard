@@ -473,7 +473,9 @@ def renderDivision(division):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, division=division.upper())
+	titleText = division.upper() + " division"
+
+	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
@@ -487,7 +489,9 @@ def renderTeam(team_id):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, division=division.upper())
+	titleText = getTeam(team_id)
+
+	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 
 @app.route('/api/getGames')
 @app.route('/api/getGames/<division>')
