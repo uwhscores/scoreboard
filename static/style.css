@@ -9,7 +9,7 @@
 	font: 12px Tahoma, Arial;
 }
 
-#jsddm li a {
+#jsddm li a, li.no_link, li.dummy {
 	display: block;
 	background: #324143;
 	padding: 5px 12px;
@@ -114,7 +114,7 @@ body {
 	height: 40px;
 }
 
-#wrap {
+#tabs {
 	width: 90%;
 	margin: 5px;
 }

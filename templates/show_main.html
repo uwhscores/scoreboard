@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 
-{% include "nav_bar.html" with context %}
+{% block nav %}
+	{% include "nav_bar.html" with context %}
+{% endblock nav %}
 
 {% block tabs %}
                 <ul>
