@@ -155,10 +155,6 @@ def calcStandings(pod):
 		
 	team_ids = cur.fetchall()
 
-	#cur = db.execute('SELECT rr_games FROM tournaments WHERE tid=?', app.config['TID'])
-	#row = cur.fetchone()
-	#rr_games = row['rr_games']
-	
 	for team in team_ids:
 		team_id = team['team_id']
 		cur = db.execute('SELECT name, division FROM teams WHERE team_id=? AND tid=?',(team_id, app.config['TID']))
@@ -237,10 +233,10 @@ def getStandings(pod=None):
 		for row in rows:
 			pod = row['pod']
 			standings = standings + calcStandings(pod)
-		return standings
-	else:
-		return calcStandings(pod)
+	else:	
+		standings= calcStandings(pod)
 
+	return standings
 
 # simple function for converting team ID index to real name
 def getTeam(team_id):
@@ -390,7 +386,8 @@ def expandGames(games):
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
 		game["pool"] = info['pool']
-		game["pod"] = info['pod']
+		if hasattr(info,'pod'):
+			game["pod"] = info['pod']
 		(game["black_tid"],game["black"],game["style_b"]) = parseGame(info['black'])
 		(game["white_tid"],game["white"],game["style_w"]) = parseGame(info['white'])
 
@@ -455,6 +452,13 @@ def getDivision(team_id):
 
 	return row['division']
 
+def getPod(team_id):
+	db = getDB()
+	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=? LIMIT 1', (team_id, app.config['TID']))
+	row = cur.fetchone()
+
+	return row['pod']
+
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
 	db = getDB()
@@ -508,13 +512,27 @@ def renderDivision(division):
 
 	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 
+@app.route('/pod/<pod>')
+def renderPod(pod):
+	games = getGames(pod)
+	teams = getStandings(pod)
+
+	standings = []
+	for team in teams:
+		standings.append(team.__dict__)
+
+	titleText = pod.upper() + " Pod"
+	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+
+
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
 	team_id = int(team_id)
 	division = getDivision(team_id)
-	games = getTeamGames(team_id)
+	pod = getPod(team_id)
 
-	teams = getStandings(division)
+	games = getTeamGames(team_id)
+	teams = getStandings(pod)
 	
 	standings = []
 	for team in teams:
