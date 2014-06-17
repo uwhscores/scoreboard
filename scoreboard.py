@@ -429,7 +429,7 @@ def getGame(gid):
 def getTeamGames(team_id):
 	db = getDB()
 
-	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=?',(app.config['TID']))
+	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=? ORDER BY day, CAST(start_time as datetime)',(app.config['TID']))
 	allGames = expandGames(cur.fetchall())
 
 	games = []
@@ -585,4 +585,4 @@ def renderUpdate():
 
 	
 if __name__ == '__main__':
-	app.run(host='0.0.0.0 ')
+	app.run(host='0.0.0.0 ',port=80)
