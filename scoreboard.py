@@ -410,9 +410,9 @@ def expandGames(games):
 def getGames(division= None ):
 	db = getDB()
 	if (division == None):
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, start_time',app.config['TID'])
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, CAST(start_time as datetime)',app.config['TID'])
 	else:
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time', (division, app.config['TID']))
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, CAST(start_time as datetime)', (division, app.config['TID']))
 
 	games = expandGames(cur.fetchall())
 
