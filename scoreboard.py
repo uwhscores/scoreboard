@@ -21,10 +21,11 @@ app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 class Stats(object):
-	def __init__(self, name, team_id, div=None):
+	def __init__(self, name, team_id, div=None, pod=None):
 		self.name = name
 		self.team_id = team_id
 		self.division = div
+		self.pod = pod
 		self.points = 0
 		self.wins = 0
 		self.losses = 0
@@ -142,14 +143,15 @@ def addTie(tid_a, tid_b):
 # master function for calculating standings of all teams
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
-def calcStandings(division):
+def calcStandings(pod):
 	standings = {}
 
 	db = getDB()
-	if (division == None):
-		cur = db.execute('SELECT team_id, name, division FROM teams WHERE tid=?',app.config['TID'])
+	if (pod == None):
+		cur = db.execute('SELECT team_id FROM teams WHERE tid=?',app.config['TID'])
 	else:
-		cur = db.execute('SELECT team_id, name, division FROM teams WHERE division LIKE ? AND tid=?', (division, app.config['TID']))
+		cur = db.execute('SELECT team_id FROM pods WHERE tid=? AND pod=?',(app.config['TID'], pod)) 
+				
 		
 	team_ids = cur.fetchall()
 
@@ -157,14 +159,16 @@ def calcStandings(division):
 	#row = cur.fetchone()
 	#rr_games = row['rr_games']
 	
-	for row in team_ids:
-		team_id = row['team_id']
-		standings[team_id]= Stats(row['name'], row['team_id'], row['division'])
+	for team in team_ids:
+		team_id = team['team_id']
+		cur = db.execute('SELECT name, division FROM teams WHERE team_id=? AND tid=?',(team_id, app.config['TID']))
+		row = cur.fetchone()
+		standings[team_id]= Stats(row['name'], team_id, row['division'], pod)
 
-	if (division == None):
+	if (pod == None):
 		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND s.tid=?', (app.config['TID']))
 	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.division LIKE ? AND g.type="RR" AND s.tid=?', (division,app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod LIKE ? AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -218,12 +222,25 @@ def calcStandings(division):
 
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
-def getStandings(division=None):
+def getStandings(pod=None):
 	#if not hasattr(g, 'standings'):
 	#	g.standings = calcStandings(division)
 	#return g.standings
 
-	return  calcStandings(division)
+	db = getDB()
+
+	if ( pod == None ):
+		standings = []
+		cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?', app.config['TID'])
+		rows = cur.fetchall()		
+
+		for row in rows:
+			pod = row['pod']
+			standings = standings + calcStandings(pod)
+		return standings
+	else:
+		return calcStandings(pod)
+
 
 # simple function for converting team ID index to real name
 def getTeam(team_id):
@@ -261,7 +278,8 @@ def getSeed(seed, division=None):
 	if ( endRoundRobin(division) ):
 		standings = getStandings(division)
 		seed = int(seed) - 1	
-		return standings[seed].team_id
+		#return standings[seed].team_id
+		return -1
 	else:
 		return -1
 
@@ -299,6 +317,7 @@ def getLooser(game_id):
 # Team IDs, seeding games and "winner/looser of" games
 def parseGame(game):
 	style = ""
+	team_id = -1
 	# Team notation
 	match = re.search( '^T(\d+)$', game)
 	if match:
@@ -317,6 +336,16 @@ def parseGame(game):
 		else:
 			team = getTeam(team_id)
 			game = team + " (S" + division + seed + ")"
+
+	# Seeded pod notation
+	match = re.search( '^S([O|B|Y|G])(\d+)$', game)
+	if match:
+		pod = match.group(1)
+		seed = match.grou(2)
+		# team_id = getPodSeed( pod, seed)
+	
+		game = "Pod " + pod + seed
+		style="soft"
 
 	# Winner of	
 	match = re.search( '^W(\d+)$', game)
@@ -361,6 +390,7 @@ def expandGames(games):
 		game["day"] = info['day']
 		game["start_time"] = info['start_time']
 		game["pool"] = info['pool']
+		game["pod"] = info['pod']
 		(game["black_tid"],game["black"],game["style_b"]) = parseGame(info['black'])
 		(game["white_tid"],game["white"],game["style_w"]) = parseGame(info['white'])
 
@@ -383,9 +413,9 @@ def expandGames(games):
 def getGames(division= None ):
 	db = getDB()
 	if (division == None):
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=? ORDER BY gid',app.config['TID'])
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, start_time',app.config['TID'])
 	else:
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE division LIKE ? AND tid=? ORDER BY gid', (division, app.config['TID']))
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time', (division, app.config['TID']))
 
 	games = expandGames(cur.fetchall())
 
@@ -394,7 +424,7 @@ def getGames(division= None ):
 # gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
 	return game[0];
@@ -433,9 +463,10 @@ def updateGame(form):
 	score_w = form['score_w']
 	black_tid = form['btid']
 	white_tid = form['wtid']
-
-        cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid) VALUES(?,?,?,?,?,?)", \
-			(black_tid,white_tid,score_w,score_b,app.config['TID'],gid))
+	pod = form['pod']
+	
+        cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod) VALUES(?,?,?,?,?,?,?)", \
+			(black_tid,white_tid,score_w,score_b,app.config['TID'],gid, pod))
         db.commit()
 	cur = db.execute("UPDATE scores SET score_b=?,score_w=? WHERE tid=? AND gid=?", (score_b,score_w,app.config['TID'],gid))
 	db.commit()

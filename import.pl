@@ -13,14 +13,15 @@ $db->do("DELETE FROM games WHERE tid=$tid");
 
 
 while (<FILE>) {
-	($gid,$day,$time,$pool,$black,$white,$div,$type)  = split(/,/, $_);
-	
+	($gid,$day,$time,$pool,$black,$white,$div,$pod,$type)  = split(/,/, $_);
+	chomp $type;
+	$type =~ s/^\s+|\s+$//g;	
 	if ($type){
-		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, type) VALUES(?,?,?,?,?,?,?,?,?)");
-		$add->execute($tid, $gid, $day, $time, $pool, $black, $white, $div, $type);		
+		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type) VALUES(?,?,?,?,?,?,?,?,?,?)");
+		$add->execute($tid, $gid, $day, $time, $pool, $black, $white, $div, $pod, $type);		
 	} else{
-		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white) VALUES(?,?,?,?,?,?,?)");
-		$add->execute($tid, $gid, $day, $time, $pool, $black, $white);		
+		$add = $db->prepare("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod) VALUES(?,?,?,?,?,?,?,?,?)");
+		$add->execute($tid, $gid, $day, $time, $pool, $black, $white, $division, $pod);		
 	}
 }
 
@@ -33,6 +34,7 @@ if ( -e "teams.csv" ) {
 
 	while (<FILE>) {
 		($team_id,$name,$division) = split(/,/, $_);
+		chomp $division;
 		
 		$add = $db->prepare("INSERT INTO teams(tid, team_id, name, division) VALUES(?,?,?,?)");
 		$add->execute($tid, $team_id, $name, $division);
@@ -52,4 +54,18 @@ if ( -e "places.csv" ) {
 	
 	close FILE;
 }
+
+if ( -e "pods.csv"){
+	$db->do("DELETE FROM pods WHERE tid=$tid");
+
+	open FILE, "pods.csv" or die "cannot open file: $!";
+
+	while(<FILE>){
+		($pod,$team_id) = split(/,/,$_);
+		$add = $db->prepare("INSERT INTO pods(tid, team_id, pod) VALUES(?,?,?)");
+		$add->execute($tid, $team_id, $pod);
+	}
+	close FILE;
+}
+
 
