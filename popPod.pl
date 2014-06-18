@@ -37,6 +37,22 @@ if ( $pod ne "" ) {
 		if ($white =~ m/^T(\d+)$/ ) {
 			$white_tid = $1
 		}
+	
+		if ($black =~ m/^([bdegz])(\d+)$/ ) {
+			print "Finding black pod $1, $2";
+			$q = $db->prepare("SELECT team_id FROM pods WHERE tid=? AND pod=? AND pod_id=?");
+			$q->execute($tid, $1, $2);
+			$r = $q->fetchrow_hashref;
+			$black_tid = $r->{team_id};
+		}
+
+		if ($white =~ m/^([bdegz])(\d+)$/ ) {
+			print "Finding white pod $1, $2";
+			$q = $db->prepare("SELECT team_id FROM pods WHERE tid=? AND pod=? AND pod_id=?");
+			$q->execute($tid, $1, $2);
+			$r = $q->fetchrow_hashref;
+			$white_tid = $r->{team_id};
+		}
 
 		$score_b = int(rand(10));
 		$score_w = int(rand(10));

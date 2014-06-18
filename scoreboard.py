@@ -164,7 +164,7 @@ def calcStandings(pod):
 	if (pod == None):
 		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND s.tid=?', (app.config['TID']))
 	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod LIKE ? AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod=?  AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -279,6 +279,16 @@ def getSeed(seed, division=None):
 	else:
 		return -1
 
+def getPodSeed(pod, pod_id):
+	db = getDB()
+	cur = db.execute("SELECT team_id FROM pods WHERE pod=? AND pod_id=? AND tid=? LIMIT 1",(pod, pod_id, app.config['TID']))
+
+	row = cur.fetchone()
+	if (row):
+		return row['team_id']
+	else:
+		return -1
+
 # returns winner team ID of game by ID
 def getWinner(game_id):
 	db = getDB()
@@ -320,6 +330,20 @@ def parseGame(game):
 		team_id = match.group(1)
 		game = getTeam(team_id)
 
+	# seeded pods RR games
+	match = re.search('^([begdz])(\d+)$', game)
+	if match:
+		pod = match.group(1)
+		pod_id = match.group(2)
+		team_id = getPodSeed(pod, pod_id)		
+
+		if ( team_id < 0):
+			game = "Pod " + pod + " team " + pod_id
+			style="soft"
+		else:
+			name = getTeam(team_id)
+			game = name + " ("+pod+pod_id+")"
+ 
 	# Seed notation
 	match = re.search( '^S([A|B|C])(\d+)$', game )
 	if match:
@@ -333,15 +357,19 @@ def parseGame(game):
 			team = getTeam(team_id)
 			game = team + " (S" + division + seed + ")"
 
-	# Seeded pod notation
-	match = re.search( '^S([O|B|Y|G])(\d+)$', game)
+	#Seeded Pod notation
+	match = re.search( '^S([begdz])(\d+)$', game)
 	if match:
 		pod = match.group(1)
-		seed = match.grou(2)
-		# team_id = getPodSeed( pod, seed)
-	
-		game = "Pod " + pod + seed
-		style="soft"
+		seed = match.group(2)
+		team_id = getPodSeed( pod, seed)
+
+		if ( team_id < 0 ):	
+			game = "Pod " + pod + " seed " + seed
+			style="soft"
+		else:
+			name = getTeam(team_id)
+			game = name + " (S"+pod+seed+")"
 
 	# Winner of	
 	match = re.search( '^W(\d+)$', game)
@@ -477,6 +505,30 @@ def updateGame(form):
 
 	return 1
 
+# total hack for Nationals seeded pod. Not dynamic at all but its what had to happen
+def popSeededPods():
+	db = getDB()
+
+	seededPods = ['b','g','d','e','z']
+	pod_id = 1
+
+	# green, blue, orange, yellow
+	for pod in ("G","B","O","Y"):
+		podStandings = getStandings(pod)
+
+		pod_offset=0
+		for team in podStandings:
+			team_id = team.team_id
+			pod = seededPods[pod_offset]
+			cur = db.execute("INSERT INTO pods (tid, team_id, pod, pod_id) VALUES (?,?,?,?)",(app.config['TID'], team_id, pod, pod_id))
+			db.commit()
+			pod_offset +=1
+
+		pod_id +=1
+
+	return 1
+		
+
 def getTournamentName():
 	db = getDB()
 	cur = db.execute("SELECT name FROM tournaments WHERE tid=?", app.config['TID'])
@@ -541,6 +593,12 @@ def renderTeam(team_id):
 	titleText = getTeam(team_id)
 
 	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+
+
+@app.route('/whiterabbitobject')
+def callToSeed():
+	output = popSeededPods()
+	return json.dumps(output)
 
 @app.route('/api/getGames')
 @app.route('/api/getGames/<division>')
