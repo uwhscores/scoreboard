@@ -324,6 +324,7 @@ def getLooser(game_id):
 def parseGame(game):
 	style = ""
 	team_id = -1
+	
 	# Team notation
 	match = re.search( '^T(\d+)$', game)
 	if match:
@@ -369,7 +370,7 @@ def parseGame(game):
 			style="soft"
 		else:
 			name = getTeam(team_id)
-			game = name + " (S"+pod+seed+")"
+			game = name + " ("+pod+"-S"+seed+")"
 
 	# Winner of	
 	match = re.search( '^W(\d+)$', game)
@@ -416,8 +417,11 @@ def expandGames(games):
 		game["pool"] = info['pool']
 		if hasattr(info,'pod'):
 			game["pod"] = info['pod']
+
 		(game["black_tid"],game["black"],game["style_b"]) = parseGame(info['black'])
 		(game["white_tid"],game["white"],game["style_w"]) = parseGame(info['white'])
+
+		game["pod"] = getGamePod(game["gid"])
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
@@ -480,12 +484,20 @@ def getDivision(team_id):
 
 	return row['division']
 
-def getPod(team_id):
+def getTeamPod(team_id):
 	db = getDB()
 	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=? LIMIT 1', (team_id, app.config['TID']))
 	row = cur.fetchone()
 
 	return row['pod']
+
+def getGamePod(gid):
+	db = getDB()
+	cur = db.execute('SELECT pod from games WHERE gid=? AND tid=?', (gid, app.config['TID']))
+	row = cur.fetchone()
+
+	return row['pod']
+
 
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
@@ -581,7 +593,7 @@ def renderPod(pod):
 def renderTeam(team_id):
 	team_id = int(team_id)
 	division = getDivision(team_id)
-	pod = getPod(team_id)
+	pod = getTeamPod(team_id)
 
 	games = getTeamGames(team_id)
 	teams = getStandings(pod)
@@ -643,4 +655,4 @@ def renderUpdate():
 
 	
 if __name__ == '__main__':
-	app.run(host='0.0.0.0 ',port=80)
+	app.run(host='0.0.0.0 ')
