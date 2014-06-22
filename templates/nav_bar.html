@@ -5,10 +5,17 @@
 		<li><a href="/">Main</a></li>
                 <li><a href="#">Division</a>
                         <ul>
-                                <li><a href="/div/a">A Division</a></li>
-                                <li><a href="/div/b">B Division</a></li>
+                                <li><a href="/div/A">A Division</a></li>
+                                <li><a href="/div/B">B Division</a></li>
                         </ul>
                 </li>
+		<li><a href="#">Pods</a>
+			<ul>
+			{% for pod in pods %}
+				<li><a href="/pod/{{ pod.pod }}">Pod {{ pod.pod }}</a></li>
+			{% endfor %}
+			</ul>
+		</li>
                 <li><a href="#">Teams</a>
 			<ul>
 			{% for team in standings|sort(attribute='name') %}

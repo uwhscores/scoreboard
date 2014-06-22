@@ -143,7 +143,7 @@ def addTie(tid_a, tid_b):
 # master function for calculating standings of all teams
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
-def calcStandings(pod):
+def calcStandings(pod=None):
 	standings = {}
 
 	db = getDB()
@@ -218,21 +218,29 @@ def calcStandings(pod):
 
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
-def getStandings(pod=None):
+def getStandings(div=None, pod=None):
 	#if not hasattr(g, 'standings'):
 	#	g.standings = calcStandings(division)
 	#return g.standings
 
 	db = getDB()
+	standings = []
 
-	if ( pod == None ):
-		standings = []
+	if ( pod == None and div == None ):
 		cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?', app.config['TID'])
 		rows = cur.fetchall()		
 
 		for row in rows:
 			pod = row['pod']
 			standings = standings + calcStandings(pod)
+	elif (pod == None):
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id AND t.division=? AND p.tid=?',\
+			(div, app.config['TID']))
+
+		rows = cur.fetchall()
+		for row in rows:
+			standings = standings + calcStandings(row['pod'])
+
 	else:	
 		standings= calcStandings(pod)
 
@@ -439,13 +447,15 @@ def expandGames(games):
 	
 # gets full list of games for display	
 # returns list of dictionaries for each game
-def getGames(division= None ):
+def getGames(division= None, pod=None ):
 	db = getDB()
-	if (division == None):
+	if (division == None and pod == None):
 		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, CAST(start_time as datetime)',app.config['TID'])
-	else:
+	elif (pod == None):
 		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, CAST(start_time as datetime)', (division, app.config['TID']))
-
+	elif (division == None):
+		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, CAST(start_time as datetime)', (pod, app.config['TID']))
+		
 	games = expandGames(cur.fetchall())
 
 	return games;
@@ -475,6 +485,13 @@ def getTeamGames(team_id):
 			games.append(game)
 
 	return games;
+
+# get list of pods that have teams assigned to them
+def getPodsActive(div=None):
+	db = getDB()
+	cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?',(app.config['TID']))
+	pods = ()
+	return( cur.fetchall())
 
 # return division as string from team_id
 def getDivision(team_id):
@@ -556,37 +573,42 @@ def renderMain():
 
 	games = getGames()
 	teams = getStandings()
+	pods = getPodsActive()
 
+	titleText="Master Schedule"	
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
 	
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, pods=pods, titleText=titleText)
 
 @app.route('/div/<division>')
 def renderDivision(division):
 	games = getGames(division)
 	teams = getStandings(division)
+	pods = getPodsActive()
 
 	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = division.upper() + " division"
+	titleText = division.upper() + " Division Schedule"
 
-	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
-	games = getGames(pod)
-	teams = getStandings(pod)
+	games = getGames(None,pod)
+	teams = getStandings(None, pod)
+	pods = getPodsActive()
 
 	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = pod.upper() + " Pod"
-	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+	titleText = pod.upper() + " Pod Schedule"
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
 
 
 @app.route('/team/<team_id>')
@@ -594,9 +616,10 @@ def renderTeam(team_id):
 	team_id = int(team_id)
 	division = getDivision(team_id)
 	pod = getTeamPod(team_id)
+	pods = getPodsActive(division)
 
 	games = getTeamGames(team_id)
-	teams = getStandings(pod)
+	teams = getStandings(None, pod)
 	
 	standings = []
 	for team in teams:
@@ -604,7 +627,7 @@ def renderTeam(team_id):
 
 	titleText = getTeam(team_id)
 
-	return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
 
 
 @app.route('/whiterabbitobject')
