@@ -262,19 +262,28 @@ def getTeam(team_id):
 	return team['name']
 
 # true false function for determining if round robin play has been completed
-def endRoundRobin(division=None):
+def endRoundRobin(division=None, pod=None):
 	db = getDB()
-	if (division == None):
+	if (division == None and pod  == None):
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', app.config['TID'])
+	elif (division == None):
+		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND pod=? AND tid=?',(pod, app.config['TID']))
 	else:
-		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', (division, app.config['TID']))
+		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', \
+			(division, app.config['TID']))
 	row = cur.fetchone()
+
 	rr_games = row['games']
 
-	if (division == None):
-		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND s.tid=?', app.config['TID'])
+	if (division == None and pod == None):
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND s.tid=?', \
+			app.config['TID'])
+	elif (division == None):
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=?', \
+			(pod, app.config['TID']))	
 	else:
-		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.division=? AND s.tid=?', (division, app.config['TID']))
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.division=? AND s.tid=?',\
+			(division, app.config['TID']))
 	
 	row = cur.fetchone()
 	games_played = row['count']
@@ -285,12 +294,11 @@ def endRoundRobin(division=None):
 		return 0
 
 # gets team ID back from seed ranking, returns -1 if seeding isn't final
-def getSeed(seed, division=None):
-	if ( endRoundRobin(division) ):
-		standings = getStandings(division)
+def getSeed(seed, division=None, pod=None):
+	if ( endRoundRobin(division, pod) ):
+		standings = getStandings(None, pod)
 		seed = int(seed) - 1	
-		#return standings[seed].team_id
-		return -1
+		return standings[seed].team_id
 	else:
 		return -1
 
@@ -365,7 +373,7 @@ def parseGame(game):
 	if match:
 		division = match.group(1)
 		seed = match.group(2)
-		team_id = getSeed( seed, division )
+		team_id = getSeed( seed, None, division )
 		if ( team_id < 0 ):
 			game = "Seed " + division + seed
 			style="soft"
