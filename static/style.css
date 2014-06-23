@@ -59,6 +59,8 @@ table, th, td
 tr.header
 {
 	background-color:#4671D5;
+	text-align: center;
+	color: #FFFFFF;
 }
 
 tr.odd

@@ -2,7 +2,7 @@
 
 {% block games %}
 <div id="update">
-<h1>Update Scores</h1>
+<h1>Update Score</h1>
 
 {% for messages in get_flashed_messages() %}
     <div class=flashes> {{ message }} </div>
@@ -14,20 +14,29 @@
                 <input type=hidden name=wtid value={{ game.white_tid }}>
 		<input type=hidden name=pod  value={{ game.pod }}>
                 <table id=games>
-                <tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td>White</td></tr>
+                <tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td></tr>
 
                 <tr>
                         <td>{{ game.gid}}</td> 
 			<td>{{ game.day }} {{ game.start_time }}</td>
-                        <td>{{ game.black }} 
+			<td>{{ game.pool }}</td>
+			<td>{{ game.pod }}</td>
+		</tr>
+		<tr class=header>
+			<td colspan=2>Black</td>
+			<td colspan=2>White</td>
+		</tr>
+		<tr>
+                        <td colspan=2>{{ game.black }} 
                         <input class=score type=text name=score_b autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'></td>
-                        <td>{{ game.white }}
+                        <td colspan=2>{{ game.white }}
                         <input class=score type=text name=score_w autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'></td>
                 </tr>
-
-                </table>
-                <input type='submit' value=Update>
-        </form>
+		<tr>
+                	<td colspan=4 style="text-align:center"><input type='submit' value=Update></td>
+        	</tr>
+		</table>
+	</form>
 
 </div>
 {% endblock games %}
