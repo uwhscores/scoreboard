@@ -50,7 +50,7 @@
 	{% for team in standings %}
 		{% if lastPod != team.pod%}
 			{% set rank = 1 %}
-			<tr class=header><td></td></tr>
+			<tr class=header><td colspan=6></td></tr>
 		{% endif %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
@@ -60,7 +60,7 @@
 	
 		<tr class={{ class }} >
 			<td>{{ team.pod}}{{ rank }}</td>
-			<td>{{ team.name }} {{ team.team_id }}</td>
+			<td>{{ team.name }}</td>
 			<td>{{ team.points }} </td>
 			<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
 			<td>{{ team.goals_allowed }}</td>

@@ -61,7 +61,9 @@ if ( -e "pods.csv"){
 	open FILE, "pods.csv" or die "cannot open file: $!";
 
 	while(<FILE>){
-		($pod,$team_id) = split(/,/,$_);
+		($team_id,$pod) = split(/,/,$_);
+		chomp $pod;
+		$pod =~ s/^\r+|\r+$//g;	
 		$add = $db->prepare("INSERT INTO pods(tid, team_id, pod) VALUES(?,?,?)");
 		$add->execute($tid, $team_id, $pod);
 	}

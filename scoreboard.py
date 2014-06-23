@@ -3,6 +3,7 @@ import sqlite3
 import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
 	render_template, flash, jsonify, json
+from werkzeug.contrib.fixers import ProxyFix
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -450,11 +451,13 @@ def expandGames(games):
 def getGames(division= None, pod=None ):
 	db = getDB()
 	if (division == None and pod == None):
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, CAST(start_time as datetime)',app.config['TID'])
+		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, start_time',app.config['TID'])
 	elif (pod == None):
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, CAST(start_time as datetime)', (division, app.config['TID']))
+		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time',\
+			 (division, app.config['TID']))
 	elif (division == None):
-		cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, CAST(start_time as datetime)', (pod, app.config['TID']))
+		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, start_time',\
+			 (pod, app.config['TID']))
 		
 	games = expandGames(cur.fetchall())
 
@@ -463,7 +466,7 @@ def getGames(division= None, pod=None ):
 # gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, start_time, pool, black, white, pod FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
 	return game[0];
@@ -471,7 +474,7 @@ def getGame(gid):
 def getTeamGames(team_id):
 	db = getDB()
 
-	cur = db.execute('SELECT gid, day, start_time, pool, black, white FROM games WHERE tid=? ORDER BY day, CAST(start_time as datetime)',(app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white FROM games WHERE tid=? ORDER BY day, start_time',(app.config['TID']))
 	allGames = expandGames(cur.fetchall())
 
 	games = []
@@ -676,6 +679,7 @@ def renderUpdate():
 		updateGame(request.form)
 		return redirect("/update")
 
+app.wsgi_app = ProxyFix(app.wsgi_app)
 	
 if __name__ == '__main__':
 	app.run(host='0.0.0.0 ')
