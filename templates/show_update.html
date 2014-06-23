@@ -19,9 +19,9 @@
 		<tr class={{ class }} >
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
-			<td>{{ game.black }}</td>
+			<td class={{game.style_b}}>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
-			<td>{{ game.white }}</td>
+			<td class={{game.style_w}}>{{ game.white }}</td>
 			<td>{{game.score_w}}</td>
 			{% if game.black_tid < 0 or game.white_tid < 0 %}
 				<td>---</td>

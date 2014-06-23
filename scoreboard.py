@@ -114,12 +114,19 @@ def divToInt(div):
 	else:
 		return 0
 
+def podToInt(pod):
+	sortOrder = "b,g,d,e,z,B,G,O,Y"
+	sortOder = "Y,O,G,B,z,e,d,g,b,A"
+	return sortOder.index(pod)
+
 # function used for sorting Stats class for standings
 # Sorts on most points, head to head, most wins, least losses, goals allowed
 # Returns for coin toss in all tied <- not done
 def sortTeams(team_b, team_a):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
+	elif (team_a.pod != team_b.pod):
+		return podToInt(team_a.pod) - podToInt(team_b.pod)
 	elif (team_a.points != team_b.points):
 		return team_a.points - team_b.points
 	elif ( whoWon(team_a, team_b) != whoWon(team_b, team_a) ):
@@ -302,7 +309,7 @@ def getSeed(seed, division=None, pod=None):
 	else:
 		return -1
 
-def getPodSeed(pod, pod_id):
+def getPodID(pod, pod_id):
 	db = getDB()
 	cur = db.execute("SELECT team_id FROM pods WHERE pod=? AND pod_id=? AND tid=? LIMIT 1",(pod, pod_id, app.config['TID']))
 
@@ -359,7 +366,7 @@ def parseGame(game):
 	if match:
 		pod = match.group(1)
 		pod_id = match.group(2)
-		team_id = getPodSeed(pod, pod_id)		
+		team_id = getPodID(pod, pod_id)		
 
 		if ( team_id < 0):
 			game = "Pod " + pod + " team " + pod_id
@@ -386,7 +393,7 @@ def parseGame(game):
 	if match:
 		pod = match.group(1)
 		seed = match.group(2)
-		team_id = getPodSeed( pod, seed)
+		team_id = getSeed( seed, None, pod)
 
 		if ( team_id < 0 ):	
 			game = "Pod " + pod + " seed " + seed
@@ -431,6 +438,10 @@ def parseGame(game):
 def expandGames(games):
 	expanded = []
 	db = getDB()
+
+	podColors = {'A':'#BDBDBD','B':'#2E2EFE','G':'#04B404','O':'#FF8000','Y':'#FFFF00',\
+			'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54'
+		}
 	
 	for info in games:
 		game = {}
@@ -440,11 +451,19 @@ def expandGames(games):
 		game["pool"] = info['pool']
 		if hasattr(info,'pod'):
 			game["pod"] = info['pod']
+			game["pod_color"] = podColors[info['pod']]
+			b
 
 		(game["black_tid"],game["black"],game["style_b"]) = parseGame(info['black'])
 		(game["white_tid"],game["white"],game["style_w"]) = parseGame(info['white'])
 
-		game["pod"] = getGamePod(game["gid"])
+		pod = getGamePod(game["gid"])
+		game["pod"] = pod
+		if pod in podColors:
+			game["pod_color"] = podColors[pod]
+		else:
+			game["pod_color"] = "#FFFFFF"
+		
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
@@ -560,7 +579,7 @@ def popSeededPods():
 
 	# green, blue, orange, yellow
 	for pod in ("G","B","O","Y"):
-		podStandings = getStandings(pod)
+		podStandings = getStandings(None,pod)
 
 		pod_offset=0
 		for team in podStandings:
@@ -648,6 +667,7 @@ def renderTeam(team_id):
 
 
 @app.route('/whiterabbitobject')
+@basic_auth.required
 def callToSeed():
 	output = popSeededPods()
 	return json.dumps(output)
