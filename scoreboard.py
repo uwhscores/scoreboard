@@ -4,9 +4,15 @@ import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
 	render_template, flash, jsonify, json
 from werkzeug.contrib.fixers import ProxyFix
+from flask.ext.basicauth import BasicAuth
 
 app = Flask(__name__)
 app.config.from_object(__name__)
+
+app.config['BASIC_AUTH_USERNAME'] = 'admin'
+app.config['BASIC_AUTH_PASSWORD'] = 'dummy'
+
+basic_auth = BasicAuth(app)
 
 app.config.update(dict(
 	DATABASE=os.path.join(app.root_path, 'scores.db'),
@@ -667,10 +673,19 @@ def apiGetStandings(division=None):
 
 
 @app.route('/update', methods=['POST','GET'])
+@basic_auth.required
 def renderUpdate():
 	if request.method =='GET':
 		if request.args.get('gid'):
 			game = getGame( request.args.get('gid') ) 
+			if ( game['score_b'] == "--"):
+				game['score_b'] = ""
+			if ( game['score_w'] == "--"):
+				game['score_w'] = ""
+
+			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
+				flash('Team(s) not determined yet. Cannot set score')
+				return redirect('/update')
 			return render_template('update_single.html', game=game)
 		else:
 			games = getGames()

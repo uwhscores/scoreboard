@@ -3,6 +3,10 @@
 {% block games %}
 <div id="schedule">
 <h1>Schedule</h1>
+{% for messages in get_flashed_messages() %}
+    <div class=flashes> {{ message }} </div>
+{% endfor %}
+
 <table>
 	<tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td></td><td>White</td><td></td><td></td></tr>
 	{% set rank = 1 %}
@@ -19,7 +23,11 @@
 			<td>{{game.score_b}}</td>
 			<td>{{ game.white }}</td>
 			<td>{{game.score_w}}</td>
-			<td><a class=update href='update?gid={{game.gid}}'>Update</a></td>
+			{% if game.black_tid < 0 or game.white_tid < 0 %}
+				<td>---</td>
+			{% else %}
+				<td><a class=update href='update?gid={{game.gid}}'>Update</a></td>
+			{% endif %}
 		</tr>
 		{% set rank = rank + 1 %}
 	{% endfor %}

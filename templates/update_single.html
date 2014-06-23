@@ -2,7 +2,12 @@
 
 {% block games %}
 <div id="update">
-<h1>Update Score</h1>
+<h1>Update Scores</h1>
+
+{% for messages in get_flashed_messages() %}
+    <div class=flashes> {{ message }} </div>
+{% endfor %}
+
         <form action='/update' method=post>
                 <input type=hidden name=gid value={{ game.gid }}>
                 <input type=hidden name=btid value={{ game.black_tid }}>
@@ -11,13 +16,6 @@
                 <table id=games>
                 <tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td>White</td></tr>
 
-		{% if score_b == "--" %}
-			{% score_b="" %}
-		{% endif %}
-		{% if score_w == "--" %}
-			{% score_w="" %}
-		{% endif %}
-        
                 <tr>
                         <td>{{ game.gid}}</td> 
 			<td>{{ game.day }} {{ game.start_time }}</td>
