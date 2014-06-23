@@ -10,6 +10,13 @@
 		<input type=hidden name=pod  value={{ game.pod }}>
                 <table id=games>
                 <tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td>White</td></tr>
+
+		{% if score_b == "--" %}
+			{% score_b="" %}
+		{% endif %}
+		{% if score_w == "--" %}
+			{% score_w="" %}
+		{% endif %}
         
                 <tr>
                         <td>{{ game.gid}}</td> 
