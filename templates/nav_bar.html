@@ -18,8 +18,12 @@
 		</li>
                 <li><a href="#">Teams</a>
 			<ul>
+			{% set last="" %}
 			{% for team in standings|sort(attribute='name') %}
-				<li><a href="/team/{{ team.team_id  }}">{{ team.name }}</a></li>
+				{% if team.name != last %}
+					<li><a href="/team/{{ team.team_id  }}">{{ team.name }}</a></li>
+				{% endif %}
+				{% set last = team.name %}
 			{% endfor %}
 			</ul>
 		</li>
