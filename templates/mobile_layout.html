@@ -54,11 +54,8 @@
 
 </head>
 <body>
-	{% block nav %}{% endblock %}
 	<h1>{{ tournament }}</h1>
-	<div id=tabs>
-		{% block tabs %}{% endblock %}
-		{% block games %}{% endblock %}
-		{% block standings %}{% endblock %}
-	</div>
+	{% block tabs %}{% endblock %}
+	{% block games %}{% endblock %}
+	{% block standings %}{% endblock %}
 </body>
