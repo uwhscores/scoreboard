@@ -440,7 +440,8 @@ def expandGames(games):
 	db = getDB()
 
 	podColors = {'A':'#BDBDBD','B':'#2E2EFE','G':'#04B404','O':'#FF8000','Y':'#FFFF00',\
-			'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54'
+			'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54',\
+			'D':'#FF00FF'
 		}
 	
 	for info in games:
@@ -462,7 +463,7 @@ def expandGames(games):
 		if pod in podColors:
 			game["pod_color"] = podColors[pod]
 		else:
-			game["pod_color"] = "#FFFFFF"
+			game["pod_color"] = None
 		
 
 		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
@@ -611,7 +612,7 @@ def renderMain():
 	teams = getStandings()
 	pods = getPodsActive()
 
-	titleText="Master Schedule"	
+	titleText="Full "	
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
@@ -628,7 +629,7 @@ def renderDivision(division):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = division.upper() + " Division Schedule"
+	titleText = division.upper() + " Division"
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
@@ -643,7 +644,7 @@ def renderPod(pod):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = pod.upper() + " Pod Schedule"
+	titleText = pod.upper() + " Pod"
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
 
 

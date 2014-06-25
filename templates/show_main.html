@@ -12,10 +12,9 @@
 {% endblock tabs %}
 {% block games %}
 <div id="schedule">
-<h1>{{ titleText }}</h1>
+<h1>{{ titleText }} Schedule</h1>
 <table>
 	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td><td>Black</td><td></td><td>White</td><td></td></tr>
-
 	{% set rank = 1 %}
 	{% for game in games %}
 		{% if rank % 2 == 0 %}
@@ -23,12 +22,15 @@
 		{% else %}
 			{% set class="odd" %}
 		{% endif %}
-	
 		<tr class={{ class }} >
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td>{{ game.pool }}</td>
-			<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
+			{% if game.pod_color %}
+				<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
+			{% else %}
+				<td>--</td>
+			{% endif %}
 			<td class={{game.style_b}}>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
 			<td class={{game.style_w}}>{{ game.white }}</td>
@@ -42,7 +44,7 @@
 
 {% block standings %}
 <div id="standings">
-<h1>Current Standings</h1>
+<h1>{{ titleText }} Standings</h1>
 <table>
 	<tr class=header><td>Rank</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
 

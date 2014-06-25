@@ -11,6 +11,7 @@ open FILE, "schedule.csv" or die "cannot open file: $!";
 
 $db->do("DELETE FROM games WHERE tid=$tid");
 
+$header = <FILE>;
 
 while (<FILE>) {
 	($gid,$day,$time,$pool,$black,$white,$div,$pod,$type)  = split(/,/, $_);

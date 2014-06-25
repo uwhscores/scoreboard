@@ -39,7 +39,6 @@ if ( $pod ne "" ) {
 		}
 	
 		if ($black =~ m/^([bdegz])(\d+)$/ ) {
-			print "Finding black pod $1, $2";
 			$q = $db->prepare("SELECT team_id FROM pods WHERE tid=? AND pod=? AND pod_id=?");
 			$q->execute($tid, $1, $2);
 			$r = $q->fetchrow_hashref;
@@ -47,7 +46,6 @@ if ( $pod ne "" ) {
 		}
 
 		if ($white =~ m/^([bdegz])(\d+)$/ ) {
-			print "Finding white pod $1, $2";
 			$q = $db->prepare("SELECT team_id FROM pods WHERE tid=? AND pod=? AND pod_id=?");
 			$q->execute($tid, $1, $2);
 			$r = $q->fetchrow_hashref;
