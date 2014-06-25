@@ -17,7 +17,11 @@
 			{% set class="odd" %}
 		{% endif %}
 		<tr class={{ class }} >
-			<td>{{ game.gid }}</td>
+			{% if game.black_tid < 0 or game.white_tid < 0 %}
+				<td>{{ game.gid }}</td>
+			{% else %}
+				<td><a class=click href='update?gid={{game.gid}}'>{{ game.gid }}</a></td>
+			{% endif %}
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td class={{game.style_b}}>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>

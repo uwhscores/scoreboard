@@ -56,6 +56,19 @@ table, th, td
 	padding-right: 1em;
 }
 
+a.click 
+{
+	padding-left: 0;
+	padding-right: 0;
+	text-decoration:none;
+}
+
+table tr td a {
+	display: block;
+	height:100%;
+	width:100%;
+}
+
 tr.header
 {
 	background-color:#4671D5;
