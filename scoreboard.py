@@ -540,10 +540,10 @@ def getDivision(team_id):
 
 def getTeamPod(team_id):
 	db = getDB()
-	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=? LIMIT 1', (team_id, app.config['TID']))
-	row = cur.fetchone()
+	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
+	row = cur.fetchall()
 
-	return row['pod']
+	return row
 
 def getGamePod(gid):
 	db = getDB()
@@ -652,15 +652,18 @@ def renderPod(pod):
 def renderTeam(team_id):
 	team_id = int(team_id)
 	division = getDivision(team_id)
-	pod = getTeamPod(team_id)
-	pods = getPodsActive(division)
+	pods = getTeamPod(team_id)
+	#pods = getPodsActive(division)
 
+	teams = []
 	games = getTeamGames(team_id)
-	teams = getStandings(None, pod)
+	for pod in pods:
+		teams.append(getStandings(None, pod['pod']))
 	
 	standings = []
-	for team in teams:
-		standings.append(team.__dict__)
+	for div in teams:
+		for team in div:
+			standings.append(team.__dict__)
 
 	titleText = getTeam(team_id)
 
