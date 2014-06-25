@@ -23,3 +23,7 @@ CREATE TABLE tournaments(
 CREATE TABLE pods(
 	tid INTEGER, team_id INTEGER, pod Text, pod_id INTEGER
 );
+
+CREATE TABLE rankings(
+	tid INTEGER NOT NULL, place text NOT NULL, game text, division text, PRIMARY KEY(tid, place)
+);

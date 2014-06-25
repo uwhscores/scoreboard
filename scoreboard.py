@@ -319,6 +319,73 @@ def getPodID(pod, pod_id):
 	else:
 		return -1
 
+
+def getPlacings(div=None):
+	db = getDB()
+	if (div):
+		cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=?", (div,app.config['TID']))
+	else:
+		cur = db.execute("SELECT place, game FROM rankings WHERE tid=?", app.config['TID'])
+
+	rankings = cur.fetchall()
+
+	final = [] 
+	for rank in rankings:
+		entry = {}
+		style=""
+		place = rank['place']
+		game = rank['game']	
+
+		#Seeded Pod notation
+		match = re.search( '^S([\w])(\d+)$', game)
+		if match:
+			pod = match.group(1)
+			seed = match.group(2)
+			team_id = getSeed( seed, None, pod)
+
+			if ( team_id < 0 ):	
+				game = "Pod " + pod + " seed " + seed
+				style="soft"
+			else:
+				name = getTeam(team_id)
+				game = name 
+
+		# Winner of	
+		match = re.search( '^W(\d+)$', game)
+		if match:
+			gid = match.group(1)
+			team_id = getWinner(gid)
+			if (team_id == -1):
+				game = "Winner of " + gid
+				style="soft"
+			elif (team_id == -2):
+				game = "TIE IN BRACKET!!"
+			else:
+				team = getTeam(team_id)
+				game = team
+
+		# Looser of
+		match = re.search( '^L(\d+)$', game)
+		if match:
+			gid = match.group(1)
+			team_id = getLooser(gid)
+			if (team_id == -1):
+				game = "Looser of " + gid
+				style="soft"
+			elif (team_id == -2):
+				game = "TIE IN BRACKET!!"
+			else:
+				team = getTeam(team_id)
+				game = team
+
+		entry['place']= place
+		entry['name'] = game	
+		entry['style'] = style
+
+		final.append(entry)
+
+	return final
+
 # returns winner team ID of game by ID
 def getWinner(game_id):
 	db = getDB()
@@ -593,8 +660,8 @@ def popSeededPods():
 		pod_id +=1
 
 	return 1
-		
 
+	
 def getTournamentName():
 	db = getDB()
 	cur = db.execute("SELECT name FROM tournaments WHERE tid=?", app.config['TID'])
@@ -611,13 +678,15 @@ def renderMain():
 	games = getGames()
 	teams = getStandings()
 	pods = getPodsActive()
-
+	placings = getPlacings()
+	
 	titleText="Full "	
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
-	
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, pods=pods, titleText=titleText)
+
+		
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, pods=pods, titleText=titleText, placings=placings)
 
 @app.route('/div/<division>')
 def renderDivision(division):

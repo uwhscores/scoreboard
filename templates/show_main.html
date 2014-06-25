@@ -8,6 +8,7 @@
                 <ul>
                         <li><a href="#schedule">Schedule</a></li>
                         <li><a href="#standings">Standings</a></li>
+                        <li><a href="#places">Places</a></li>
                 </ul>
 {% endblock tabs %}
 {% block games %}
@@ -73,4 +74,26 @@
 	{% endfor %}
 </table>
 </div>
-{% endblock %}
+{% endblock standings %}
+
+{% block places %}
+<div id="places">
+<h1>{{ titleText }} Placings</h1>
+<table>
+	<tr class=header><td>Place</td><td>Team</td></tr>
+
+	{% set row = 1 %}
+	{% for team in placings %}
+		{% if row % 2 == 0 %}
+			{% set class="even" %}
+		{% else %}
+			{% set class="odd" %}
+		{% endif %}
+		<tr class={{ class }} >
+			<td>{{ team.place }}</td><td class={{ team.style }}>{{ team.name }}</td>
+		</tr>
+		{% set row = row + 1 %}
+	{% endfor %}
+</table>
+</div>
+{% endblock places %}
