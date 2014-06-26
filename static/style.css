@@ -47,6 +47,7 @@ table
 {
 	border-collapse:collapse;
 	height=100%;
+	font-size: .9em;
 }
 
 table, th, td 
@@ -121,7 +122,6 @@ h1 {
 
 body {
 	background-color: #cccccc;
-
 }
 
 #nav {
@@ -138,17 +138,19 @@ body {
 #update {
 	background-color: #cccccc;
 }
-/*
-#schedule 
+
+#schedule_tv 
 {
 	float:left;
 	width: 60%;
 	margin-bottom: 20px;
+	font-size: .9em;
 }
 
-#standings
+#standings_tv
 {
 	float: right;
 	width: 40%;
+	font-size: .9em;
 }
-*/
+

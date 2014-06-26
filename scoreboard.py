@@ -364,13 +364,13 @@ def getPlacings(div=None):
 				team = getTeam(team_id)
 				game = team
 
-		# Looser of
+		# Loser of
 		match = re.search( '^L(\d+)$', game)
 		if match:
 			gid = match.group(1)
-			team_id = getLooser(gid)
+			team_id = getLoser(gid)
 			if (team_id == -1):
-				game = "Looser of " + gid
+				game = "Loser of " + gid
 				style="soft"
 			elif (team_id == -2):
 				game = "TIE IN BRACKET!!"
@@ -401,8 +401,8 @@ def getWinner(game_id):
 	else:
 		return -1 
 
-# returns looser team ID of game by ID
-def getLooser(game_id):
+# returns loser team ID of game by ID
+def getLoser(game_id):
 	db = getDB()
 	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
 	game = cur.fetchone()
@@ -417,7 +417,7 @@ def getLooser(game_id):
 		return -1 
 	
 # Converts short hand notation for game schedule into human readable names
-# Team IDs, seeding games and "winner/looser of" games
+# Team IDs, seeding games and "winner/loser of" games
 def parseGame(game):
 	style = ""
 	team_id = -1
@@ -483,13 +483,13 @@ def parseGame(game):
 			team = getTeam(team_id)
 			game = team + " (W" + gid + ")"
 
-	# Looser of
+	# Loser of
 	match = re.search( '^L(\d+)$', game)
 	if match:
 		gid = match.group(1)
-		team_id = getLooser(gid)
+		team_id = getLoser(gid)
 		if (team_id == -1):
-			game = "Looser of " + gid
+			game = "Loser of " + gid
 			style="soft"
 		elif (team_id == -2):
 			game = "TIE IN BRACKET!!"
@@ -672,9 +672,6 @@ def getTournamentName():
 @app.route('/')
 def renderMain():
 
-	#cur = db.execute('select name from teams WHERE tid=?', app.config['TID'])
-	#teams = cur.fetchall()
-
 	games = getGames()
 	teams = getStandings()
 	pods = getPodsActive()
@@ -735,9 +732,24 @@ def renderTeam(team_id):
 			standings.append(team.__dict__)
 
 	titleText = getTeam(team_id)
+	noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, noteText=noteText)
 
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
 
+@app.route('/tv')
+@app.route('/tv/<division>')
+def renderTV(division=None):
+	games = getGames(division)
+	teams = getStandings(division)
+	pods = getPodsActive()
+	placings = getPlacings()
+	
+	titleText="Full "	
+	standings = [] 
+	for team in teams:
+		standings.append(team.__dict__)
+	
+	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, request=request)
 
 @app.route('/whiterabbitobject')
 @basic_auth.required
