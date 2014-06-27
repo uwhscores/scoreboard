@@ -549,13 +549,16 @@ def expandGames(games):
 	
 # gets full list of games for display	
 # returns list of dictionaries for each game
-def getGames(division= None, pod=None ):
+def getGames(division= None, pod=None, offSet=None ):
 	db = getDB()
 	if (division == None and pod == None):
 		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, start_time',app.config['TID'])
-	elif (pod == None):
+	elif (pod == None and offSet == None):
 		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time',\
 			 (division, app.config['TID']))
+	elif (pod == None and offSet ):
+		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time LIMIT ?,30',\
+			 (division, app.config['TID'], offSet))
 	elif (division == None):
 		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, start_time',\
 			 (pod, app.config['TID']))
@@ -593,9 +596,22 @@ def getTeamGames(team_id):
 # get list of pods that have teams assigned to them
 def getPodsActive(div=None):
 	db = getDB()
-	cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?',(app.config['TID']))
+	if (div):	
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
+			 AND t.division=? and p.tid=?',(div,app.config['TID']))
+	else:
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=?',(div,app.config['TID']))
 	pods = ()
 	return( cur.fetchall())
+
+def getPodsInPlay(div=None):
+	pods = getPodsActive(div)
+	inPlay = []
+	for pod in pods:
+		if not endRoundRobin(None, pod['pod']):
+			inPlay.append(pod)
+
+	return inPlay
 
 # return division as string from team_id
 def getDivision(team_id):
@@ -739,17 +755,23 @@ def renderTeam(team_id):
 @app.route('/tv')
 @app.route('/tv/<division>')
 def renderTV(division=None):
-	games = getGames(division)
-	teams = getStandings(division)
-	pods = getPodsActive()
-	placings = getPlacings()
+	games = getGames(division,None,15)
+	if (division == "A"):
+		teams = getStandings(division)
+	else:
+		pods = getPodsInPlay(division)
+
+		teams = []
+		for pod in pods:
+			#games.extend(getGames(None, pod['pod']))
+			teams.extend(getStandings(None, pod['pod']))
 	
 	titleText="Full "	
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
-	
-	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, request=request)
+
+	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request)
 
 @app.route('/whiterabbitobject')
 @basic_auth.required
