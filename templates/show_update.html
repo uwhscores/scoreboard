@@ -8,7 +8,7 @@
 {% endfor %}
 
 <table>
-	<tr class=header><td>Game</td><td>Start Time</td><td>Black</td><td></td><td>White</td><td></td><td></td></tr>
+	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Black</td><td></td><td>White</td><td></td><td></td></tr>
 	{% set rank = 1 %}
 	{% for game in games %}
 		{% if rank % 2 == 0 %}
@@ -23,6 +23,7 @@
 				<td><a class=click href='update?gid={{game.gid}}'>{{ game.gid }}</a></td>
 			{% endif %}
 			<td>{{ game.day }} {{ game.start_time }}</td>
+			<td>{{ game.pool }}</td>
 			<td class={{game.style_b}}>{{ game.black }}</td>
 			<td>{{game.score_b}}</td>
 			<td class={{game.style_w}}>{{ game.white }}</td>

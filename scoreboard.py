@@ -600,7 +600,7 @@ def getPodsActive(div=None):
 		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
 			 AND t.division=? and p.tid=?',(div,app.config['TID']))
 	else:
-		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=?',(div,app.config['TID']))
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=?',(app.config['TID']))
 	pods = ()
 	return( cur.fetchall())
 
@@ -820,14 +820,14 @@ def renderUpdate():
 
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
-				return redirect('/update')
+				return redirect("http://scoreboard.mnuwh.com/update")
 			return render_template('update_single.html', game=game)
 		else:
 			games = getGames()
 			return render_template('show_update.html', games=games)
 	if request.method == 'POST':
 		updateGame(request.form)
-		return redirect("/update")
+		return redirect("http://scoreboard.mnuwh.com/update")
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
 	
