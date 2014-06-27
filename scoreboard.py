@@ -755,10 +755,11 @@ def renderTeam(team_id):
 @app.route('/tv')
 @app.route('/tv/<division>')
 def renderTV(division=None):
-	games = getGames(division,None,15)
 	if (division == "A"):
+		games = getGames(division)
 		teams = getStandings(division)
 	else:
+		games = getGames(division,None,9)
 		pods = getPodsInPlay(division)
 
 		teams = []
