@@ -143,14 +143,17 @@ def sortTeams(team_b, team_a):
 
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
-	#db = getDB()
-	#cur = db.execute('SELECT division FROM teams WHERE team_id=? AND TID=?',(tid_a,app.config['TID']))
-	#row = cur.fetchone()
+	db = getDB()
+	cur = db.execute('SELECT pod FROM pods WHERE team_id=? AND TID=? LIMIT 1',(tid_a,app.config['TID']))
+	row = cur.fetchone()
 	#division = row['division']
-
-	#if endRoundRobin(division):
-	#	flash("We have a real tie " + str(tid_a) + " & " + str(tid_b))
+	pod = row['pod']
 	
+	a = getTeam(tid_a)
+	b = getTeam(tid_b)
+
+	if endRoundRobin(None, pod):
+		flash("We have a real tie " + a + " & " + b)
 	return 0
 
 
