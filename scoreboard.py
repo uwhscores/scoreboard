@@ -761,9 +761,11 @@ def renderTV(division=None):
 	if (division == "A"):
 		games = getGames(division)
 		teams = getStandings(division)
+		placings = getPlacings(division)
 	else:
-		games = getGames(division,None,65)
+		games = getGames(division,None,75)
 		pods = getPodsInPlay(division)
+		placings = getPlacings(division)
 
 		teams = []
 		for pod in pods:
@@ -775,7 +777,7 @@ def renderTV(division=None):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request)
+	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
 @app.route('/whiterabbitobject')
 @basic_auth.required
