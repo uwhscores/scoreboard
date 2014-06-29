@@ -149,11 +149,11 @@ def addTie(tid_a, tid_b):
 	#division = row['division']
 	pod = row['pod']
 	
-	a = getTeam(tid_a)
-	b = getTeam(tid_b)
+	#a = getTeam(tid_a)
+	#b = getTeam(tid_b)
 
-	if endRoundRobin(None, pod):
-		flash("We have a real tie " + a + " & " + b)
+	#if endRoundRobin(None, pod):
+		#flash("We have a real tie " + a + " & " + b)
 	return 0
 
 
@@ -560,7 +560,7 @@ def getGames(division= None, pod=None, offSet=None ):
 		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time',\
 			 (division, app.config['TID']))
 	elif (pod == None and offSet ):
-		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time LIMIT ?,30',\
+		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time LIMIT ?,40',\
 			 (division, app.config['TID'], offSet))
 	elif (division == None):
 		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, start_time',\
@@ -762,7 +762,7 @@ def renderTV(division=None):
 		games = getGames(division)
 		teams = getStandings(division)
 	else:
-		games = getGames(division,None,9)
+		games = getGames(division,None,65)
 		pods = getPodsInPlay(division)
 
 		teams = []

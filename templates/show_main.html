@@ -48,13 +48,13 @@
 <div id="standings">
 <h1>{{ titleText }} Standings</h1>
 <table>
-	<tr class=header><td>Rank</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
-
+	<tr class=header><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
+	{% set lastPod ="" %}
 	{% set rank = 1 %}
 	{% for team in standings %}
-		{% if lastPod != team.pod%}
+		{% if lastPod != team.pod and lastPod != ""%}
 			{% set rank = 1 %}
-			<tr class=header><td colspan=6></td></tr>
+			<tr class=header><td>Pod</td><td>Rank</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
 		{% endif %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
@@ -63,7 +63,8 @@
 		{% endif %}
 	
 		<tr class={{ class }} >
-			<td>{{ team.pod}}{{ rank }}</td>
+			<td>{{ rank }}</td>
+			<td>{{ team.pod}}</td>
 			<td>{{ team.name }}</td>
 			<td>{{ team.points }} </td>
 			<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>

@@ -52,8 +52,8 @@ if ( $pod ne "" ) {
 			$white_tid = $r->{team_id};
 		}
 
-		$score_b = int(rand(10));
-		$score_w = int(rand(10));
+		$score_b = int(rand(2));
+		$score_w = int(rand(2));
 
 		print "Scoring game $gid: $black_tid $score_b - $white_tid $score_w\n";
 		$q = $db->prepare("INSERT INTO scores(tid, gid, pod, black_tid, white_tid, score_b, score_w) VALUES(?,?,?,?,?,?,?)");
