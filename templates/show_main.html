@@ -14,16 +14,22 @@
 {% block games %}
 <div id="schedule">
 <h1>{{ titleText }} Schedule</h1>
-<table>
-	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td><td>Black</td><td></td><td>White</td><td></td></tr>
-	{% set rank = 1 %}
+<table id=games class="display" cellspacing="0" width="100%">
+	<thead>
+		<tr>
+			<td>Game</td>
+			<td>Start Time</td>
+			<td>Pool</td>
+			<td>Pod</td>
+			<td>Black</td>
+			<td></td>
+			<td>White</td>
+			<td></td>
+		</tr>
+	</thead>
+	<tbody>
 	{% for game in games %}
-		{% if rank % 2 == 0 %}
-			{% set class="even" %}
-		{% else %}
-			{% set class="odd" %}
-		{% endif %}
-		<tr class={{ class }} >
+		<tr>
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td>{{ game.pool }}</td>
@@ -37,8 +43,8 @@
 			<td class={{game.style_w}}>{{ game.white }}</td>
 			<td>{{game.score_w}}</td>
 		</tr>
-		{% set rank = rank + 1 %}
 	{% endfor %}
+	</tbody>
 </table>
 <p class=note>{{ noteText }}</p>
 </div>
@@ -47,14 +53,25 @@
 {% block standings %}
 <div id="standings">
 <h1>{{ titleText }} Standings</h1>
-<table>
-	<tr class=header><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
+<table id=standings_tbl class="display" cellspacing="0" width="100%">
+	<thead>
+		<tr>
+			<td>Rank</td>
+			<td>Pod</td>
+			<td>Team</td>
+			<td>Points</td>
+			<td>Record</td>
+			<td>GA</td>
+			<td>GP</td>
+		</tr>
+	</thead>
+	<tbody>
 	{% set lastPod ="" %}
 	{% set rank = 1 %}
 	{% for team in standings %}
 		{% if lastPod != team.pod and lastPod != ""%}
 			{% set rank = 1 %}
-			<tr class=header><td>Pod</td><td>Rank</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
+			<tr><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
 		{% endif %}
 		{% if rank % 2 == 0 %}
 			{% set class="even" %}
@@ -62,7 +79,7 @@
 			{% set class="odd" %}
 		{% endif %}
 	
-		<tr class={{ class }} >
+		<tr>
 			<td>{{ rank }}</td>
 			<td>{{ team.pod}}</td>
 			<td>{{ team.name }}</td>
@@ -74,6 +91,7 @@
 		{% set rank = rank + 1 %}
 		{% set lastPod = team.pod %}
 	{% endfor %}
+	<tbody>
 </table>
 
 {% with messages = get_flashed_messages() %}
@@ -93,9 +111,14 @@
 {% if placings %}
 <div id="places">
 <h1>{{ titleText }} Placings</h1>
-<table>
-	<tr class=header><td>Place</td><td>Team</td></tr>
-
+<table id=places_tbl class="display" cellspacing="0" width="100%" >
+	<theader>
+		<tr>
+			<td>Place</td>
+			<td>Team</td>
+		</tr>
+	</theader>
+	<tbody>
 	{% set row = 1 %}
 	{% for team in placings %}
 		{% if row % 2 == 0 %}
@@ -108,6 +131,7 @@
 		</tr>
 		{% set row = row + 1 %}
 	{% endfor %}
+	</tbody>
 </table>
 </div>
 {% endif %}

@@ -2,9 +2,12 @@
 <head>
 	<title>Standings</title>
 	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}"> 
-	<link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='jquery-ui.css') }}">
+	<link rel="stylesheet" href="//cdn.datatables.net/1.10.4/css/jquery.dataTables.css" >
+	
 	<script src="{{ url_for('static', filename='jquery-1.11.1.js') }}"></script>
 	<script src="{{ url_for('static', filename='jquery-ui.js') }}"></script>
+	<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"> </script>
 	<script>
 	$(function() {
 		$( "#tabs" ).tabs();
@@ -46,6 +49,10 @@
 		{	
 			$('#jsddm > li').bind('click mouseover', jsddm_open);
 			$('#jsddm > li').bind('mouseout',  jsddm_timer);
+			
+			$('#games').DataTable({ordering: false, paging:false, info:false});
+			$('#standings_tbl').DataTable({ordering: false, paging:false, info:false});
+			$('#places_tbl').DataTable({ordering: false, paging:false, info:false});
 		});
 
 		document.onclick = jsddm_close;

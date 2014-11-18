@@ -43,6 +43,7 @@
 
 #jsddm li ul li a:hover { background: #1240AB }
 
+/*
 table 
 {
 	border-collapse:collapse;
@@ -94,7 +95,6 @@ td.winner
 
 td.soft
 {
-	/*color: #848484;*/
 	color: #6E6E6E;
 	font-style:italic;
 }
@@ -103,7 +103,7 @@ td.strong
 {
 	font-weight:bold;
 }
-
+*/
 input.score
 {
 	margin-left: 1em;
