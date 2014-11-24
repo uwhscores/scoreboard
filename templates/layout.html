@@ -1,72 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
 	<title>Standings</title>
-	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}"> 
+		
+	<!-- Bootstrap Core CSS -->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='jquery-ui.css') }}">
 	<link rel="stylesheet" href="//cdn.datatables.net/1.10.4/css/jquery.dataTables.css" >
-	
-	<script src="{{ url_for('static', filename='jquery-1.11.1.js') }}"></script>
-	<script src="{{ url_for('static', filename='jquery-ui.js') }}"></script>
-	<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"> </script>
-	<script>
-	$(function() {
-		$( "#tabs" ).tabs();
-	});
 
-	$(function() {
-		$( "#menu" ).menu();
-	});
-	</script>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"> 
+	<!-- Custom Fonts -->
+	<link href="font-awesome-4.1.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+	<!-- Bootstrap Core JavaScript -->
+	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='jquery.js') }}"></script>
+	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='jquery-ui.js') }}"></script>
+	<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"> </script>
 
 	<script type="text/javascript">
-		var timeout = 500;
-		var closetimer = 0;
-		var ddmenuitem = 0;
-
-		function jsddm_open() {
-			jsddm_canceltimer();
-			jsddm_close();
-			ddmenuitem = $(this).find('ul').eq(0).css('visibility', 'visible');
-			$('#jsddm > li').unbind('click');
-			return false;
-		}
-
-
-		function jsddm_close() {
-			if(ddmenuitem) ddmenuitem.css('visibility', 'hidden');
-			$('#jsddm > li').bind('click', jsddm_open);
-		}
-
-		function jsddm_timer()
-		{	closetimer = window.setTimeout(jsddm_close, timeout);}
-
-		function jsddm_canceltimer()
-		{	if(closetimer)
-			{	window.clearTimeout(closetimer);
-				closetimer = null;}}
-
-		$(document).ready(function()
-		{	
-			$('#jsddm > li').bind('click mouseover', jsddm_open);
-			$('#jsddm > li').bind('mouseout',  jsddm_timer);
-			
-			$('#games').DataTable({ordering: false, paging:false, info:false});
-			$('#standings_tbl').DataTable({ordering: false, paging:false, info:false});
-			$('#places_tbl').DataTable({ordering: false, paging:false, info:false});
+		$(function() {
+			$( "#tabs" ).tabs();
 		});
 
-		document.onclick = jsddm_close;
-	</script>
+		$(function() {
+			$( "#menu" ).menu();
+		});
+		
+		 $(document).ready(function()
+               {                              
+                       $('#games').DataTable({ordering: false, paging:false, info:false});
+                       $('#standings_tbl').DataTable({ordering: false, paging:false, info:false});
+                       $('#places_tbl').DataTable({ordering: false, paging:false, info:false});
+               });
 
+	</script>
 </head>
 <body>
 	{% block nav %}{% endblock %}
-	<h1>{{ tournament }}</h1>
 	<div id=tabs>
 		{% block tabs %}{% endblock %}
 		{% block games %}{% endblock %}
 		{% block standings %}{% endblock %}
 		{% block places %}{% endblock %}
 	</div>
-</body>
+	
 
+</body>
+</html>
