@@ -11,7 +11,7 @@
 		
 	<!-- Bootstrap Core CSS -->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dataTables.bootstrap.css') }}"> -->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dataTables.bootstrap.css') }}">
 	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"> -->
 	<!-- Custom Fonts -->
 	<link href="{{ url_for('static', filename='font-awesome.min.css') }}" rel="stylesheet" type="text/css">
@@ -44,12 +44,10 @@
 	{% block nav %}{% endblock %}
 
     <!-- Page Content -->
-	<div id="block_blah" style="margin-top: 100px">
-		{% block tabs %}{% endblock %}
-		{% block games %}{% endblock %}
-		{% block standings %}{% endblock %}
-		{% block places %}{% endblock %}
-	</div>
+	{% block tabs %}{% endblock %}
+	{% block games %}{% endblock %}
+	{% block standings %}{% endblock %}
+	{% block places %}{% endblock %}
 	<!-- /.container -->
 	
 
