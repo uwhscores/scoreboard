@@ -2,16 +2,19 @@
 <html lang="en">
 
 <head>
-	<title>Standings</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+	<title>Underwater Hockey Scores</title>
 		
 	<!-- Bootstrap Core CSS -->
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='jquery-ui.css') }}">
-	<link rel="stylesheet" href="//cdn.datatables.net/1.10.4/css/jquery.dataTables.css" >
-
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"> 
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dataTables.bootstrap.css') }}"> -->
+	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"> -->
 	<!-- Custom Fonts -->
-	<link href="font-awesome-4.1.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+	<link href="{{ url_for('static', filename='font-awesome.min.css') }}" rel="stylesheet" type="text/css">
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -21,37 +24,33 @@
     <![endif]-->
 
 	<!-- Bootstrap Core JavaScript -->
-	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='jquery.js') }}"></script>
-	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
-	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='jquery-ui.js') }}"></script>
-	<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"> </script>
+	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+	<!-- <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"> </script> -->
+	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+	<!-- <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/dataTables.bootstrap.js') }}"> </script> -->
 
 	<script type="text/javascript">
-		$(function() {
-			$( "#tabs" ).tabs();
-		});
-
-		$(function() {
-			$( "#menu" ).menu();
-		});
-		
 		 $(document).ready(function()
                {                              
-                       $('#games').DataTable({ordering: false, paging:false, info:false});
-                       $('#standings_tbl').DataTable({ordering: false, paging:false, info:false});
-                       $('#places_tbl').DataTable({ordering: false, paging:false, info:false});
+                       $('#games').dataTable({ordering: false, paging:false, info:false});
+                       $('#standings_tbl').dataTable({ordering: false, paging:false, info:false});
+                       $('#places_tbl').dataTable({ordering: false, paging:false, info:false});
                });
 
 	</script>
 </head>
 <body>
+
 	{% block nav %}{% endblock %}
-	<div id=tabs class=row>
+
+    <!-- Page Content -->
+	<div id="block_blah" style="margin-top: 100px">
 		{% block tabs %}{% endblock %}
 		{% block games %}{% endblock %}
 		{% block standings %}{% endblock %}
 		{% block places %}{% endblock %}
 	</div>
+	<!-- /.container -->
 	
 
 </body>
