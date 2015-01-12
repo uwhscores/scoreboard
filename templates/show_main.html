@@ -5,16 +5,22 @@
 {% endblock nav %}
 
 {% block tabs %}
+
 <div class="container">
 	<div class="row">
-			<h1> Underwater Hockey Scores </h1>
+		<h3>Humm ..... </h3>
+	</div>
+</div>
+<div id="page_body" class="container">
+	<div class="row">
+		<h1 class="page-header">Underwater Hockey Scores</h1>		
 	</div>
 
 	<div class="row">
 		<ul id=tabNav class="nav nav-tabs">
-				<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
-				<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
-				{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
+			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
+			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
+			{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
 		</ul>
 	{% endblock tabs %}
 

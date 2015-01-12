@@ -14,7 +14,7 @@
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dataTables.bootstrap.css') }}">
 	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"> -->
 	<!-- Custom Fonts -->
-	<link href="{{ url_for('static', filename='font-awesome.min.css') }}" rel="stylesheet" type="text/css">
+	<link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet" type="text/css">
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -28,16 +28,6 @@
 	<!-- <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"> </script> -->
 	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 	<!-- <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/dataTables.bootstrap.js') }}"> </script> -->
-
-	<script type="text/javascript">
-		 $(document).ready(function()
-               {                              
-                       $('#games').dataTable({ordering: false, paging:false, info:false});
-                       $('#standings_tbl').dataTable({ordering: false, paging:false, info:false});
-                       $('#places_tbl').dataTable({ordering: false, paging:false, info:false});
-               });
-
-	</script>
 </head>
 <body>
 
