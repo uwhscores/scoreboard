@@ -179,9 +179,9 @@ def calcStandings(pod=None):
 		standings[team_id]= Stats(row['name'], team_id, row['division'], pod)
 
 	if (pod == None):
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND s.tid=?', (app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?', (app.config['TID']))
 	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod=?  AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod=?  AND g.type="RR" AND  g.tid=s.tid AND s.tid=?', (pod,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -286,17 +286,20 @@ def endRoundRobin(division=None, pod=None):
 	rr_games = row['games']
 
 	if (division == None and pod == None):
-		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND s.tid=?', \
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?', \
 			app.config['TID'])
 	elif (division == None):
-		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=?', \
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=s.tid AND g.tid=?', \
 			(pod, app.config['TID']))	
 	else:
-		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.division=? AND s.tid=?',\
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND g.division=? AND s.tid=?',\
 			(division, app.config['TID']))
 	
 	row = cur.fetchone()
 	games_played = row['count']
+
+	#app.logger.debug("division |%s| and pod |%s|" % (division, pod))
+	#app.logger.debug("RR Games = %s and we've played %s games" % (rr_games, games_played))
 
 	if (games_played >= rr_games):
 		return 1
@@ -552,19 +555,32 @@ def expandGames(games):
 	
 # gets full list of games for display	
 # returns list of dictionaries for each game
-def getGames(division= None, pod=None, offSet=None ):
+def getGames(division= None, pod=None, offset=None ):
 	db = getDB()
-	if (division == None and pod == None):
-		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE tid=? ORDER BY day, start_time',app.config['TID'])
-	elif (pod == None and offSet == None):
-		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time',\
-			 (division, app.config['TID']))
-	elif (pod == None and offSet ):
-		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE division LIKE ? AND tid=? ORDER BY day, start_time LIMIT ?,40',\
-			 (division, app.config['TID'], offSet))
+	if (offset != None):
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+						WHERE tid=? ORDER BY day, start_time LIMIT ?,45",\
+						(app.config['TID'], offset))
+	elif (division == None and pod == None):
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+							WHERE tid=? ORDER BY day, start_time",app.config['TID'])
+	elif (pod == None):
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+							WHERE division LIKE ? AND tid=? ORDER BY day, start_time", \
+							(division, app.config['TID']))
 	elif (division == None):
-		cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE pod=? AND tid=? ORDER BY day, start_time',\
-			 (pod, app.config['TID']))
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+							WHERE POD like ? AND tid=? ORDER BY day, start_time",\
+			 				(pod, app.config['TID']))
+	
+	#if (division == None and pod==None and offset):
+	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+	#					WHERE tid=? ORDER BY day, start_time LIMIT ?,40",\
+	#					(app.config['TID'], offset))
+	#else:
+	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+	#					WHERE tid=? ORDER BY day, start_time",\
+	#					(app.config['TID']))	
 		
 	games = expandGames(cur.fetchall())
 
@@ -756,21 +772,22 @@ def renderTeam(team_id):
 
 
 @app.route('/tv')
-@app.route('/tv/<division>')
-def renderTV(division=None):
-	if (division == "A"):
-		games = getGames(division)
-		teams = getStandings(division)
-		placings = getPlacings(division)
-	else:
-		games = getGames(division,None,85)
-		pods = getPodsInPlay(division)
-		placings = getPlacings(division)
+@app.route('/tv/<offset>')
+def renderTV(offset=None):
+	#if (division == "A"):
+	#	games = getGames(division)
+	#	teams = getStandings(division)
+	#	placings = getPlacings(division)
+	#else:
+	
+	division=None
+	
+	games = getGames(division,None,offset)
+	#pods = getPodsInPlay(division)
+	placings = getPlacings(division)
 
-		teams = []
-		for pod in pods:
-			#games.extend(getGames(None, pod['pod']))
-			teams.extend(getStandings(None, pod['pod']))
+	teams = []		
+	teams = getStandings()
 	
 	titleText="Full "	
 	standings = [] 
@@ -826,14 +843,14 @@ def renderUpdate():
 
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
-				return redirect("http://scoreboard.mnuwh.com/update")
+				return redirect("http://uwhscores.com/update")
 			return render_template('update_single.html', game=game)
 		else:
 			games = getGames()
 			return render_template('show_update.html', games=games)
 	if request.method == 'POST':
 		updateGame(request.form)
-		return redirect("http://scoreboard.mnuwh.com/update")
+		return redirect("http://uwhscores.com/update")
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
 	

@@ -1,14 +1,30 @@
 {% extends "layout.html" %}
 
 {% block games %}
-<div id="schedule">
-<h1>Schedule</h1>
+
+<div id="page_body" class="container">
+	<div class="row">
+		<h1 class="page-header">Update scores for {{ tournament }}</h1>		
+	</div>
 {% for messages in get_flashed_messages() %}
     <div class=flashes> {{ message }} </div>
 {% endfor %}
 
-<table>
-	<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Black</td><td></td><td>White</td><td></td><td></td></tr>
+<table id=games class="table table-striped">
+	<thead>
+		<tr>
+			<th>Game</th>
+			<th>Start Time</th>
+			<th>Pool</th>
+			<th>Black</th>
+			<th></th>
+			<th>White</th>
+			<th></th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+	
 	{% set rank = 1 %}
 	{% for game in games %}
 		{% if rank % 2 == 0 %}
@@ -36,6 +52,7 @@
 		</tr>
 		{% set rank = rank + 1 %}
 	{% endfor %}
+	</tbody>
 </table>
 </div>
 {% endblock games %}

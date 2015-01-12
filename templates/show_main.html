@@ -13,7 +13,7 @@
 </div>
 <div id="page_body" class="container">
 	<div class="row">
-		<h1 class="page-header">Underwater Hockey Scores</h1>		
+		<h1 class="page-header">{{ tournament }}</h1>		
 	</div>
 
 	<div class="row">
@@ -28,13 +28,13 @@
 	<div id="tabContents" class="tab-content">
 		<div id="schedule" class="tab-pane fade active in">
 		<h1>{{ titleText }} Schedule</h1>
-		<table id=games class="table">
+		<table id=games class="table table-striped">
 			<thead>
 				<tr>
 					<th>Game</th>
 					<th>Start Time</th>
-					<th>Pool</th>
-					<th>Pod</th>
+					<!--<th>Pool</th>
+					<th>Pod</th>-->
 					<th>Black</th>
 					<th></th>
 					<th>White</th>
@@ -46,11 +46,11 @@
 				<tr>
 					<td>{{ game.gid }}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
-					<td>{{ game.pool }}</td>
+					<!-- <td>{{ game.pool }}</td> -->
 					{% if game.pod_color %}
-						<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
+						<!-- <td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td> -->
 					{% else %}
-						<td>--</td>
+						<!-- <td>--</td> -->
 					{% endif %}
 					<td class={{game.style_b}}>{{ game.black }}</td>
 					<td>{{game.score_b}}</td>
@@ -67,7 +67,7 @@
 		{% block standings %}
 		<div id="standings" class="tab-pane fade">
 		<h1>{{ titleText }} Standings</h1>
-		<table id=standings_tbl class="table">
+		<table id=standings_tbl class="table table-striped">
 			<thead>
 				<tr>
 					<th>Rank</th>
@@ -125,7 +125,7 @@
 		{% if placings %}
 		<div id="places" class="tab-pane fade">
 		<h1>{{ titleText }} Placings</h1>
-		<table id=places_tbl class="table">
+		<table id=places_tbl class="table table-striped">
 			<thead>
 				<tr>
 					<th>Place</th>

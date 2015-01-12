@@ -1,42 +1,45 @@
 {% extends "mobile_layout.html" %}
 
 {% block games %}
-<div id="update">
-<h1>Update Score</h1>
+<div id="page_body" class="container">
+	<div class="row">
+		<h1>Update Score</h1>
 
-{% for messages in get_flashed_messages() %}
-    <div class=flashes> {{ message }} </div>
-{% endfor %}
+		{% for messages in get_flashed_messages() %}
+			<div class=flashes> {{ message }} </div>
+		{% endfor %}
+	</div>
+	<div class="row">
+			<form action='/update' method=post>
+					<input type=hidden name=gid value={{ game.gid }}>
+					<input type=hidden name=btid value={{ game.black_tid }}>
+					<input type=hidden name=wtid value={{ game.white_tid }}>
+			<input type=hidden name=pod  value={{ game.pod }}>
+					<table id=games>
+					<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td></tr>
 
-        <form action='/update' method=post>
-                <input type=hidden name=gid value={{ game.gid }}>
-                <input type=hidden name=btid value={{ game.black_tid }}>
-                <input type=hidden name=wtid value={{ game.white_tid }}>
-		<input type=hidden name=pod  value={{ game.pod }}>
-                <table id=games>
-                <tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td></tr>
-
-                <tr>
-                        <td>{{ game.gid}}</td> 
-			<td>{{ game.day }} {{ game.start_time }}</td>
-			<td>{{ game.pool }}</td>
-			<td>{{ game.pod }}</td>
-		</tr>
-		<tr class=header>
-			<td colspan=2>Black</td>
-			<td colspan=2>White</td>
-		</tr>
-		<tr>
-                        <td colspan=2>{{ game.black }} 
-                        <input class=score type=text name=score_b autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'></td>
-                        <td colspan=2>{{ game.white }}
-                        <input class=score type=text name=score_w autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'></td>
-                </tr>
-		<tr>
-                	<td colspan=4 style="text-align:center"><input type='submit' value=Update></td>
-        	</tr>
-		</table>
-	</form>
+					<tr>
+							<td>{{ game.gid}}</td> 
+				<td>{{ game.day }} {{ game.start_time }}</td>
+				<td>{{ game.pool }}</td>
+				<td>{{ game.pod }}</td>
+			</tr>
+			<tr class=header>
+				<td colspan=2>Black</td>
+				<td colspan=2>White</td>
+			</tr>
+			<tr>
+							<td colspan=2>{{ game.black }} 
+							<input class=score type=text name=score_b autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'></td>
+							<td colspan=2>{{ game.white }}
+							<input class=score type=text name=score_w autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'></td>
+					</tr>
+			<tr>
+						<td colspan=4 style="text-align:center"><input type='submit' value=Update></td>
+				</tr>
+			</table>
+		</form>
+	</div>
 
 </div>
 {% endblock games %}
