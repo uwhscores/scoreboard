@@ -611,7 +611,7 @@ def getTeamGames(team_id):
 			elif game['white_tid'] == team_id:
 				game['style_w'] = "strong"
 			games.append(game)
-
+							
 	return games;
 
 # get list of pods that have teams assigned to them
@@ -769,7 +769,9 @@ def renderTeam(team_id):
 			standings.append(team.__dict__)
 
 	titleText = getTeam(team_id)
-	noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
+	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
+	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
+	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, noteText=noteText)
 
 
