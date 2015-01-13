@@ -145,10 +145,10 @@ def sortTeams(team_b, team_a):
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
 	db = getDB()
-	cur = db.execute('SELECT pod FROM pods WHERE team_id=? AND TID=? LIMIT 1',(tid_a,app.config['TID']))
-	row = cur.fetchone()
+	#cur = db.execute('SELECT pod FROM pods WHERE team_id=? AND TID=? LIMIT 1',(tid_a,app.config['TID']))
+	#row = cur.fetchone()
 	#division = row['division']
-	pod = row['pod']
+	#pod = row['pod']
 	
 	#a = getTeam(tid_a)
 	#b = getTeam(tid_b)
@@ -180,9 +180,11 @@ def calcStandings(pod=None):
 		standings[team_id]= Stats(row['name'], team_id, row['division'], pod)
 
 	if (pod == None):
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?', (app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g \
+							WHERE g.gid=s.gid AND g.tid=s.tid AND g.type="RR" AND s.tid=?', (app.config['TID']))
 	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g WHERE g.gid=s.gid AND g.pod=?  AND g.type="RR" AND  g.tid=s.tid AND s.tid=?', (pod,app.config['TID']))
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g \
+							WHERE g.gid=s.gid AND g.tid=s.tid AND g.pod=?  AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
 	games = cur.fetchall()
 
 	for game in games:
@@ -247,10 +249,13 @@ def getStandings(div=None, pod=None):
 	if ( pod == None and div == None ):
 		cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?', app.config['TID'])
 		rows = cur.fetchall()		
-
-		for row in rows:
-			pod = row['pod']
-			standings = standings + calcStandings(pod)
+		if (len(rows) > 0):
+			for row in rows:
+				pod = row['pod']
+				standings = standings + calcStandings(pod)
+		else:
+			standings = calcStandings()
+			
 	elif (pod == None):
 		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id AND t.division=? AND p.tid=?',\
 			(div, app.config['TID']))
@@ -261,6 +266,7 @@ def getStandings(div=None, pod=None):
 
 	else:	
 		standings= calcStandings(pod)
+
 
 	return standings
 
@@ -299,8 +305,8 @@ def endRoundRobin(division=None, pod=None):
 	row = cur.fetchone()
 	games_played = row['count']
 
-	#app.logger.debug("division |%s| and pod |%s|" % (division, pod))
-	#app.logger.debug("RR Games = %s and we've played %s games" % (rr_games, games_played))
+	app.logger.debug("division |%s| and pod |%s|" % (division, pod))
+	app.logger.debug("RR Games = %s and we've played %s games" % (rr_games, games_played))
 
 	if (games_played >= rr_games):
 		return 1
@@ -310,7 +316,7 @@ def endRoundRobin(division=None, pod=None):
 # gets team ID back from seed ranking, returns -1 if seeding isn't final
 def getSeed(seed, division=None, pod=None):
 	if ( endRoundRobin(division, pod) ):
-		standings = getStandings(None, pod)
+		standings = getStandings(division, pod)
 		seed = int(seed) - 1	
 		return standings[seed].team_id
 	else:
@@ -450,13 +456,16 @@ def parseGame(game):
 			game = name + " ("+pod+pod_id+")"
  
 	# Seed notation
-	match = re.search( '^S([A|B|C])(\d+)$', game )
+	match = re.search( '^S([A|B|C])?(\d+)$', game )
 	if match:
 		division = match.group(1)
 		seed = match.group(2)
 		team_id = getSeed( seed, None, division )
 		if ( team_id < 0 ):
-			game = "Seed " + division + seed
+			if division:
+				game = "Seed " + division + seed
+			else:
+				game = "Seed " + seed
 			style="soft"
 		else:
 			team = getTeam(team_id)
