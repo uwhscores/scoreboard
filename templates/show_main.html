@@ -59,8 +59,14 @@
 				</tr>
 			{% endfor %}
 			</tbody>
-		</table>
-		<p class=note>{{ noteText }}</p>
+		</table>	
+		
+		{% if noteText %}
+			<div class="alert alert-info" role="alert">
+				<p>{{ noteText }}</p>
+			</div>
+		{% endif %}
+		
 		</div>
 		{% endblock games %}
 

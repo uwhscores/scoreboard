@@ -1,45 +1,49 @@
-{% extends "mobile_layout.html" %}
+{% extends "layout.html" %}
 
 {% block games %}
 <div id="page_body" class="container">
-	<div class="row">
-		<h1>Update Score</h1>
+	<h1>Update Score</h1>
 
-		{% for messages in get_flashed_messages() %}
-			<div class=flashes> {{ message }} </div>
-		{% endfor %}
-	</div>
-	<div class="row">
-			<form action='/update' method=post>
-					<input type=hidden name=gid value={{ game.gid }}>
-					<input type=hidden name=btid value={{ game.black_tid }}>
-					<input type=hidden name=wtid value={{ game.white_tid }}>
-			<input type=hidden name=pod  value={{ game.pod }}>
-					<table id=games>
-					<tr class=header><td>Game</td><td>Start Time</td><td>Pool</td><td>Pod</td></tr>
-
-					<tr>
-							<td>{{ game.gid}}</td> 
-				<td>{{ game.day }} {{ game.start_time }}</td>
-				<td>{{ game.pool }}</td>
-				<td>{{ game.pod }}</td>
+	{% for messages in get_flashed_messages() %}
+		<div class=alert alert-warning> {{ message }} </div>
+	{% endfor %}
+	<form action='/update' method=post>
+		<input type=hidden name=gid value={{ game.gid }}>
+		<input type=hidden name=btid value={{ game.black_tid }}>
+		<input type=hidden name=wtid value={{ game.white_tid }}>
+		<input type=hidden name=pod  value={{ game.pod }}>
+		<table id=games class=table>
+			<thead>
+				<tr><th>Game</th><th>Start Time</th><th>Pool</th><th>Pod</th></tr>
+			</thead>
+			</tbody>
+				<tr>
+					<td>{{ game.gid}}</td> 
+					<td>{{ game.day }} {{ game.start_time }}</td>
+					<td>{{ game.pool }}</td>
+					<td>{{ game.pod }}</td>
 			</tr>
-			<tr class=header>
-				<td colspan=2>Black</td>
-				<td colspan=2>White</td>
-			</tr>
-			<tr>
-							<td colspan=2>{{ game.black }} 
-							<input class=score type=text name=score_b autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'></td>
-							<td colspan=2>{{ game.white }}
-							<input class=score type=text name=score_w autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'></td>
-					</tr>
-			<tr>
-						<td colspan=4 style="text-align:center"><input type='submit' value=Update></td>
+			</tbody>
+			<thead>
+				<tr> <th colspan=2>Black</td> <th colspan=2>White</td></tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td colspan=2> 
+						{{ game.black }} </br> 
+						<input class=score type=text name=score_b placeholder="0" autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'> 
+					</td>
+					<td colspan=2> 
+						{{ game.white }} </br>
+						<input class=score type=text name=score_w placeholder="0" autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'>
+					</td>
 				</tr>
-			</table>
-		</form>
-	</div>
 
+				<tr>
+					<td colspan=4 style="text-align:center"><input type='submit' class="btn btn-success" value=Update></td>
+				</tr>
+			</tbody>
+		</table>
+	</form>
 </div>
 {% endblock games %}

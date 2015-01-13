@@ -4,7 +4,8 @@ import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
 	render_template, flash, jsonify, json
 from werkzeug.contrib.fixers import ProxyFix
-from flask.ext.basicauth import BasicAuth
+#from flask.ext.basicauth import BasicAuth
+from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -12,7 +13,7 @@ app.config.from_object(__name__)
 app.config['BASIC_AUTH_USERNAME'] = 'admin'
 app.config['BASIC_AUTH_PASSWORD'] = 'dummy'
 
-basic_auth = BasicAuth(app)
+#basic_auth = BasicAuth(app)
 
 app.config.update(dict(
 	DATABASE=os.path.join(app.root_path, 'scores.db'),
@@ -521,7 +522,8 @@ def expandGames(games):
 		game = {}
 		game["gid"] = info['gid']
 		game["day"] = info['day']
-		game["start_time"] = info['start_time']
+		start_time = info['start_time']
+		game["start_time"] = datetime.strptime(start_time, '%H:%M').strftime('%I:%M %p')
 		game["pool"] = info['pool']
 		if hasattr(info,'pod'):
 			game["pod"] = info['pod']
@@ -797,7 +799,7 @@ def renderTV(offset=None):
 	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
 @app.route('/whiterabbitobject')
-@basic_auth.required
+#@basic_auth.required
 def callToSeed():
 	output = popSeededPods()
 	return json.dumps(output)
@@ -831,7 +833,7 @@ def apiGetStandings(division=None):
 
 
 @app.route('/update', methods=['POST','GET'])
-@basic_auth.required
+#@basic_auth.required
 def renderUpdate():
 	if request.method =='GET':
 		if request.args.get('gid'):
@@ -843,14 +845,14 @@ def renderUpdate():
 
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
-				return redirect("http://uwhscores.com/update")
+				return redirect(request.base_url)
 			return render_template('update_single.html', game=game)
 		else:
 			games = getGames()
-			return render_template('show_update.html', games=games)
+			return render_template('show_update.html', games=games, tournament=getTournamentName())
 	if request.method == 'POST':
 		updateGame(request.form)
-		return redirect("http://uwhscores.com/update")
+		return redirect(request.base_url)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
 	

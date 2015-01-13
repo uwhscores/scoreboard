@@ -17,7 +17,7 @@ CREATE TABLE teams(
 );
 
 CREATE TABLE tournaments(
-	tid INTEGER PRIMARY KEY, name TEXT, rr_games INTEGER
+	tid INTEGER PRIMARY KEY, name TEXT, short_name TEXT
 );
 
 CREATE TABLE pods(
