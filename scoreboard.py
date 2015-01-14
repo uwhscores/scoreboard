@@ -276,7 +276,10 @@ def getTeam(team_id):
 	cur = db.execute('SELECT name FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
 	team = cur.fetchone()
 
-	return team['name']
+	if team:
+		return team['name']
+	else:
+		return None
 
 # true false function for determining if round robin play has been completed
 def endRoundRobin(division=None, pod=None):
@@ -652,7 +655,10 @@ def getDivision(team_id):
 	cur = db.execute('SELECT division FROM teams WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
 	row = cur.fetchone()
 
-	return row['division']
+	if row:
+		return row['division']
+	else:
+		return None
 
 def getTeamPod(team_id):
 	db = getDB()
@@ -769,6 +775,13 @@ def renderPod(pod):
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
 	team_id = int(team_id)
+
+	titleText = getTeam(team_id)
+	
+	if titleText == None:
+		flash("Team ID %s doesn't exist" % team_id)
+		return redirect(request.url_root)
+		
 	division = getDivision(team_id)
 	#pods = getPodsActive(division)
 
@@ -788,7 +801,6 @@ def renderTeam(team_id):
 		for team in div:
 			standings.append(team.__dict__)
 
-	titleText = getTeam(team_id)
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
 	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."

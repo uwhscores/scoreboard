@@ -14,8 +14,18 @@
 <div id="page_body" class="container">
 	<div class="row">
 		<h1 class="page-header">{{ tournament }}</h1>		
-	</div>
 
+	{% with messages = get_flashed_messages() %}
+		{% if messages %}
+			<div class="alert alert-danger" role="alert">
+			{% for message in messages %}
+				{{ message }}</br>
+			{% endfor %}
+			</div>
+		{% endif %}
+	{% endwith %}
+
+	</div>
 	<div class="row">
 		<ul id=tabNav class="nav nav-tabs">
 			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
