@@ -659,7 +659,10 @@ def getTeamPod(team_id):
 	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
 	row = cur.fetchall()
 
-	return row
+	if len(row) > 0:
+		return row
+	else:
+		return None
 
 def getGamePod(gid):
 	db = getDB()
@@ -767,13 +770,18 @@ def renderPod(pod):
 def renderTeam(team_id):
 	team_id = int(team_id)
 	division = getDivision(team_id)
-	pods = getTeamPod(team_id)
 	#pods = getPodsActive(division)
 
 	teams = []
 	games = getTeamGames(team_id)
-	for pod in pods:
-		teams.append(getStandings(None, pod['pod']))
+	
+
+	pods = getTeamPod(team_id)
+	if pods:
+		for pod in pods:
+			teams.append(getStandings(None, pod['pod']))
+	else:
+		teams.append(getStandings())
 	
 	standings = []
 	for div in teams:
