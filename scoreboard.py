@@ -469,7 +469,10 @@ def parseGame(game):
 			style="soft"
 		else:
 			team = getTeam(team_id)
-			game = team + " (S" + division + seed + ")"
+			if division:
+				game = "%s (S%s%s)" % (team, division, seed)
+			else:
+				game = "%s (S%s)" % (team, seed)
 
 	#Seeded Pod notation
 	match = re.search( '^S([begdz])(\d+)$', game)
