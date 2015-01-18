@@ -196,7 +196,7 @@ def calcStandings(pod=None):
 		standings[black_tid].games_played += 1
 		standings[white_tid].games_played += 1
 
-		if (score_b >= 0 & score_w >= 0 ): 
+		if (score_b >= 0 and score_w >= 0 ): 
 			standings[black_tid].goals_allowed += score_w
 			standings[white_tid].goals_allowed += score_b
 
@@ -308,8 +308,8 @@ def endRoundRobin(division=None, pod=None):
 	row = cur.fetchone()
 	games_played = row['count']
 
-	app.logger.debug("division |%s| and pod |%s|" % (division, pod))
-	app.logger.debug("RR Games = %s and we've played %s games" % (rr_games, games_played))
+	#app.logger.debug("division |%s| and pod |%s|" % (division, pod))
+	#app.logger.debug("RR Games = %s and we've played %s games" % (rr_games, games_played))
 
 	if (games_played >= rr_games):
 		return 1
