@@ -112,6 +112,7 @@
 					<td>{{ team.goals_allowed }}</td>
 					<td>{{ team.games_played }} </td>
 				</tr>
+				{% set rank = rank + 1 %}
 				{% set lastPod = team.pod %}
 			{% endfor %}
 			<tbody>
