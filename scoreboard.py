@@ -873,9 +873,9 @@ def renderUpdate():
 		if request.args.get('gid'):
 			game = getGame( request.args.get('gid') ) 
 			if ( game['score_b'] == "--"):
-				game['score_b'] = ""
+				game['score_b'] = "0"
 			if ( game['score_w'] == "--"):
-				game['score_w'] = ""
+				game['score_w'] = "0"
 
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')

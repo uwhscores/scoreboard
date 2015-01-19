@@ -26,6 +26,50 @@
 	<!-- Bootstrap Core JavaScript -->
 	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/jquery.js') }}"></script>
 	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+
+	<script>
+	jQuery(document).ready(function(){
+		// This button will increment the value
+		$('.qtyplus').click(function(e){
+			// Stop acting like a button
+			e.preventDefault();
+			// Get the field name
+			fieldName = $(this).attr('field');
+			// Get its current value
+			var currentVal = parseInt($('input[name='+fieldName+']').val());
+			var newVal = 0;
+			// If is not undefined
+			if (!isNaN(currentVal)) {
+				// Increment
+				newVal = currentVal + 1;
+			} 
+			
+			$('input[name='+fieldName+']').val(newVal);
+			 document.getElementById(fieldName).innerHTML=newVal;
+
+			
+		});
+		// This button will decrement the value till 0
+		$(".qtyminus").click(function(e) {
+			// Stop acting like a button
+			e.preventDefault();
+			// Get the field name
+			fieldName = $(this).attr('field');
+			// Get its current value
+			var currentVal = parseInt($('input[name='+fieldName+']').val());
+			var newVal = 0;
+			// If it isn't undefined or its greater than 0
+			if (!isNaN(currentVal) && currentVal > 0) {
+				// Decrement one
+				newVal = currentVal - 1;
+			} 
+			$('input[name='+fieldName+']').val(newVal);
+			document.getElementById(fieldName).innerHTML=newVal;
+
+		});
+	});
+	</script>
+
 </head>
 <body>
 

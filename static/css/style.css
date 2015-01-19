@@ -8,3 +8,15 @@ td.strong
 {
 	font-weight:bold;
 }
+
+input[type="number"] {
+   width:3em;
+}
+
+.score {
+	font-size: 3em;
+	padding-left: 6px;
+	padding-right: 6px;
+	padding-top: 6px;
+	vertical-align: middle;
+}

@@ -30,17 +30,27 @@
 			<tbody>
 				<tr>
 					<td colspan=2> 
-						{{ game.black }} </br> 
-						<input class=score type=text name=score_b placeholder="0" autocomplete=off maxlength=2 size=2 value='{{ game.score_b }}'> 
+						<h3>{{ game.black }}</h3> 
+						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_b' />
+						<input type=hidden  name=score_b value='{{ game.score_b }}'> 
+						<span id=score_b class=score>{{ game.score_b }}</span>
+						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_b' />
 					</td>
 					<td colspan=2> 
-						{{ game.white }} </br>
-						<input class=score type=text name=score_w placeholder="0" autocomplete=off maxlength=2 size=2 value='{{ game.score_w }}'>
+						<h3>{{ game.white }} </h3>
+						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_w' />
+						<input type=hidden  name=score_w value='{{ game.score_w }}'> 
+						<span id=score_w class=score>{{ game.score_w }}</span>						
+						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_w' />
+
 					</td>
 				</tr>
 
 				<tr>
-					<td colspan=4 style="text-align:center"><input type='submit' class="btn btn-success" value=Update></td>
+					<td colspan=4 style="text-align:center">
+						<a href={{ request.base_url }} ><input type='button' class="btn btn-danger" value=Cancel></a>
+						<input type='submit' class="btn btn-success" value=Update>
+					</td>
 				</tr>
 			</tbody>
 		</table>
