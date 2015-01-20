@@ -681,12 +681,19 @@ def getGamePod(gid):
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
 	db = getDB()
-	gid = form['gid']
-	score_b = form['score_b']
-	score_w = form['score_w']
-	black_tid = form['btid']
-	white_tid = form['wtid']
+	gid = int(form['gid'])
+	score_b = int(form['score_b'])
+	score_w = int(form['score_w'])
+	black_tid = int(form['btid'])
+	white_tid = int(form['wtid'])
 	pod = form['pod']
+
+
+	if not isinstance(score_b, int):
+		return -1
+
+	if not isinstance(score_w, int):
+		return -1
 	
         cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod) VALUES(?,?,?,?,?,?,?)", \
 			(black_tid,white_tid,score_w,score_b,app.config['TID'],gid, pod))
