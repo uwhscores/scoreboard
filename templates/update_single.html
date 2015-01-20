@@ -1,6 +1,50 @@
 {% extends "layout.html" %}
 
 {% block games %}
+
+	<script>
+	jQuery(document).ready(function(){
+		// This button will increment the value
+		$('.qtyplus').click(function(e){
+			// Stop acting like a button
+			e.preventDefault();
+			// Get the field name
+			fieldName = $(this).attr('field');
+			// Get its current value
+			var currentVal = parseInt($('input[name='+fieldName+']').val());
+			var newVal = 0;
+			// If is not undefined
+			if (!isNaN(currentVal)) {
+				// Increment
+				newVal = currentVal + 1;
+			}
+
+			$('input[name='+fieldName+']').val(newVal);
+			 document.getElementById(fieldName).innerHTML=newVal;
+
+
+		});
+		// This button will decrement the value till 0
+		$(".qtyminus").click(function(e) {
+			// Stop acting like a button
+			e.preventDefault();
+			// Get the field name
+			fieldName = $(this).attr('field');
+			// Get its current value
+			var currentVal = parseInt($('input[name='+fieldName+']').val());
+			var newVal = 0;
+			// If it isn't undefined or its greater than 0
+			if (!isNaN(currentVal) && currentVal > 0) {
+				// Decrement one
+				newVal = currentVal - 1;
+			}
+			$('input[name='+fieldName+']').val(newVal);
+			document.getElementById(fieldName).innerHTML=newVal;
+
+		});
+	});
+	</script>
+
 <div id="page_body" class="container">
 	<h1>Update Score</h1>
 
@@ -18,7 +62,7 @@
 			</thead>
 			</tbody>
 				<tr>
-					<td>{{ game.gid}}</td> 
+					<td>{{ game.gid}}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
 					<td>{{ game.pool }}</td>
 					<td>{{ game.pod }}</td>
@@ -29,18 +73,18 @@
 			</thead>
 			<tbody>
 				<tr>
-					<td colspan=2> 
-						<h3>{{ game.black }}</h3> 
+					<td colspan=2>
+						<h3>{{ game.black }}</h3>
 						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_b' />
-						<input type=hidden  name=score_b value='{{ game.score_b }}'> 
+						<input type=hidden  name=score_b value='{{ game.score_b }}'>
 						<span id=score_b class=score>{{ game.score_b }}</span>
 						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_b' />
 					</td>
-					<td colspan=2> 
-						<h3>{{ game.white }} </h3>
+					<td colspan=2>
+						<h3>{{ game.white }}</h3>
 						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_w' />
-						<input type=hidden  name=score_w value='{{ game.score_w }}'> 
-						<span id=score_w class=score>{{ game.score_w }}</span>						
+						<input type=hidden  name=score_w value='{{ game.score_w }}'>
+						<span id=score_w class=score>{{ game.score_w }}</span>
 						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_w' />
 
 					</td>
