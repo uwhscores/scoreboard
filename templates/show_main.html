@@ -6,8 +6,8 @@
 
 {% block tabs %}
 <div id="page_body" class="container">
-	<div class="row">
-		<h1 class="page-header">{{ tournament }}</h1>		
+	<div class="page-header">
+		<h1>{{ tournament }}</h1>		
 
 	{% with messages = get_flashed_messages() %}
 		{% if messages %}
@@ -21,7 +21,7 @@
 
 	</div>
 	<div class="row">
-		<ul id=tabNav class="nav nav-tabs">
+		<ul id=tabNav class="nav nav-pills">
 			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
 			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
 			{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
@@ -30,8 +30,8 @@
 
 	{% block games %}
 	<div id="tabContents" class="tab-content">
-		<div id="schedule" class="tab-pane fade active in">
-		<h1>{{ titleText }} Schedule</h1>
+		<div id="schedule" class="tab-pane fade active in">		
+		<h1>{{ titleText }} Schedule</h1>	
 		<table id=games class="table table-striped">
 			<thead>
 				<tr>
