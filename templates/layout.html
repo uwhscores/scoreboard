@@ -11,6 +11,7 @@
 
 	<!-- Bootstrap Core CSS -->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+
 	<!-- Custom Fonts le-1.4.5.min.js-->
 	<link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet" type="text/css">
 	
@@ -33,10 +34,7 @@
 	{% block nav %}{% endblock %}
 
     <!-- Page Content -->
-	{% block tabs %}{% endblock %}
-	{% block games %}{% endblock %}
-	{% block standings %}{% endblock %}
-	{% block places %}{% endblock %}
+	{% block main %}{% endblock %}
 	<!-- /.container -->
 
 	<footer class="footer">

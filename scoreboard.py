@@ -21,7 +21,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='2'
+	TID='3'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)

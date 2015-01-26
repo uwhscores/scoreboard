@@ -4,7 +4,7 @@
 	{% include "nav_bar.html" with context %}
 {% endblock nav %}
 
-{% block tabs %}
+{% block main %}
 <div id="page_body" class="container">
 	<div class="page-header">
 		<h1>{{ tournament }}</h1>		
@@ -21,143 +21,153 @@
 
 	</div>
 	<div class="row">
+	<div id="team_nav" class="col-md-4 listgroup">
+		<h3>Filter For Team</h3>
+		{% for team in standings|sort(attribute='name') -%}
+		{% if team.name != last -%}
+		<a class="list-group-item" href="/team/{{ team.team_id  }}">{{ team.name }}</a>
+		{%- endif %}
+		{% set last = team.name %}
+		{%- endfor %}
+		<a class="list-group-item active" href="/">Full Schedule</a>
+	</div>
+	<div class="col-md-8">
 		<ul id=tabNav class="nav nav-pills">
 			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
 			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
 			{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
 		</ul>
-	{% endblock tabs %}
-
-	{% block games %}
+	
 	<div id="tabContents" class="tab-content">
-		<div id="schedule" class="tab-pane fade active in">		
-		<h1>{{ titleText }} Schedule</h1>	
-		<table id="games" class="table table-striped">
-			<thead>
-				<tr>
-					<th>#</th>
-					<th>Start</th>
-					<th>Pool</th>
-					<th>Pod</th>
-					<th>Black</th>
-					<th></th>
-					<th>White</th>
-					<th></th>
-				</tr>
-			</thead>
-			<tbody>
-			{% for game in games -%}
-				<tr>
-					<td>{{ game.gid }}</td>
-					<td>{{ game.day }} {{ game.start_time }}</td>
-					<td>{{ game.pool }}</td>
-					{% if game.pod_color and game.pod -%}
-						<td> <span style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span></td>
-					{% elif game.pod %}
-						<td>{{ game.pod }}</td>
-					{% else %}
-						<td>--</td>
-					{%- endif %}
-					<td class={{game.style_b}}>{{ game.black }}</td>
-					<td>{{game.score_b}}</td>
-					<td class={{game.style_w}}>{{ game.white }}</td>
-					<td>{{game.score_w}}</td>
-				</tr>
-			{%- endfor %}
-			</tbody>
-		</table>	
+
+			<div id="schedule" class="tab-pane fade active in">		
+				<h1>{{ titleText }} Schedule</h1>	
+					<table id="games" class="table">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Time/Pool</th>
+								<th>Teams</th>
+								<th>Score</th>
+							</tr>
+						</thead>
+						<tbody>
+						{% for game in games -%}
+							<tr class="{{ loop.cycle('odd', 'even') }}">
+								<td rowspan=3>{{ game.gid }}</td>
+							</tr>
+							<tr  class="{{ loop.cycle('odd', 'even') }}">
+								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
+								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>
+								<td>{{game.score_b}}</td>
+							</tr>
+							<tr  class="{{ loop.cycle('odd', 'even') }}">
+								<td> 
+								Pool: {{ game.pool }}
+								{% if game.pod_color and game.pod -%}
+									Pod: <span style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
+								{% elif game.pod %}
+									Pod: {{ game.pod }}
+								{% endif %}
+								</td>
+								<td><div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span></td>
+								<td>{{game.score_w}}</td>
+							</tr>
+						{%- endfor %}
+						</tbody>
+					</table>	
 		
-		{% if noteText %}
-			<div class="alert alert-info" role="alert">
-				<p>{{ noteText }}</p>
+					{% if noteText %}
+						<div class="alert alert-info" role="alert">
+							<p>{{ noteText }}</p>
+						</div>
+					{% endif %}
+					</div>
+
+			<div id="standings" class="tab-pane fade">
+			<h1>{{ titleText }} Standings</h1>
+			<table id=standings_tbl class="table table-striped">
+				<thead>
+					<tr>
+						<th>Rank</th>
+						<th>Pod</th>
+						<th>Team</th>
+						<th>Points</th>
+						<th>Record</th>
+						<th>GA</th>
+						<th>GP</th>
+					</tr>
+				</thead>
+				<tbody>
+				{% set lastPod ="" %}
+				{% set rank = 1 %}
+				{% for team in standings %}
+					{% if lastPod != team.pod and lastPod != ""%}
+						{% set rank = 1 %}
+						<tr><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
+					{% endif %}
+					<tr>
+						<td>{{ rank }}</td>
+						<td>{{ team.pod}}</td>
+						<td>{{ team.name }}</td>
+						<td>{{ team.points }} </td>
+						<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
+						<td>{{ team.goals_allowed }}</td>
+						<td>{{ team.games_played }} </td>
+					</tr>
+					{% set rank = rank + 1 %}
+					{% set lastPod = team.pod %}
+				{% endfor %}
+				<tbody>
+			</table>
+
+			{% with messages = get_flashed_messages() %}
+			  {% if messages %}
+				<ul class=flashes>
+				{% for message in messages %}
+				  <li>{{ message }}</li>
+				{% endfor %}
+				</ul>
+			  {% endif %}
+			{% endwith %}
+
 			</div>
-		{% endif %}
-		</div>
-		{% endblock games %}
 
-		{% block standings %}
-		<div id="standings" class="tab-pane fade">
-		<h1>{{ titleText }} Standings</h1>
-		<table id=standings_tbl class="table table-striped">
-			<thead>
-				<tr>
-					<th>Rank</th>
-					<th>Pod</th>
-					<th>Team</th>
-					<th>Points</th>
-					<th>Record</th>
-					<th>GA</th>
-					<th>GP</th>
-				</tr>
-			</thead>
-			<tbody>
-			{% set lastPod ="" %}
-			{% set rank = 1 %}
-			{% for team in standings %}
-				{% if lastPod != team.pod and lastPod != ""%}
-					{% set rank = 1 %}
-					<tr><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
-				{% endif %}
-				<tr>
-					<td>{{ rank }}</td>
-					<td>{{ team.pod}}</td>
-					<td>{{ team.name }}</td>
-					<td>{{ team.points }} </td>
-					<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
-					<td>{{ team.goals_allowed }}</td>
-					<td>{{ team.games_played }} </td>
-				</tr>
-				{% set rank = rank + 1 %}
-				{% set lastPod = team.pod %}
-			{% endfor %}
-			<tbody>
-		</table>
-
-		{% with messages = get_flashed_messages() %}
-		  {% if messages %}
-			<ul class=flashes>
-			{% for message in messages %}
-			  <li>{{ message }}</li>
-			{% endfor %}
-			</ul>
-		  {% endif %}
-		{% endwith %}
-
-		</div>
-		{% endblock standings %}
-
-		{% block places %}
-		{% if placings %}
-		<div id="places" class="tab-pane fade">
-		<h1>{{ titleText }} Placings</h1>
-		<table id=places_tbl class="table table-striped">
-			<thead>
-				<tr>
-					<th>Place</th>
-					<th>Team</th>
-				</tr>
-			</thead>
-			<tbody>
-			{% set row = 1 %}
-			{% for team in placings %}
-				{% if row % 2 == 0 %}
-					{% set class="even" %}
-				{% else %}
-					{% set class="odd" %}
-				{% endif %}
-				<tr class={{ class }} >
-					<td>{{ team.place }}</td><td class={{ team.style }}>{{ team.name }}</td>
-				</tr>
-				{% set row = row + 1 %}
-			{% endfor %}
-			</tbody>
-		</table>
-		</div>
-		{% endif %}
+			{% if placings %}
+			<div id="places" class="tab-pane fade">
+			<h1>{{ titleText }} Placings</h1>
+			<table id=places_tbl class="table table-striped">
+				<thead>
+					<tr>
+						<th>Place</th>
+						<th>Team</th>
+					</tr>
+				</thead>
+				<tbody>
+				{% set row = 1 %}
+				{% for team in placings %}
+					{% if row % 2 == 0 %}
+						{% set class="even" %}
+					{% else %}
+						{% set class="odd" %}
+					{% endif %}
+					<tr class={{ class }} >
+						<td>{{ team.place }}</td><td class={{ team.style }}>{{ team.name }}</td>
+					</tr>
+					{% set row = row + 1 %}
+				{% endfor %}
+				</tbody>
+			</table>
+			</div>
+			{% endif %}
+			
 	</div> <!-- tabContent -->
+	
+	</div>
 
 	</div> <!-- row -->
 </div> <!-- container -->
-{% endblock places %}
+{%endblock main %}
+
 
 

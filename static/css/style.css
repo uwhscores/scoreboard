@@ -1,10 +1,18 @@
-td.soft
+tr.major {
+	border-bottom:1.5pt solid black;
+}
+
+
+tr.odd {
+	background-color: #E6E6E6;
+}
+.soft
 {
 	color: #6E6E6E;
 	font-style:italic;
 }
 
-td.strong
+.strong
 {
 	font-weight:bold;
 }
@@ -14,4 +22,22 @@ td.strong
 	padding-left: 6px;
 	padding-right: 6px;
 	vertical-align: middle;
+}
+
+.color-box {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    background-color: #ccc;
+    margin-right: 5px;
+    top: 5px;
+    border-style: solid;
+    border-width: 1px;
+}
+
+@media screen and (max-width: 1000px) {
+	#team_nav{
+		visibility: hidden;
+		display: none;
+	}
 }
