@@ -31,11 +31,13 @@
 </head>
 <body>
 
+	{% autoescape false %}
 	{% block nav %}{% endblock %}
 
     <!-- Page Content -->
 	{% block main %}{% endblock %}
 	<!-- /.container -->
+	{% endautoescape %}
 
 	<footer class="footer">
 		<div class="container">

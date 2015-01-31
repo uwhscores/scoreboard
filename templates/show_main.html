@@ -59,7 +59,12 @@
 							<tr  class="{{ loop.cycle('odd', 'even') }}">
 								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
 								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>
-								<td>{{game.score_b}}</td>
+								<td>
+								{{game.score_b}} 
+								{% if game.note_b -%}
+									<span style="padding-left: 1em">{{ game.note_b }}</span>
+								{%- endif %}
+								</td>
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }}">
 								<td> 
@@ -71,7 +76,12 @@
 								{% endif %}
 								</td>
 								<td><div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span></td>
-								<td>{{game.score_w}}</td>
+								<td>
+								{{game.score_w}} 
+								{% if game.note_w -%}
+									<span style="padding-left: 1em">{{ game.note_w }}</span>
+								{% endif %}
+								</td>
 							</tr>
 						{%- endfor %}
 						</tbody>

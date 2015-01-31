@@ -180,10 +180,10 @@ def calcStandings(pod=None):
 		standings[team_id]= Stats(row['name'], team_id, row['division'], pod)
 
 	if (pod == None):
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g \
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, forfeit FROM scores s, games g \
 							WHERE g.gid=s.gid AND g.tid=s.tid AND g.type="RR" AND s.tid=?', (app.config['TID']))
 	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w FROM scores s, games g \
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, forfeit FROM scores s, games g \
 							WHERE g.gid=s.gid AND g.tid=s.tid AND g.pod=?  AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
 	games = cur.fetchall()
 
@@ -192,6 +192,7 @@ def calcStandings(pod=None):
 		white_tid = game['white_tid']
 		score_b = game['score_b']
 		score_w = game['score_w']
+		forfeit = game['forfeit']
 	
 		standings[black_tid].games_played += 1
 		standings[white_tid].games_played += 1
@@ -200,14 +201,14 @@ def calcStandings(pod=None):
 			standings[black_tid].goals_allowed += score_w
 			standings[white_tid].goals_allowed += score_b
 
-		if (score_b == -1): #black forfit
+		if (score_b == -1 or forfeit == "b"): #black forfeit
 			standings[black_tid].points -= 2
 			standings[black_tid].losses += 1
 
 			standings[white_tid].wins += 1
 			standings[white_tid].points += 2
 
-		elif (score_w == -1): #white forfit
+		elif (score_w == -1 or forfeit == "w"): #white forfeit
 			standings[white_tid].points -= 2
 			standings[white_tid].losses += 1
 	
@@ -556,12 +557,19 @@ def expandGames(games):
 			game["pod_color"] = None
 		
 
-		cur = db.execute('SELECT score_b, score_w FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
+		cur = db.execute('SELECT score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
 
+		game['note_b'] = ""
+		game['note_w'] = ""
 		if score:
 			game['score_b'] = score['score_b']		
 			game['score_w'] = score['score_w']
+			if score['forfeit']:
+				if score['forfeit'] == "b":
+					game['note_b'] = "Forfeit"
+				else:
+					game['note_w'] = "Forfeit"
 		else:
 			game['score_b'] = "--"
 			game['score_w'] = "--"
@@ -680,25 +688,37 @@ def getGamePod(gid):
 
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):
+	app.logger.debug("Well, we are here")
+	
 	db = getDB()
-	gid = int(form['gid'])
-	score_b = int(form['score_b'])
-	score_w = int(form['score_w'])
-	black_tid = int(form['btid'])
-	white_tid = int(form['wtid'])
-	pod = form['pod']
+	gid = int(form.get('gid'))
+	score_b = int(form.get('score_b'))
+	score_w = int(form.get('score_w'))
+	black_tid = int(form.get('btid'))
+	white_tid = int(form.get('wtid'))
+	pod = form.get('pod')
 
+	forfeit_w = form.get('forfeit_w')
+	forfeit_b = form.get('forfeit_b')
 
+	if forfeit_b:
+		forfeit = "b"
+	elif forfeit_w:
+		forfeit = "w"
+	else:
+		forfeit = None
+		
 	if not isinstance(score_b, int):
 		return -1
 
 	if not isinstance(score_w, int):
 		return -1
 	
-        cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod) VALUES(?,?,?,?,?,?,?)", \
-			(black_tid,white_tid,score_w,score_b,app.config['TID'],gid, pod))
-        db.commit()
-	cur = db.execute("UPDATE scores SET score_b=?,score_w=? WHERE tid=? AND gid=?", (score_b,score_w,app.config['TID'],gid))
+	cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)", \
+		(black_tid,white_tid,score_w,score_b,app.config['TID'],gid, pod, forfeit))
+	db.commit()
+        
+	cur = db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?", (score_b,score_w, forfeit, app.config['TID'],gid))
 	db.commit()
 
 	return 1

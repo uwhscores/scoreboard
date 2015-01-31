@@ -42,6 +42,17 @@
 			document.getElementById(fieldName).innerHTML=newVal;
 
 		});
+		
+		$('#forfeit_b').click(function (event) {
+			if (event.target.checked) {
+				$('#forfeit_w').removeAttr('checked');
+			}
+		});
+		$('#forfeit_w').click(function (event) {
+			if (event.target.checked) {
+				$('#forfeit_b').removeAttr('checked');
+			}
+		});
 	});
 	</script>
 
@@ -60,7 +71,7 @@
 			<thead>
 				<tr><th>Game</th><th>Start Time</th><th>Pool</th><th>Pod</th></tr>
 			</thead>
-			</tbody>
+			<tbody>
 				<tr>
 					<td>{{ game.gid}}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
@@ -89,7 +100,14 @@
 
 					</td>
 				</tr>
-
+				<tr>
+					<td colspan=2>
+						<input id="forfeit_b" type="checkbox" name="forfeit_b"> Forfeit Black
+					</td>
+					<td colspan=2>
+						<input id="forfeit_w" type="checkbox" name="forfeit_w"> Forfeit White
+					</td>
+				</tr>
 				<tr>
 					<td colspan=4 style="text-align:center">
 						<a href={{ request.base_url }} ><input type='button' class="btn btn-danger" value=Cancel></a>

@@ -45,9 +45,9 @@ jQuery(document).ready(function($) {
 			<td>{{ game.gid }}</td>
 			<td>{{ game.day }} {{ game.start_time }}</td>
 			<td>{{ game.pool }}</td>
-			<td class={{game.style_b}}>{{ game.black }}</td>
+			<td class={{game.style_b}}>{{ game.black }} <strong>{{ game.note_b }}</stron></td>
 			<td>{{game.score_b}}</td>
-			<td class={{game.style_w}}>{{ game.white }}</td>
+			<td class={{game.style_w}}>{{ game.white }} <strong>{{ game.note_w }}</strong></td>
 			<td>{{game.score_w}}</td>
 		</tr>
 	{%- endfor %}

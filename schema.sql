@@ -9,7 +9,8 @@ CREATE TABLE games(
 );
 
 CREATE TABLE scores(
-	tid INTEGER NOT NULL, gid INTEGER NOT NULL, black_tid INTEGER, white_tid INTEGER, score_b INTEGER, score_w INTEGER, pod text, PRIMARY KEY (tid,gid)
+	tid INTEGER NOT NULL, gid INTEGER NOT NULL, black_tid INTEGER, white_tid INTEGER, score_b INTEGER, score_w INTEGER, 
+	pod text, forfeit TEXT, PRIMARY KEY (tid,gid)
 );
 
 CREATE TABLE teams(
