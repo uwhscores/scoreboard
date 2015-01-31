@@ -101,11 +101,17 @@
 					</td>
 				</tr>
 				<tr>
+					{% if game.forfeit == "b" -%}
+						{% set black_check="checked=checked" %}
+					{%- endif %}
+					{% if game.forfeit == "w" -%}
+						{% set white_check="checked=checked" %}
+					{%- endif %}
 					<td colspan=2>
-						<input id="forfeit_b" type="checkbox" name="forfeit_b"> Forfeit Black
+						<input id="forfeit_b" type="checkbox" name="forfeit_b" {{ black_check }}> Forfeit Black
 					</td>
 					<td colspan=2>
-						<input id="forfeit_w" type="checkbox" name="forfeit_w"> Forfeit White
+						<input id="forfeit_w" type="checkbox" name="forfeit_w" {{ white_check }}> Forfeit White
 					</td>
 				</tr>
 				<tr>

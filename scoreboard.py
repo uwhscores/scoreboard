@@ -566,6 +566,7 @@ def expandGames(games):
 			game['score_b'] = score['score_b']		
 			game['score_w'] = score['score_w']
 			if score['forfeit']:
+				game['forfeit'] = score['forfeit']
 				if score['forfeit'] == "b":
 					game['note_b'] = "Forfeit"
 				else:
@@ -903,7 +904,7 @@ def renderUpdate():
 				game['score_b'] = "0"
 			if ( game['score_w'] == "--"):
 				game['score_w'] = "0"
-
+				
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
 				return redirect(request.base_url)
