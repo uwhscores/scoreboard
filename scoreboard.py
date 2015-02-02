@@ -21,7 +21,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='4'
+	TID='2'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -40,6 +40,9 @@ class Stats(object):
 		self.ties = 0
 		self.goals_allowed = 0
 		self.games_played = 0
+		self.wins_t = 0
+		self.losses_t = 0
+		self.ties_t = 0
 
 	def __repr__(self):
 		return '{}({}): {} {}-{}-{}'.format(self.name,self.team_id, self.points, self.wins, self.losses, self.ties)
@@ -179,21 +182,38 @@ def calcStandings(pod=None):
 		row = cur.fetchone()
 		standings[team_id]= Stats(row['name'], team_id, row['division'], pod)
 
-	if (pod == None):
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, forfeit FROM scores s, games g \
-							WHERE g.gid=s.gid AND g.tid=s.tid AND g.type="RR" AND s.tid=?', (app.config['TID']))
-	else:
-		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, forfeit FROM scores s, games g \
-							WHERE g.gid=s.gid AND g.tid=s.tid AND g.pod=?  AND g.type="RR" AND s.tid=?', (pod,app.config['TID']))
+	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g \
+							WHERE g.gid=s.gid AND g.tid=s.tid  AND s.tid=?', (app.config['TID']))
+	
 	games = cur.fetchall()
 
 	for game in games:
+
+	
 		black_tid = game['black_tid']
 		white_tid = game['white_tid']
 		score_b = game['score_b']
 		score_w = game['score_w']
 		forfeit = game['forfeit']
-	
+
+
+		if ( score_b > score_w ):
+			if black_tid in standings: standings[black_tid].wins_t += 1 
+			if white_tid in standings: standings[white_tid].losses_t += 1 		 	
+		elif (score_w > score_b): 
+			if white_tid in standings: standings[white_tid].wins_t +=1 
+			if black_tid in standings: standings[black_tid].losses_t += 1 
+		elif (score_w == score_b):
+			if black_tid in standings: standings[black_tid].ties_t += 1
+			if white_tid in standings: standings[white_tid].ties_t += 1 
+		
+		
+		if game['type'] != "RR":
+			continue
+			
+		if pod and game['pod'] != pod:
+			continue
+				
 		standings[black_tid].games_played += 1
 		standings[white_tid].games_played += 1
 

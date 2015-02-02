@@ -106,13 +106,14 @@
 						<th>Record</th>
 						<th>GA</th>
 						<th>GP</th>
+						<th>Overall</th>
 					</tr>
 				</thead>
 				<tbody>
 				{% set lastPod ="" %}
 				{% set rank = 1 %}
 				{% for team in standings %}
-					{% if lastPod != team.division and lastPod != "" -%}
+					{% if lastPod != team.pod and lastPod != "" -%}
 						{% set rank = 1 %}
 					</tbody>
 					<thead>
@@ -124,21 +125,23 @@
 							<th>Record</th>
 							<th>GA</th>
 							<th>GP</th>
+							<th>Overall</th>
 						</tr>
 					</thead>
 					<tbody>
 					{%- endif %}
 					<tr>
 						<td>{{ rank }}</td>
-						<td>{{ team.division}}</td>
+						<td>{{ team.pod}}</td>
 						<td>{{ team.name }}</td>
 						<td>{{ team.points }} </td>
 						<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
 						<td>{{ team.goals_allowed }}</td>
 						<td>{{ team.games_played }} </td>
+						<td>{{ team.wins_t }}-{{ team.losses_t }}-{{ team.ties_t }}</td>
 					</tr>
 					{% set rank = rank + 1 %}
-					{% set lastPod = team.division %}
+					{% set lastPod = team.pod %}
 				{% endfor %}
 				<tbody>
 			</table>
@@ -152,7 +155,16 @@
 				</ul>
 			  {% endif %}
 			{% endwith %}
-
+			
+			<div class="alert alert-info" role="alert">
+				<p>
+				Points - Points earned from round-robin game play for standing</br>
+				Record - Record in games played for points in standing </br>
+				GA - Goals allowed in games played for standings, used as tie breaker </br>
+				GP - Games played for standings </br>
+				Overall - Total tournament record including non-standings games and brackets			
+				</p>
+			</div>
 			</div>
 
 			{% if placings %}
