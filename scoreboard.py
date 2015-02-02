@@ -21,7 +21,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='2'
+	TID='4'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -165,6 +165,8 @@ def addTie(tid_a, tid_b):
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
 def calcStandings(pod=None):
+	#app.logger.debug("calculating standings")
+
 	standings = {}
 
 	db = getDB()
@@ -540,6 +542,11 @@ def parseGame(game):
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
 
+	# TBD Place Holder
+	match = re.search('^TBD.*', game)
+	if match:
+		style="soft"
+	
 	team_id = int(team_id)
 	return (team_id,game,style)
 
