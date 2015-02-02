@@ -100,7 +100,7 @@
 				<thead>
 					<tr>
 						<th>Rank</th>
-						<th>Pod</th>
+						<th>Div</th>
 						<th>Team</th>
 						<th>Points</th>
 						<th>Record</th>
@@ -112,13 +112,25 @@
 				{% set lastPod ="" %}
 				{% set rank = 1 %}
 				{% for team in standings %}
-					{% if lastPod != team.pod and lastPod != ""%}
+					{% if lastPod != team.division and lastPod != "" -%}
 						{% set rank = 1 %}
-						<tr><td>Rank</td><td>Pod</td><td>Team</td><td>Points</td><td>Record</td><td>GA</td><td>GP</td></tr>
-					{% endif %}
+					</tbody>
+					<thead>
+						<tr>
+							<th>Rank</th>
+							<th>Div</th>
+							<th>Team</th>
+							<th>Points</th>
+							<th>Record</th>
+							<th>GA</th>
+							<th>GP</th>
+						</tr>
+					</thead>
+					<tbody>
+					{%- endif %}
 					<tr>
 						<td>{{ rank }}</td>
-						<td>{{ team.pod}}</td>
+						<td>{{ team.division}}</td>
 						<td>{{ team.name }}</td>
 						<td>{{ team.points }} </td>
 						<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
@@ -126,7 +138,7 @@
 						<td>{{ team.games_played }} </td>
 					</tr>
 					{% set rank = rank + 1 %}
-					{% set lastPod = team.pod %}
+					{% set lastPod = team.division %}
 				{% endfor %}
 				<tbody>
 			</table>

@@ -21,7 +21,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='3'
+	TID='4'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -460,11 +460,11 @@ def parseGame(game):
 			game = name + " ("+pod+pod_id+")"
  
 	# Seed notation
-	match = re.search( '^S([A|B|C])?(\d+)$', game )
+	match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
 	if match:
 		division = match.group(1)
 		seed = match.group(2)
-		team_id = getSeed( seed, None, division )
+		team_id = getSeed( seed, division, None )
 		if ( team_id < 0 ):
 			if division:
 				game = "Seed " + division + seed
