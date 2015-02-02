@@ -272,7 +272,7 @@ def getStandings(div=None, pod=None):
 	if ( pod == None and div == None ):
 		cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?', app.config['TID'])
 		rows = cur.fetchall()		
-		if (len(rows) > 0):
+		if rows:
 			for row in rows:
 				pod = row['pod']
 				standings = standings + calcStandings(pod)
@@ -284,9 +284,11 @@ def getStandings(div=None, pod=None):
 			(div, app.config['TID']))
 
 		rows = cur.fetchall()
-		for row in rows:
+		if rows:
 			standings = standings + calcStandings(row['pod'])
-
+		else:
+			standings = [x for x in calcStandings() if x.division==div] 
+			
 	else:	
 		standings= calcStandings(pod)
 
