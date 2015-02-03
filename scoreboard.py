@@ -285,7 +285,8 @@ def getStandings(div=None, pod=None):
 
 		rows = cur.fetchall()
 		if rows:
-			standings = standings + calcStandings(row['pod'])
+			for row in rows:
+				standings = standings + calcStandings(row['pod'])
 		else:
 			standings = [x for x in calcStandings() if x.division==div] 
 			
