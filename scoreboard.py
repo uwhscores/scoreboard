@@ -292,7 +292,6 @@ def getStandings(div=None, pod=None):
 	else:	
 		standings= calcStandings(pod)
 
-
 	return standings
 
 # simple function for converting team ID index to real name
@@ -784,6 +783,16 @@ def getTournamentName():
 
 	return row['name']
 
+def getDivisions():
+	db = getDB()
+	cur = db.execute("SELECT DISTINCT division FROM games WHERE tid=?", app.config['TID'])
+	
+	divisions = []
+	for r in cur.fetchall():
+		divisions.append(r['division'])
+
+	return divisions
+
 @app.route('/')
 def renderMain():
 
@@ -791,6 +800,7 @@ def renderMain():
 	teams = getStandings()
 	pods = getPodsActive()
 	placings = getPlacings()
+	divisions = getDivisions()
 	
 	titleText="Full "	
 	standings = [] 
@@ -798,13 +808,16 @@ def renderMain():
 		standings.append(team.__dict__)
 
 		
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, pods=pods, titleText=titleText, placings=placings)
+	return render_template('show_main.html', tournament=getTournamentName(),\
+		standings=standings, games=games, pods=pods, titleText=titleText, placings=placings, divisions=divisions)
 
 @app.route('/div/<division>')
 def renderDivision(division):
 	games = getGames(division)
 	teams = getStandings(division)
 	pods = getPodsActive()
+	divisions = getDivisions()
+
 
 	standings = []
 	for team in teams:
@@ -813,7 +826,8 @@ def renderDivision(division):
 	titleText = division.upper() + " Division"
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
+		 games=games, titleText=titleText, pods=pods, divisions=divisions)
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
@@ -831,6 +845,8 @@ def renderPod(pod):
 
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
+	divisions = getDivisions()
+
 	team_id = int(team_id)
 
 	titleText = getTeam(team_id)
@@ -851,7 +867,7 @@ def renderTeam(team_id):
 		for pod in pods:
 			teams.append(getStandings(None, pod['pod']))
 	else:
-		teams.append(getStandings())
+		teams.append(getStandings(division))
 	
 	standings = []
 	for div in teams:
@@ -861,7 +877,8 @@ def renderTeam(team_id):
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
 	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, noteText=noteText)
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
+		titleText=titleText, pods=pods, noteText=noteText, divisions=divisions)
 
 
 @app.route('/tv')
