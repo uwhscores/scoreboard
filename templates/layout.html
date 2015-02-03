@@ -28,6 +28,29 @@
 	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/jquery.js') }}"></script>
 	<script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 
+	<script>
+	jQuery(document).ready(function(){
+		// This button will increment the value
+		$('.toggleDay').click(function(e){
+			dayFilter = $(this).attr('day');
+			
+			//$(document.getElementById('#dayPager')).children().classList.remove('active');
+			$('#dayPager').find('.active').removeClass('active');
+			this.className= 'active toggleDay';
+			
+			var rows = $('#games tr:not(:first)');
+		
+			if ( dayFilter == "All"){
+				rows.show()
+			} else  {
+				var showing = rows.filter("." + dayFilter).show();
+				rows.not( showing ).hide();
+			}
+		});
+	});
+	</script>
+
+
 </head>
 <body>
 

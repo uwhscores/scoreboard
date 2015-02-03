@@ -1,3 +1,11 @@
+#tournamentTitle {
+	margin-top: 0px;
+}
+
+#dayPager {
+	margin: 0px;
+}
+
 tr.major {
 	border-bottom:1.5pt solid black;
 }
@@ -35,9 +43,20 @@ tr.odd {
     border-width: 1px;
 }
 
+#dayPagerNav{
+	position: absolute;
+	left: 0;
+	right: 0;
+	text-align: right;
+}
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
 		display: none;
+	}
+	
+	h1 {
+		font-size:24px;
 	}
 }

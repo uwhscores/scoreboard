@@ -6,9 +6,8 @@
 
 {% block main %}
 <div id="page_body" class="container">
-	<div class="page-header">
-		<h1>{{ tournament }}</h1>		
-
+	<div class="page-header" style="margin-top:0px;">
+		<h1 id="tournamentTitle">{{ tournament }}</h1>		
 	{% with messages = get_flashed_messages() %}
 		{% if messages %}
 			<div class="alert alert-danger" role="alert">
@@ -18,7 +17,6 @@
 			</div>
 		{% endif %}
 	{% endwith %}
-
 	</div>
 	<div class="row">
 	<div id="team_nav" class="col-md-4 listgroup">
@@ -39,9 +37,17 @@
 		</ul>
 	
 	<div id="tabContents" class="tab-content">
-
 			<div id="schedule" class="tab-pane fade active in">		
-				<h1>{{ titleText }} Schedule</h1>	
+					<h1>{{ titleText }} Schedule </h1>
+					<nav id="dayPagerNav2">
+						<ul id="dayPager" class="pagination pagination-sm">
+							<li class="active toggleDay" day="All"><span>All</span></li>
+							<li class="toggleDay" day="Fri"><span>Fri</span></li>
+							<li class="toggleDay" day="Sat"><span>Sat</span></li>
+							<li class="toggleDay" day="Sun""><span>Sun</span></li>
+
+						</ul>
+					</nav>	
 					<table id="games" class="table">
 						<thead>
 							<tr>
@@ -53,10 +59,10 @@
 						</thead>
 						<tbody>
 						{% for game in games -%}
-							<tr class="{{ loop.cycle('odd', 'even') }}">
+							<tr class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td rowspan=3>{{ game.gid }}</td>
 							</tr>
-							<tr  class="{{ loop.cycle('odd', 'even') }}">
+							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
 								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>
 								<td>
@@ -66,7 +72,7 @@
 								{%- endif %}
 								</td>
 							</tr>
-							<tr  class="{{ loop.cycle('odd', 'even') }}">
+							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td> 
 								Pool: {{ game.pool }}
 								{% if game.pod_color and game.pod -%}
