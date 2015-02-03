@@ -889,21 +889,25 @@ def renderTV(offset=None):
 
 	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
-@app.route('/api/v1/getGames')
-def apiGetGames():
-	if request.args.get('done'):
-		if request.args.get('done') == "1":
-			games = [x for x in getGames() if x['score_b'] != "--" ]
-		elif request.args.get('done') == "0":
-			games = [x for x in getGames() if x['score_b'] == "--" ]
+@app.route('/whiterabbitobject')
+#@basic_auth.required
+def callToSeed():
+	output = popSeededPods()
+	return json.dumps(output)
+
+@app.route('/api/getGames')
+@app.route('/api/getGames/<division>')
+def apiGetGames(division=None):
+	if (division == None):
+		games = getGames()
 	else:
-		games = getGames();
-			
+		games = getGames(division)
 
 	#return jsonify(games)
 	return json.dumps(games)
 
-@app.route('/api/v1/getStandings')
+@app.route('/api/getStandings')
+@app.route('/api/getStandings/<division>')
 def apiGetStandings(division=None):
 	if (division == None):
 		teams = getStandings()
@@ -935,7 +939,8 @@ def renderUpdate():
 				return redirect(request.base_url)
 			return render_template('update_single.html', game=game)
 		else:
-			return render_template('show_update.html', tournament=getTournamentName())
+			games = getGames()
+			return render_template('show_update.html', games=games, tournament=getTournamentName())
 	if request.method == 'POST':
 		updateGame(request.form)
 		return redirect(request.base_url)

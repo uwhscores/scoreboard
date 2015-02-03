@@ -7,69 +7,11 @@
 {% block main %}
 
 <script>
-	jQuery(document).ready(function(){
-	
-		$('#toggleComplete').click(function (event) {
-			me = document.getElementById("toggleComplete");
-			if (me.value == "off"){
-				document.getElementById("toggleComplete").className = "btn btn-primary"; 	
-				document.getElementById("toggleComplete-glyph").className = "glyphicon glyphicon-ok";
-				$('#games').find("tr:not(:first)").remove();
-				me.value="on";
-				$.getJSON('/api/v1/getGames?done=0', function(data) { drawTable(data) }); 
-			} else if (me.value == "on") {
-				document.getElementById("toggleComplete").className = "btn btn-default"; 	
-				document.getElementById("toggleComplete-glyph").className = "glyphicon glyphicon-remove";
-				$('#games').find("tr:not(:first)").remove();
-				me.value="off";
-				$.getJSON('/api/v1/getGames', function(data) { drawTable(data) }); 
-			}
-		});
-	});
-
-$.ajax({
-    url: '/api/v1/getGames',
-    type: "get",
-    dataType: "json",
-    success: function(data, textStatus, jqXHR) {
-        // since we are using jQuery, you don't need to parse response
-        drawTable(data);
-    }
-});
-
-function drawTable(data) {
-    for (var i = 0; i < data.length; i++) {
-        drawRow(data[i]);
-    }
-    
-    clickableRows();
-    
-}
-
-function drawRow(rowData) {
-	
-    var row;
-    if (rowData.black_tid < 0 || rowData.white_tid < 0) {
-    	row = $("<tr/>");
-    } else {
-		row = $("<tr class='clickableRow' href='{{request.base_url}}?gid=" + rowData.gid + "'/>");
-	}
-    $("#games").append(row); //this will append tr element to table... keep its reference for a while since we will add cels into it
-    row.append($("<td>" + rowData.gid + "</td>"));
-    row.append($("<td>" + rowData.day + " " + rowData.start_time + "</td>"));
-	row.append($("<td>" + rowData.pool + "</td>"));
-	row.append($("<td class='" + rowData.style_b + "'>"+ rowData.black + "<strong>" + rowData.note_b + "</strong></td>"));
-	row.append($("<td>" + rowData.score_b + "</td>"));
-	row.append($("<td class='" + rowData.style_w + "'>"+ rowData.white + "<strong>" + rowData.note_w + "</strong></td>"));
-	row.append($("<td>" + rowData.score_w + "</td>"));
-}
-
-function clickableRows() {
+jQuery(document).ready(function($) {
       $(".clickableRow").click(function() {
             window.document.location = $(this).attr("href");
       });
-}
-
+});
 </script>
 <div id="page_body" class="container">
 	<div class="row">
@@ -78,10 +20,6 @@ function clickableRows() {
 {% for messages in get_flashed_messages() %}
     <div class=flashes> {{ message }} </div>
 {% endfor %}
-	
-	<button id="toggleComplete" type="button" class="btn btn-default" value="off">
-		<span id="toggleComplete-glyph" class="glyphicon glyphicon-remove" aria-hidden="true"></span> Hide Complete
-	</button>
 
 <table id=games class="table table-striped">
 	<thead>
@@ -97,6 +35,22 @@ function clickableRows() {
 		</tr>
 	</thead>
 	<tbody>
+	
+	{% for game in games -%}
+		{% if (game.black_tid < 0) or (game.white_tid < 0) %}
+		<tr>
+		{% else %}
+		<tr class='clickableRow' href='{{request.base_url}}?gid={{game.gid}}'>
+		{% endif %}
+			<td>{{ game.gid }}</td>
+			<td>{{ game.day }} {{ game.start_time }}</td>
+			<td>{{ game.pool }}</td>
+			<td class={{game.style_b}}>{{ game.black }} <strong>{{ game.note_b }}</stron></td>
+			<td>{{game.score_b}}</td>
+			<td class={{game.style_w}}>{{ game.white }} <strong>{{ game.note_w }}</strong></td>
+			<td>{{game.score_w}}</td>
+		</tr>
+	{%- endfor %}
 	</tbody>
 </table>
 
