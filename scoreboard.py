@@ -22,7 +22,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='4'
+	TID='1'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -499,10 +499,15 @@ def getPlacings(div=None):
 # returns winner team ID of game by ID
 def getWinner(game_id):
 	db = getDB()
-	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
+	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
 	game = cur.fetchone()
 	if game:
-		if (game['score_b'] > game['score_w']):
+		if game['forfeit']:
+			if game['forfeit'] == "b":
+				return game['white_tid']
+			elif game ['forfeit'] == "w":
+				return game['black_tid']
+		elif (game['score_b'] > game['score_w']):
 			return game['black_tid']
 		elif ( game['score_b'] < game['score_w']):
 			return game['white_tid']
@@ -514,10 +519,15 @@ def getWinner(game_id):
 # returns loser team ID of game by ID
 def getLoser(game_id):
 	db = getDB()
-	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
+	cur = db.execute("SELECT black_tid, white_tid, score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?", (game_id,app.config['TID']))
 	game = cur.fetchone()
 	if game:
-		if (game['score_b'] < game['score_w']):
+		if game['forfeit']:
+			if game['forfeit'] == "b":
+				return game['black_tid']
+			elif game ['forfeit'] == "w":
+				return game['white_tid']
+		elif (game['score_b'] < game['score_w']):
 			return game['black_tid']
 		elif ( game['score_b'] > game['score_w']):
 			return game['white_tid']
