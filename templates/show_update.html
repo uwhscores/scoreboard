@@ -38,9 +38,19 @@ jQuery(document).ready(function($) {
 	<div class="row">
 		<h1 class="page-header">Update scores for {{ tournament }}</h1>		
 	</div>
-{% for messages in get_flashed_messages() %}
-    <div class=flashes> {{ message }} </div>
-{% endfor %}
+	{% with messages = get_flashed_messages() -%}
+		{% if messages %}
+			{% set last="" -%}
+			<div class="alert alert-danger" role="alert">
+			{% for message in messages %}
+				{% if message != last -%}
+				{{ message }}</br>
+				{%- endif %}
+				{% set last=message %}
+			{% endfor %}
+			</div>
+		{% endif %}
+	{%- endwith %}
 	<button id="toggleComplete" type="button" class="btn btn-default" value="off">
 		Hide Completed <span id="toggleComplete-glyph" class="glyphicon glyphicon-remove" aria-hidden="true"></span> 
 	</button>
