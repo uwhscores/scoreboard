@@ -6,6 +6,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 from werkzeug.contrib.fixers import ProxyFix
 #from flask.ext.basicauth import BasicAuth
 from datetime import datetime
+from string import split
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -50,6 +51,8 @@ class Stats(object):
 	def __cmp__(self, other):
 		if hasattr(other, 'points'):
 			return other.points.__cmp__(self.points)
+	def __eq__(self, other):
+		return sortTeams(self, other)
 
 # DB logic for setting up database connection and teardown
 def connectDB():
@@ -161,9 +164,15 @@ def sortTeams(team_b, team_a):
 		return team_b.losses - team_a.losses
 	elif (team_a.goals_allowed != team_b.goals_allowed):
 		return team_b.goals_allowed - team_a.goals_allowed
-	else:
-		addTie(team_a.team_id, team_b.team_id)
-		return 0
+	else:		
+		flip = getCoinFlip(team_a.team_id, team_b.team_id)
+		if flip == team_a.team_id:
+			return 1
+		if flip == team_b.team_id:
+			return -1
+		else:
+			addTie(team_a.team_id, team_b.team_id)
+			return 0
 
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
@@ -173,12 +182,39 @@ def addTie(tid_a, tid_b):
 	#division = row['division']
 	#pod = row['pod']
 	
-	#a = getTeam(tid_a)
-	#b = getTeam(tid_b)
+	div_a = getDivision(tid_a)
+	div_b = getDivision(tid_b)
+	
+	# not quite sure how this would happen, but protecting myself
+	if div_a != div_b:
+		return 0
+	
+	teams = []
+	teams.append(getTeam(tid_a))
+	teams.append(getTeam(tid_b))
+	# sort teams into alphabetical order so I can filter out a & b and b & a
+	teams = sorted(teams) 
+	pod = None
 
-	#if endRoundRobin(None, pod):
-		#flash("We have a real tie " + a + " & " + b)
+	if endRoundRobin(div_a, pod):
+		flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
 	return 0
+
+def getCoinFlip(tid_a, tid_b):
+	params = getParams()
+
+	if 'coin_flips' in params:
+		flips = split(params['coin_flips'],";")
+		for i in flips:
+			(a,b,coin) = split(i,",")
+			a = int(a)
+			b = int(b)
+			if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b): 
+				app.logger.debug("returning a coin %s" % coin)
+				return int(coin)
+		else:
+			return -1
+	
 
 
 # master function for calculating standings of all teams
@@ -328,6 +364,7 @@ def getTeam(team_id):
 
 # true false function for determining if round robin play has been completed
 def endRoundRobin(division=None, pod=None):
+	#app.logger.debug("Running endRoundRobin")
 	db = getDB()
 	if (division == None and pod  == None):
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', app.config['TID'])
@@ -360,11 +397,23 @@ def endRoundRobin(division=None, pod=None):
 		return 1
 	else:
 		return 0
+		
+		
+def checkForTies(standings):
+	x=0
+	while x < len(standings)-1:
+		if sortTeams(standings[x], standings[x+1]) == 0:
+			return True
+		x = x+1
+		
+	return False
 
 # gets team ID back from seed ranking, returns -1 if seeding isn't final
 def getSeed(seed, division=None, pod=None):
 	if ( endRoundRobin(division, pod) ):
 		standings = getStandings(division, pod)
+		if checkForTies(standings):
+			return -1
 		seed = int(seed) - 1	
 		return standings[seed].team_id
 	else:

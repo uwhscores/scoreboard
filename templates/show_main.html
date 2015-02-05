@@ -8,15 +8,6 @@
 <div id="page_body" class="container">
 	<div class="page-header" style="margin-top:0px;">
 		<h1 id="tournamentTitle">{{ tournament }}</h1>		
-	{% with messages = get_flashed_messages() %}
-		{% if messages %}
-			<div class="alert alert-danger" role="alert">
-			{% for message in messages %}
-				{{ message }}</br>
-			{% endfor %}
-			</div>
-		{% endif %}
-	{% endwith %}
 	</div>
 	<div class="row">
 	<div id="team_nav" class="col-md-4 listgroup">
@@ -30,6 +21,19 @@
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
 	<div class="col-md-8">
+	{% with messages = get_flashed_messages() -%}
+		{% if messages %}
+			{% set last="" -%}
+			<div class="alert alert-danger" role="alert">
+			{% for message in messages %}
+				{% if message != last -%}
+				{{ message }}</br>
+				{%- endif %}
+				{% set last=message %}
+			{% endfor %}
+			</div>
+		{% endif %}
+	{%- endwith %}
 		<ul id=tabNav class="nav nav-pills">
 			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
 			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
