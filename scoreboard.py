@@ -66,6 +66,26 @@ def getDB():
 def closeDB(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
+		
+# loads in all the rows from the config table for the tournament ID
+# config table is used to store parameters for various logic in the code
+def loadParams():
+	db = getDB()
+	params = {}
+		
+	cur = db.execute('SELECT field, val FROM params where tid=?', app.config['TID'])
+
+	rows = cur.fetchall()
+	
+	for config in rows:
+		params[config['field']] = config['val']
+		
+	return params
+	
+def getParams():
+	if not hasattr(g, 'params'):
+		g.params = loadParams()
+	return g.params
 
 # simple function for calculating the win/loss ration between two teams
 # returns number of wins team_a has over team_b, negative number if more losses
@@ -717,9 +737,7 @@ def getGamePod(gid):
 
 
 # takes in form dictionary from POST and updates/creates score for single game
-def updateGame(form):
-	app.logger.debug("Well, we are here")
-	
+def updateGame(form):	
 	db = getDB()
 	gid = int(form.get('gid'))
 	score_b = int(form.get('score_b'))
@@ -807,8 +825,7 @@ def renderMain():
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
-
-		
+	
 	return render_template('show_main.html', tournament=getTournamentName(),\
 		standings=standings, games=games, pods=pods, titleText=titleText, placings=placings, divisions=divisions)
 

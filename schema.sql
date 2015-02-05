@@ -28,3 +28,7 @@ CREATE TABLE pods(
 CREATE TABLE rankings(
 	tid INTEGER NOT NULL, place text NOT NULL, game text, division text, PRIMARY KEY(tid, place)
 );
+
+CREATE TABLE params(
+	tid INTEGER NOT NULL, field text NOT NULL, val NOT NULL
+);
