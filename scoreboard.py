@@ -22,7 +22,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='1'
+	TID='4'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -952,7 +952,7 @@ def renderTeam(team_id):
 			standings.append(team.__dict__)
 
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
-	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
+	noteText = "NOTICE: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
 		titleText=titleText, pods=pods, noteText=noteText, divisions=divisions)
