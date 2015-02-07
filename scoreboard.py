@@ -7,6 +7,7 @@ from werkzeug.contrib.fixers import ProxyFix
 #from flask.ext.basicauth import BasicAuth
 from datetime import datetime
 from string import split
+from collections import OrderedDict
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -179,6 +180,18 @@ def sortTeams(team_b, team_a):
 			addTie(team_a.team_id, team_b.team_id)
 			return 0
 
+## Pre sort to break three-way ties. 
+def sortTeams2(team_b, team_a):
+	if (team_a.wins != team_b.wins):
+		return team_a.wins - team_b.wins
+	elif (team_a.losses != team_b.losses):
+		return team_b.losses - team_a.losses
+	elif (team_a.goals_allowed != team_b.goals_allowed):
+		return team_b.goals_allowed - team_a.goals_allowed
+	else:
+		return 0
+
+
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
 	db = getDB()
@@ -317,8 +330,9 @@ def calcStandings(pod=None):
 			standings[black_tid].points += 1;
 			standings[white_tid].points += 1;
 
-
-	return sorted(standings.values(), cmp=sortTeams)
+	# pre-sort required for three-way ties
+	standings = sorted(standings.values(), cmp=sortTeams2)
+	return sorted(standings, cmp=sortTeams)
 
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
