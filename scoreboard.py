@@ -99,8 +99,9 @@ def whoWon(team_a, team_b):
 	tid_a = team_a.team_id
 	tid_b = team_b.team_id
 
-	cur = db.execute('SELECT black_tid, white_tid, score_w, score_b FROM scores \
-				WHERE ((black_tid=? AND white_tid=?) OR (black_tid=? AND white_tid=?)) AND tid=?', \
+	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
+				WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
+				OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.tid=?', \
 				(tid_a, tid_b, tid_b, tid_a, app.config['TID']) )
 
 	games = cur.fetchall()
@@ -137,6 +138,10 @@ def divToInt(div):
 	elif (div.lower() == 'b'):
 		return 2
 	elif (div.lower() == 'c'):
+		return 1
+	elif (div.lower() == 'e'):
+		return 2
+	elif (div.lower() == 'o'):
 		return 1
 	else:
 		return 0
@@ -952,7 +957,7 @@ def renderTeam(team_id):
 			standings.append(team.__dict__)
 
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
-	noteText = "NOTICE: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
+	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
 		titleText=titleText, pods=pods, noteText=noteText, divisions=divisions)
