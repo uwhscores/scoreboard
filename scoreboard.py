@@ -182,7 +182,9 @@ def sortTeams(team_b, team_a):
 
 ## Pre sort to break three-way ties. 
 def sortTeams2(team_b, team_a):
-	if (team_a.wins != team_b.wins):
+	if (team_a.division.lower() != team_b.division.lower()):
+		return divToInt(team_a.division) - divToInt(team_b.division)
+	elif (team_a.wins != team_b.wins):
 		return team_a.wins - team_b.wins
 	elif (team_a.losses != team_b.losses):
 		return team_b.losses - team_a.losses
@@ -332,6 +334,7 @@ def calcStandings(pod=None):
 
 	# pre-sort required for three-way ties
 	standings = sorted(standings.values(), cmp=sortTeams2)
+	app.logger.debug("Standings after sort2 %s" % standings)
 	return sorted(standings, cmp=sortTeams)
 
 # wrapper function for standings, use to ger dictionary of standings
@@ -423,6 +426,19 @@ def checkForTies(standings):
 	while x < len(standings)-1:
 		if sortTeams(standings[x], standings[x+1]) == 0:
 			return True
+		x = x+1
+		
+	x=0
+	last=0
+	while x < len(standings)-1:
+		if sortTeams2(standings[x], standings[x+1]) == 0:
+			if last == 1:
+				flash("You need a three sided die, give up and go home")
+				return True
+			else:
+				last = 1
+		else:
+			last = 0
 		x = x+1
 		
 	return False
