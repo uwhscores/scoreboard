@@ -35,7 +35,7 @@ class Stats(object):
 		self.name = name
 		self.team_id = team_id
 		self.division = div
-		self.pod = pod
+		self.pod = pod	
 		self.points = 0
 		self.wins = 0
 		self.losses = 0
@@ -53,8 +53,27 @@ class Stats(object):
 		if hasattr(other, 'points'):
 			return other.points.__cmp__(self.points)
 	def __eq__(self, other):
-		return sortTeams(self, other)
-
+		if cmpTeamPoints(self, other) == 0:
+			return True
+		else:
+			return False
+		
+class Ranking(object):
+	def __init__(self, div, pod, place, team):
+		self.div = div
+		self.pod = pod
+		self.place = place
+		self.team = team
+		
+	def __repr__(self):
+		return '{}-{}-{}: {}'.format(self.div, self.pod, self.place, self.team.name)
+		
+	def __eq__(self, other):
+		if cmpTeams2(self.team, other.team) == 0:
+			return True
+		else:
+			return False
+			
 # DB logic for setting up database connection and teardown
 def connectDB():
 	rv = sqlite3.connect(app.config['DATABASE'])
@@ -153,9 +172,9 @@ def podToInt(pod):
 	return sortOder.index(pod)
 
 # function used for sorting Stats class for standings
-# Sorts on most points, head to head, most wins, least losses, goals allowed
+# Compares on most points, head to head, most wins, least losses, goals allowed
 # Returns for coin toss in all tied <- not done
-def sortTeams(team_b, team_a):
+def cmpTeams(team_b, team_a):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
 	elif (team_a.pod != team_b.pod):
@@ -181,7 +200,7 @@ def sortTeams(team_b, team_a):
 			return 0
 
 ## Pre sort to break three-way ties. 
-def sortTeams2(team_b, team_a):
+def cmpTeams2(team_b, team_a):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
 	elif (team_a.wins != team_b.wins):
@@ -193,6 +212,102 @@ def sortTeams2(team_b, team_a):
 	else:
 		return 0
 
+## Compares teams only on points, checks division and pod first to make sure they aren't
+## in the same division, used for pre-sorting rank before applying tie breakers
+## used by __cmp__ function for Stats struct
+def cmpTeamPoints(team_b, team_a):
+	if (team_a.division.lower() != team_b.division.lower()):
+		return divToInt(team_a.division) - divToInt(team_b.division)
+	elif (team_a.pod != team_b.pod):
+		return podToInt(team_a.pod) - podToInt(team_b.pod)
+	elif (team_a.points != team_b.points):
+		return team_a.points - team_b.points
+	else:
+		return 0
+		
+def cmpRankTeams2(rank_b, rank_a):
+	return cmpTeams2(rank_b.team, rank_a.team)
+		
+def sortStandings(teamStats):
+	# pre-sort required for three-way ties
+	ordered = sorted(teamStats.values(), cmp=cmpTeams2)
+	ordered = sorted(ordered, cmp=cmpTeams)
+
+	#ordered = sorted(teamStats.values(), cmp=cmpTeamPoints)
+	
+	i = 1
+	standings= []
+	lastDiv = None
+	lastPod = None
+	last = None
+	skipped = 0
+	for team in ordered:
+		# reset rank number of its a new division or pod		
+		if team.division != lastDiv or team.pod != lastPod:
+			i = 1
+			skipped = 0
+		elif team != last and skipped > 0:
+			i = i + skipped + 1
+			skipped = 0
+		elif team != last:
+			i += 1
+		else:
+			skipped += 1
+			
+		rank = i
+		standings.append(Ranking(team.division, team.pod, rank, team))
+		
+		lastDiv = team.division
+		lastPod = team.pod
+		last = team
+
+	divisions = ['E','O']
+	for div in divisions:	
+		div_standings = [x for x in standings if x.team.division == div]
+		places = len(div_standings)
+		place = 1
+		while place <= places:
+			place_teams = [x for x in div_standings if x.place == place]
+			count = len(place_teams)
+			if count == 0:
+				place += 1
+			elif count == 1:
+				place += 1
+			elif count == 2:
+				place += 1
+				a = place_teams[0].team	
+				b = place_teams[1].team
+				if cmpTeams(a, b) < 0:
+					place_teams[1].place += 1
+				elif cmpTeams(a, b) > 0:
+					place_teams[0].place += 1
+				else:
+					continue
+			elif count == 3:
+				place_teams = sorted(place_teams, cmp=cmpRankTeams2)
+
+				if place_teams[0] == place_teams[1] and place_teams[1] == place_teams[2]:
+					#app.logger.debug("Three way tie, crap")
+					place += 1
+					continue
+				
+				last = place_teams[-1].team
+				second_last = place_teams[-2].team
+				result = cmpTeams2(last, second_last)
+				
+				if result == 0:
+					place_teams[-1].place += 1
+					place_teams[-2].place += 1
+				elif result < 0:
+					place_teams[-2].place += 1
+				else:
+					place_teams[-1].place += 1
+			else:
+				app.logger.debug("Greater than three way tie, go home")
+				place += 1
+	
+	tmp=sorted(standings, key=lambda x: x.place)
+	return sorted(tmp, key=lambda x: x.div)
 
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
@@ -331,46 +446,24 @@ def calcStandings(pod=None):
 		
 			standings[black_tid].points += 1;
 			standings[white_tid].points += 1;
+	
+	return sortStandings(standings)
 
-	# pre-sort required for three-way ties
-	standings = sorted(standings.values(), cmp=sortTeams2)
-	app.logger.debug("Standings after sort2 %s" % standings)
-	return sorted(standings, cmp=sortTeams)
 
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
 def getStandings(div=None, pod=None):
-	#if not hasattr(g, 'standings'):
-	#	g.standings = calcStandings(division)
-	#return g.standings
-
-	db = getDB()
-	standings = []
-
-	if ( pod == None and div == None ):
-		cur = db.execute('SELECT DISTINCT pod FROM pods WHERE tid=?', app.config['TID'])
-		rows = cur.fetchall()		
-		if rows:
-			for row in rows:
-				pod = row['pod']
-				standings = standings + calcStandings(pod)
-		else:
-			standings = calcStandings()
-			
-	elif (pod == None):
-		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id AND t.division=? AND p.tid=?',\
-			(div, app.config['TID']))
-
-		rows = cur.fetchall()
-		if rows:
-			for row in rows:
-				standings = standings + calcStandings(row['pod'])
-		else:
-			standings = [x for x in calcStandings() if x.division==div] 
-			
-	else:	
-		standings= calcStandings(pod)
-
+	if not hasattr(g, 'standings'):
+		g.standings = calcStandings()
+	
+	# filter for pod and div
+	if pod:
+		standings = [x for x in g.standings if x.pod == pod]
+	elif div:
+		standings = [x for x in g.standings if x.div == div]
+	else:
+		standings = g.standings
+	
 	return standings
 
 # simple function for converting team ID index to real name
@@ -424,14 +517,14 @@ def endRoundRobin(division=None, pod=None):
 def checkForTies(standings):
 	x=0
 	while x < len(standings)-1:
-		if sortTeams(standings[x], standings[x+1]) == 0:
+		if cmpTeams(standings[x].team, standings[x+1].team) == 0:
 			return True
 		x = x+1
 		
 	x=0
 	last=0
 	while x < len(standings)-1:
-		if sortTeams2(standings[x], standings[x+1]) == 0:
+		if cmpTeams2(standings[x].team, standings[x+1].team) == 0:
 			if last == 1:
 				flash("You need a three sided die, give up and go home")
 				return True
@@ -450,7 +543,7 @@ def getSeed(seed, division=None, pod=None):
 		if checkForTies(standings):
 			return -1
 		seed = int(seed) - 1	
-		return standings[seed].team_id
+		return standings[seed].team.team_id
 	else:
 		return -1
 

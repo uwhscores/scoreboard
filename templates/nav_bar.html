@@ -47,7 +47,8 @@
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Teams<b class="caret"></b></a>
 						<ul class="dropdown-menu">
 						{% set last="" %}
-						{% for team in standings|sort(attribute='name') -%}
+						{% for rank in standings -%}
+							{% set team = rank.team %}
 							{% if team.name != last -%}
 								<li><a href="/team/{{ team.team_id  }}">{{ team.name }}</a></li>
 							{%- endif %}
