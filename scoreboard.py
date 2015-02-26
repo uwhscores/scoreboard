@@ -69,7 +69,7 @@ class Ranking(object):
 		return '{}-{}-{}: {}'.format(self.div, self.pod, self.place, self.team.name)
 		
 	def __eq__(self, other):
-		if cmpTeams2(self.team, other.team) == 0:
+		if cmpTeamsSort(self.team, other.team) == 0:
 			return True
 		else:
 			return False
@@ -173,7 +173,9 @@ def podToInt(pod):
 
 # function used for sorting Stats class for standings
 # Compares on most points, head to head, most wins, least losses, goals allowed
-# Returns for coin toss in all tied <- not done
+# 
+# ONLY USE WHEN COMPARING TEAMS DIRECTLY, DON'T USE IN SORT
+#
 def cmpTeams(team_b, team_a):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
@@ -199,8 +201,8 @@ def cmpTeams(team_b, team_a):
 			addTie(team_a.team_id, team_b.team_id)
 			return 0
 
-## Pre sort to break three-way ties. 
-def cmpTeams2(team_b, team_a):
+## Compares teams w/o head-to-head, needed for sorting sets of three or more teams
+def cmpTeamsSort(team_b, team_a):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
 	elif (team_a.wins != team_b.wins):
@@ -225,16 +227,20 @@ def cmpTeamPoints(team_b, team_a):
 	else:
 		return 0
 		
-def cmpRankTeams2(rank_b, rank_a):
-	return cmpTeams2(rank_b.team, rank_a.team)
-		
+def cmpRankSort(rank_b, rank_a):
+	return cmpTeamsSort(rank_b.team, rank_a.team)
+
+# Sorts a list of Stats objects, one per team. 
+# Returns ordered list of Ranging objects, ranking object has team stat objects
+# along with the division, pod and place
+# Wherever place is displayed/used it would reference the place field, don't use the index for place
 def sortStandings(teamStats):
 	# pre-sort required for three-way ties
-	ordered = sorted(teamStats.values(), cmp=cmpTeams2)
+	ordered = sorted(teamStats.values(), cmp=cmpTeamsSort)
 	ordered = sorted(ordered, cmp=cmpTeams)
 
-	#ordered = sorted(teamStats.values(), cmp=cmpTeamPoints)
-	
+	# first go through the list and assign a place to everybody based on only points
+	# doesn't settle tie breakers yet	
 	i = 1
 	standings= []
 	lastDiv = None
@@ -261,7 +267,11 @@ def sortStandings(teamStats):
 		lastPod = team.pod
 		last = team
 
-	divisions = ['E','O']
+	
+	divisions = getDivisions()
+
+	# use list Comprehensions to find all the tied teams, have to iterate over divisions
+	# to keep 1st in the A from being confused with 1st in the B 
 	for div in divisions:	
 		div_standings = [x for x in standings if x.team.division == div]
 		places = len(div_standings)
@@ -269,11 +279,11 @@ def sortStandings(teamStats):
 		while place <= places:
 			place_teams = [x for x in div_standings if x.place == place]
 			count = len(place_teams)
-			if count == 0:
+			if count == 0: # nobody is in this place, probably do to ties, move on
 				place += 1
-			elif count == 1:
+			elif count == 1: # one team alone, nothing to do
 				place += 1
-			elif count == 2:
+			elif count == 2: # head to head tie, break based on head-to-head first
 				place += 1
 				a = place_teams[0].team	
 				b = place_teams[1].team
@@ -282,18 +292,20 @@ def sortStandings(teamStats):
 				elif cmpTeams(a, b) > 0:
 					place_teams[0].place += 1
 				else:
-					continue
+					# coin flip logic should be here
+					continue  
+					
 			elif count == 3:
-				place_teams = sorted(place_teams, cmp=cmpRankTeams2)
-
-				if place_teams[0] == place_teams[1] and place_teams[1] == place_teams[2]:
-					#app.logger.debug("Three way tie, crap")
+				place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
+				if place_teams[1:] == place_teams[:-1]:
+					# tie cannot be broken at this time
 					place += 1
 					continue
 				
 				last = place_teams[-1].team
 				second_last = place_teams[-2].team
-				result = cmpTeams2(last, second_last)
+				# don't use head-to-head cmp even though its two because its the 3-way tie braker
+				result = cmpTeamsSort(last, second_last) 
 				
 				if result == 0:
 					place_teams[-1].place += 1
@@ -306,6 +318,7 @@ def sortStandings(teamStats):
 				app.logger.debug("Greater than three way tie, go home")
 				place += 1
 	
+	# resort to make sure in order by place and division
 	tmp=sorted(standings, key=lambda x: x.place)
 	return sorted(tmp, key=lambda x: x.div)
 
@@ -524,7 +537,7 @@ def checkForTies(standings):
 	x=0
 	last=0
 	while x < len(standings)-1:
-		if cmpTeams2(standings[x].team, standings[x+1].team) == 0:
+		if cmpTeamsSort(standings[x].team, standings[x+1].team) == 0:
 			if last == 1:
 				flash("You need a three sided die, give up and go home")
 				return True
@@ -904,6 +917,16 @@ def getDivision(team_id):
 		return row['division']
 	else:
 		return None
+
+# returns a list of the divisions for the tournament
+def getDivisions():
+	db = getDB()
+	cur = db.execut('SELECT DISTINCT division FROM teams WHERE tid=?', app.config['TID'])
+	
+	if len(row) > 0:
+		return cur.fetchall()
+	else:
+		return []
 
 def getTeamPod(team_id):
 	db = getDB()
