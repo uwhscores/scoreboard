@@ -296,12 +296,28 @@ def sortStandings(teamStats):
 					continue  
 					
 			elif count == 3:
-				place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
+				# unlikely, but if one team beat both others, then win
+				if whoWon(place_teams[0].team, place_teams[1].team) > 0 and whoWon(place_teams[0].team, place_teams[2].team) > 0:
+					place_teams[1].place += 1
+					place_teams[2].place += 1
+					continue
+				elif whoWon(place_teams[1].team, place_teams[0].team) > 0 and whoWon(place_teams[1].team, place_teams[2].team) > 0:
+					place_teams[0].place += 1
+					place_teams[2].place += 1
+					continue
+				elif whoWon(place_teams[2].team, place_teams[0].team) > 0 and whoWon(place_teams[2].team, place_teams[1].team) > 0:
+					place_teams[0].place += 1
+					place_teams[1].place += 1
+					continue
+				
+				# Check if all the tie breakers are ties 
 				if place_teams[1:] == place_teams[:-1]:
 					# tie cannot be broken at this time
 					place += 1
-					continue
+					continue	
 				
+				place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
+
 				last = place_teams[-1].team
 				second_last = place_teams[-2].team
 				# don't use head-to-head cmp even though its two because its the 3-way tie braker
