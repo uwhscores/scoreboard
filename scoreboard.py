@@ -23,7 +23,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='4'
+	TID='5'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -168,8 +168,8 @@ def divToInt(div):
 
 def podToInt(pod):
 	sortOrder = "b,g,d,e,z,B,G,O,Y"
-	sortOder = "Y,O,G,B,z,e,d,g,b,A"
-	return sortOder.index(pod)
+	sortOrder = "Y,O,G,B,z,e,d,g,b,A"
+	return sortOrder.index(pod)
 
 # function used for sorting Stats class for standings
 # Compares on most points, head to head, most wins, least losses, goals allowed
@@ -269,7 +269,11 @@ def sortStandings(teamStats):
 
 	
 	divisions = getDivisions()
-
+	pods = getPodsActive()
+	
+	if pods:
+		divisions = pods
+	
 	# use list Comprehensions to find all the tied teams, have to iterate over divisions
 	# to keep 1st in the A from being confused with 1st in the B 
 	for div in divisions:	
@@ -292,8 +296,12 @@ def sortStandings(teamStats):
 				elif cmpTeams(a, b) > 0:
 					place_teams[0].place += 1
 				else:
-					# coin flip logic should be here
-					continue  
+# 					flip = getCoinFlip(a.team_id, b.team_id)
+# 					if flip == a.team_id:
+# 						place_teams[1] += 1
+# 					if flip == b.team_id:
+# 						place_Teams[0] += 1
+					continue
 					
 			elif count == 3:
 				# unlikely, but if one team beat both others, then win
@@ -366,6 +374,7 @@ def addTie(tid_a, tid_b):
 
 def getCoinFlip(tid_a, tid_b):
 	params = getParams()
+	#app.logger.debug("looking for a coin flip between %s and %s " % (tid_a, tid_b))
 
 	if 'coin_flips' in params:
 		flips = split(params['coin_flips'],";")
@@ -374,7 +383,7 @@ def getCoinFlip(tid_a, tid_b):
 			a = int(a)
 			b = int(b)
 			if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b): 
-				app.logger.debug("returning a coin %s" % coin)
+				#app.logger.debug("returning a coin %s" % coin)
 				return int(coin)
 		else:
 			return -1
@@ -482,17 +491,25 @@ def calcStandings(pod=None):
 # wrapper function for standings, use to ger dictionary of standings
 # dictionary indexed by rank and contains all the team information in Stat class
 def getStandings(div=None, pod=None):
-	if not hasattr(g, 'standings'):
-		g.standings = calcStandings()
+	#if not hasattr(g, 'standings'):
+	#	g.standings = calcStandings()
 	
 	# filter for pod and div
-	if pod:
-		standings = [x for x in g.standings if x.pod == pod]
-	elif div:
-		standings = [x for x in g.standings if x.div == div]
-	else:
-		standings = g.standings
+	#if pod:
+	#	standings = [x for x in g.standings if x.pod == pod]
+	#elif div:
+	#	standings = [x for x in g.standings if x.div == div]
+	#else:
+	#	standings = g.standings
 	
+	if pod:
+		standings = calcStandings(pod)
+	elif div :
+		standings = calcStandings()
+		standings = [x for x in g.standings if x.div == div]	
+	else:
+		standings = calcStandings()
+		
 	return standings
 
 # simple function for converting team ID index to real name
@@ -719,8 +736,9 @@ def parseGame(game):
 			name = getTeam(team_id)
 			game = name + " ("+pod+pod_id+")"
  
-	# Seed notation
-	match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
+	# Seed notation - Division
+	#match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
+	match = re.search( '^S(O|E])?(\d+)$', game )
 	if match:
 		division = match.group(1)
 		seed = match.group(2)
@@ -739,7 +757,8 @@ def parseGame(game):
 				game = "%s (S%s)" % (team, seed)
 
 	#Seeded Pod notation
-	match = re.search( '^S([begdz])(\d+)$', game)
+	#match = re.search( '^S([begdz])(\d+)$', game)
+	match = re.search( '^S([ABCDwxyz])(\d+)$', game)
 	if match:
 		pod = match.group(1)
 		seed = match.group(2)
@@ -794,10 +813,12 @@ def expandGames(games):
 	expanded = []
 	db = getDB()
 
-	podColors = {'A':'#BDBDBD','B':'#2E2EFE','G':'#04B404','O':'#FF8000','Y':'#FFFF00',\
-			'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54',\
-			'D':'#FF00FF'
-		}
+	#podColors = {'A':'#BDBDBD','B':'#2E2EFE','G':'#04B404','O':'#FF8000','Y':'#FFFF00',\
+	#		'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54',\
+	#		'D':'#FF00FF'
+	#	}
+	
+	podColors = {}
 	
 	for info in games:
 		game = {}
@@ -994,22 +1015,42 @@ def updateGame(form):
         
 	cur = db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?", (score_b,score_w, forfeit, app.config['TID'],gid))
 	db.commit()
+	
+	popSeededPods()
 
 	return 1
 
 # total hack for Nationals seeded pod. Not dynamic at all but its what had to happen
 def popSeededPods():
+	app.logger.debug("popping some pods")
+
+
+	params = getParams()
+
+	if 'seeded_pods' in params:
+		if params['seeded_pods'] == 1:
+			return 0
+			
+	pods_done =[]
+	for pod in ("A","B","C","D"):
+		pods_done.append(endRoundRobin(pod))
+		
+	if not all(True for done in pods_done):
+		return 0
+
+
 	db = getDB()
 
-	seededPods = ['b','g','d','e','z']
+	seededPods = ['w','x','y','z']
 	pod_id = 1
 
 	# green, blue, orange, yellow
-	for pod in ("G","B","O","Y"):
+	for pod in ("A","B","C","D"):
 		podStandings = getStandings(None,pod)
 
 		pod_offset=0
-		for team in podStandings:
+		for rank in podStandings:
+			team = rank.team
 			team_id = team.team_id
 			pod = seededPods[pod_offset]
 			cur = db.execute("INSERT INTO pods (tid, team_id, pod, pod_id) VALUES (?,?,?,?)",(app.config['TID'], team_id, pod, pod_id))
@@ -1018,6 +1059,10 @@ def popSeededPods():
 
 		pod_id +=1
 
+
+	cur = db.execute("UPDATE params SET val=1 WHERE tid=? and field='seeded_pods'" , (app.config['TID'],))
+	db.commit()
+	
 	return 1
 
 	
@@ -1042,11 +1087,20 @@ def getDivisions():
 def renderMain():
 
 	games = getGames()
-	teams = getStandings()
 	pods = getPodsActive()
 	placings = getPlacings()
 	divisions = getDivisions()
 	
+	pods = getPodsActive()
+	
+	teams = []
+	if pods:
+		for p in pods:
+			pod = p['pod']
+			teams += getStandings(None, pod)
+	else:
+		teams = getStandings()
+
 	titleText="Full "	
 	standings = [] 
 	for team in teams:
