@@ -2,3 +2,4 @@ venv/*
 *.bk
 *~
 *.tgz
+old/*

@@ -37,22 +37,17 @@
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Pods<b class="caret"></b></a>
 						<ul class="dropdown-menu">
 						{% for pod in pods %}
-							<li><a href="/pod/{{ pod.pod }}">Pod {{ pod.pod }}</a></li>
+							<li><a href="/pod/{{ pod }}">Pod {{ pod }}</a></li>
 						{% endfor %}
 						</ul>
 					</li>
 					{%- endif %}
-					{% if standings -%}
+					{% if team_list -%}
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Teams<b class="caret"></b></a>
 						<ul class="dropdown-menu">
-						{% set last="" %}
-						{% for rank in standings -%}
-							{% set team = rank.team %}
-							{% if team.name != last -%}
+						{% for team in team_list -%}
 								<li><a href="/team/{{ team.team_id  }}">{{ team.name }}</a></li>
-							{%- endif %}
-							{% set last = team.name %}
 						{%- endfor %}
 						</ul>
 					</li>

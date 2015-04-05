@@ -62,7 +62,7 @@
 	{% for messages in get_flashed_messages() %}
 		<div class=alert alert-warning> {{ message }} </div>
 	{% endfor %}
-	<form action='/update' method=post>
+	<form action='/update' method=post name='update'>
 		<input type=hidden name=gid value={{ game.gid }}>
 		<input type=hidden name=btid value={{ game.black_tid }}>
 		<input type=hidden name=wtid value={{ game.white_tid }}>

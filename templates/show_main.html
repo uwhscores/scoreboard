@@ -12,12 +12,8 @@
 	<div class="row">
 	<div id="team_nav" class="col-md-4 listgroup">
 		<h3>Filter For Team</h3>
-		{% for rank in standings -%}
-		{% set team = rank.team %}
-		{% if team.name != last -%}
+		{% for team in team_list -%}
 		<a class="list-group-item" href="/team/{{ team.team_id  }}">{{ team.name }}</a>
-		{%- endif %}
-		{% set last = team.name %}
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
@@ -47,7 +43,6 @@
 					<nav id="dayPagerNav2">
 						<ul id="dayPager" class="pagination pagination-sm">
 							<li class="active toggleDay" day="All"><span>All</span></li>
-							<li class="toggleDay" day="Fri"><span>Fri</span></li>
 							<li class="toggleDay" day="Sat"><span>Sat</span></li>
 							<li class="toggleDay" day="Sun""><span>Sun</span></li>
 
@@ -110,7 +105,7 @@
 			<table id=standings_tbl class="table table-striped">
 				<thead>
 					<tr>
-						<th>Div</th>
+						<!-- <th>Div</th> -->
 						<th>Pod</th>
 						<th>Rank</th>
 						<th>Team</th>
@@ -128,7 +123,7 @@
 				</tbody>
 				<thead>
 					<tr>
-						<th>Div</th>
+						<!-- <th>Div</th> -->
 						<th>Pod</th>
 						<th>Rank</th>
 						<th>Team</th>
@@ -142,7 +137,7 @@
 				<tbody>
 					{%- endif %}
 					<tr>
-						<td>{{ team.division}}</td>
+						<!-- <td>{{ team.division}}</td> -->
 						<td>{{ team.pod }} </td>
 						<td>{{ rank.place }}</td>
 						<td>{{ team.name }}</td>
