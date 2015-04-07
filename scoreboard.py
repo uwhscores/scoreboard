@@ -1002,6 +1002,7 @@ def getDivision(team_id):
 	else:
 		return None
 
+# returns list of Pods as strings, list is required because a single team might be in multiple pods
 def getTeamPods(team_id):
 	db = getDB()
 	cur = db.execute('SELECT pod from pods WHERE team_id=? AND tid=?', (team_id, app.config['TID']))
@@ -1019,6 +1020,12 @@ def getGamePod(gid):
 
 	return row['pod']
 
+def getTournamentName():
+	db = getDB()
+	cur = db.execute("SELECT name FROM tournaments WHERE tid=?", app.config['TID'])
+	row = cur.fetchone()
+
+	return row['name']
 
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):	
@@ -1057,7 +1064,8 @@ def updateGame(form):
 
 	return 1
 
-# total hack for Nationals seeded pod. Not dynamic at all but its what had to happen
+# Checks if first round of pods is all finished and populates seeded pods if necessary 
+# NOT DYNAMIC requires hard coding right now
 def popSeededPods():
 	app.logger.debug("popping some pods")
 
@@ -1103,14 +1111,11 @@ def popSeededPods():
 	db.commit()
 	
 	return 1
-
 	
-def getTournamentName():
-	db = getDB()
-	cur = db.execute("SELECT name FROM tournaments WHERE tid=?", app.config['TID'])
-	row = cur.fetchone()
 
-	return row['name']
+#######################################
+## Main Routes
+#######################################
 
 @app.route('/')
 def renderMain():
@@ -1236,12 +1241,9 @@ def renderTV(offset=None):
 
 	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
-@app.route('/whiterabbitobject')
-#@basic_auth.required
-def callToSeed():
-	output = popSeededPods()
-	return json.dumps(output)
-
+#######################################
+## APIs
+#######################################
 @app.route('/api/getGames')
 @app.route('/api/getGames/<division>')
 def apiGetGames(division=None):
