@@ -10,6 +10,7 @@
 		<h1 id="tournamentTitle">{{ tournament }}</h1>		
 	</div>
 	<div class="row">
+	{% if team_list -%}
 	<div id="team_nav" class="col-md-4 listgroup">
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
@@ -17,6 +18,17 @@
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
+	{% else %}
+	<div class="col-md-4">
+		<div class="alert alert-info" role="alert">
+			<h3> NOTICE </h3>
+			<p><strong> Team schedule view only shows confirmed games! </strong></p>
+			<p> Games for later pods or brackets that haven't been decided will not
+			show here until teams are assigned.</p>
+			<p> Check back regularly to confirm future games.</p>
+		</div>
+	</div>
+	{%- endif %}
 	<div class="col-md-8">
 	{% with messages = get_flashed_messages() -%}
 		{% if messages %}

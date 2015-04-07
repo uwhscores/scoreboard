@@ -966,6 +966,16 @@ def getPodsActive(div=None):
 
 	return pods
 
+def getPodNamesActive(div=None):
+	pods = getPodsActive(div)
+	
+	pod_names = []
+	for pod in pods:
+		name = expandGroupAbbr(pod)
+		pod_names.append({'id':pod,'name':name})
+		
+	return pod_names
+
 # returns list of all pod abbreviations  
 def getPods(div=None):
 	db = getDB()
@@ -990,6 +1000,17 @@ def getDivisions():
 		divisions.append(r['division'])
 
 	return divisions
+	
+# returns dictionary of division abbreviation and full name
+def getDivisionNames():
+	divs = getDivisions()
+	
+	div_names = []
+	for div in divs:
+		name = expandGroupAbbr(div)
+		div_names.append({'id':div,'name':name})
+	
+	return div_names
 
 # return division as string from team_id
 def getDivision(team_id):
@@ -999,6 +1020,18 @@ def getDivision(team_id):
 
 	if row:
 		return row['division']
+	else:
+		return None
+
+# takes in short name for division or pod and returns full string for display
+def expandGroupAbbr(group):
+	db = getDB()
+	cur = db.execute('SELECT name FROM groups WHERE group_id=? and tid=?', (group, app.config['TID']))
+	
+	row = cur.fetchone()
+	
+	if row:
+		return row['name']
 	else:
 		return None
 
@@ -1123,9 +1156,11 @@ def renderMain():
 	games = getGames()
 	pods = getPodsActive()
 	placings = getPlacings()
-	divisions = getDivisions()
+	divisions = getDivisionNames()
 	pods = getPodsActive()
 	team_list = getTeams()
+	pod_names = getPodNamesActive()
+
 	
 	teams = []
 	if pods:
@@ -1138,29 +1173,40 @@ def renderMain():
 	standings = [] 
 	for team in teams:
 		standings.append(team.__dict__)
+		
 	
 	return render_template('show_main.html', tournament=getTournamentName(),\
-		standings=standings, games=games, pods=pods, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
+		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
 
 @app.route('/div/<division>')
 def renderDivision(division):
 	games = getGames(division)
 	teams = getStandings(division)
-	pods = getPodsActive()
 	divisions = getDivisions()
 	team_list = getTeams(division, None)
-
-
+	pod_names = getPodNamesActive(division)
+	
+	pods = getPodsActive(division)
+	
+	teams = []
+	if len(pods) > 0:
+		for pod in pods:
+			teams += getStandings(None, pod)
 
 	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = division.upper() + " Division"
+	div_name = expandGroupAbbr(division)
+	if div_name:
+		titleText = div_name
+	else:
+		titleText = "%s Div" % division.upper()
+		
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
-		 games=games, titleText=titleText, pods=pods, divisions=divisions, team_list=team_list)
+		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list)
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
@@ -1168,20 +1214,29 @@ def renderPod(pod):
 	teams = getStandings(None, pod)
 	pods = getPodsActive()
 	team_list = getTeams(None, pod)
+	pod_names = getPodNamesActive()
 
 
 	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
 
-	titleText = pod.upper() + " Pod"
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, pods=pods, team_list=team_list)
+	
+	pod_name = expandGroupAbbr(pod)
+	if pod_name:
+		titleText = pod_name
+	else:
+		titleText = pod.upper() + " Pod"
+		
+		
+	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
+		games=games, titleText=titleText, pods=pod_names, team_list=team_list)
 
 
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
-	divisions = getDivisions()
-
+	divisions = getDivisionNames()
+	
 	team_id = int(team_id)
 
 	titleText = getTeam(team_id)
@@ -1191,7 +1246,8 @@ def renderTeam(team_id):
 		return redirect(request.url_root)
 		
 	division = getDivision(team_id)
-	#pods = getPodsActive(division)
+	pod_names = getPodNamesActive(division)
+
 
 	teams = []
 	games = getTeamGames(team_id)
@@ -1209,11 +1265,13 @@ def renderTeam(team_id):
 		for team in div:
 			standings.append(team.__dict__)
 
+
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
-	noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
-	games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
+	#noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
+	#games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
+	noteText=None
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
-		titleText=titleText, pods=pods, noteText=noteText, divisions=divisions)
+		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions)
 
 
 @app.route('/tv')

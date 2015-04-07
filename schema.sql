@@ -32,3 +32,7 @@ CREATE TABLE rankings(
 CREATE TABLE params(
 	tid INTEGER NOT NULL, field text NOT NULL, val NOT NULL
 );
+
+CREATE TABLE groups(
+	tid INTEGER NOT NULL, group_id text NOT NULL, name text NOT NULL, PRIMARY KEY(tid, group_id)
+);
