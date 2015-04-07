@@ -381,18 +381,24 @@ def addTie(tid_a, tid_b):
 	else:
 		pod = None
 
-	
-	teams = []
-	teams.append(getTeam(tid_a))
-	teams.append(getTeam(tid_b))
-	# sort teams into alphabetical order so I can filter out a & b and b & a
-	teams = sorted(teams) 
-
 	if pod:
 		div_a = None
 
 	if endRoundRobin(div_a,pod):
-		flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
+		#flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
+		if tid_a < tid_b:
+			if not hasattr(g, 'ties'):
+				g.ties = []
+				g.ties.append((tid_a, tid_b))
+			else:
+				g.ties.append((tid_a, tid_b))
+		else:
+			if not hasattr(g, 'ties'):
+				g.ties = []
+				g.ties.append((tid_b, tid_a))
+			else:
+				g.ties.append((tid_b, tid_a))
+				
 	return 0
 
 def getCoinFlip(tid_a, tid_b):
@@ -1090,7 +1096,23 @@ def isGroup(group):
 		return True
 	else:
 		return False
-
+		
+def genTieFlashes():
+	if not hasattr(g, 'ties'):
+		return 0
+	
+	ties = g.ties
+	
+	seen = set()
+	list = [x for x in ties if x not in seen and not seen.add(x)]
+	
+	for tie in list:
+		name_a = getTeam(tie[0])
+		name_b = getTeam(tie[1])
+		flash("There is a tie in the standings between %s & %s" % (name_a, name_b))
+		
+	return 0
+		
 
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):	
@@ -1199,7 +1221,6 @@ def renderMain():
 	pods = getPodsActive()
 	team_list = getTeams()
 	pod_names = getPodNamesActive()
-
 	
 	teams = []
 	if pods:
@@ -1213,6 +1234,7 @@ def renderMain():
 	for team in teams:
 		standings.append(team.__dict__)
 		
+	genTieFlashes()
 	
 	return render_template('show_main.html', tournament=getTournamentName(),\
 		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
@@ -1231,6 +1253,7 @@ def renderDivision(division):
 	
 	pods = getPodsActive(division)
 	
+
 	teams = []
 	if len(pods) > 0:
 		for pod in pods:
@@ -1246,6 +1269,7 @@ def renderDivision(division):
 	else:
 		titleText = "%s Div" % division.upper()
 		
+	genTieFlashes()
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
@@ -1275,7 +1299,8 @@ def renderPod(pod):
 	else:
 		titleText = pod.upper() + " Pod"
 		
-		
+	genTieFlashes()
+	
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
 		games=games, titleText=titleText, pods=pod_names, team_list=team_list)
 
@@ -1321,6 +1346,9 @@ def renderTeam(team_id):
 	#noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	#games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
 	noteText=None
+	
+	genTieFlashes()
+
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
 		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions)
 

@@ -32,13 +32,9 @@
 	<div class="col-md-8">
 	{% with messages = get_flashed_messages() -%}
 		{% if messages %}
-			{% set last="" -%}
 			<div class="alert alert-danger" role="alert">
 			{% for message in messages %}
-				{% if message != last -%}
 				{{ message }}</br>
-				{%- endif %}
-				{% set last=message %}
 			{% endfor %}
 			</div>
 		{% endif %}
