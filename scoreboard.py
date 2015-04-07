@@ -1060,6 +1060,18 @@ def getTournamentName():
 
 	return row['name']
 
+def isGroup(group):
+	db = getDB()
+	cur = db.execute("SELECT count(*) FROM games WHERE (pod=? OR division=?) AND tid=?", (group, group, app.config['TID']))
+	
+	count = cur.fetchone()[0]
+	
+	if count > 0:
+		return True
+	else:
+		return False
+
+
 # takes in form dictionary from POST and updates/creates score for single game
 def updateGame(form):	
 	db = getDB()
@@ -1180,6 +1192,10 @@ def renderMain():
 
 @app.route('/div/<division>')
 def renderDivision(division):
+	if not isGroup(division):
+		flash("Invalid division")
+		return redirect(request.url_root)
+
 	games = getGames(division)
 	teams = getStandings(division)
 	divisions = getDivisions()
@@ -1210,6 +1226,10 @@ def renderDivision(division):
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
+	if not isGroup(pod):
+		flash("Invalid pod")
+		return redirect(request.url_root)
+
 	games = getGames(None,pod)
 	teams = getStandings(None, pod)
 	pods = getPodsActive()
@@ -1237,6 +1257,10 @@ def renderPod(pod):
 def renderTeam(team_id):
 	divisions = getDivisionNames()
 	
+	if not team_id.isdigit():
+		flash("Invalid team ID, must be integer")
+		return redirect(request.url_root)
+		
 	team_id = int(team_id)
 
 	titleText = getTeam(team_id)
