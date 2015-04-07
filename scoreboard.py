@@ -358,11 +358,11 @@ def sortStandings(teamStats):
 
 # creates flash for tie only if the round robin for the division is finished
 def addTie(tid_a, tid_b):
-	db = getDB()
-	#cur = db.execute('SELECT pod FROM pods WHERE team_id=? AND TID=? LIMIT 1',(tid_a,app.config['TID']))
-	#row = cur.fetchone()
-	#division = row['division']
-	#pod = row['pod']
+# 	db = getDB()
+# 	cur = db.execute('SELECT pod FROM pods WHERE team_id=? AND TID=? LIMIT 1',(tid_a,app.config['TID']))
+# 	row = cur.fetchone()
+# 	division = row['division']
+# 	pod = row['pod']
 	
 	div_a = getDivision(tid_a)
 	div_b = getDivision(tid_b)
@@ -371,14 +371,27 @@ def addTie(tid_a, tid_b):
 	if div_a != div_b:
 		return 0
 	
+	db = getDB()		
+	cur = db.execute("SELECT DISTINCT g.pod FROM games g, scores s WHERE g.gid=s.gid AND \
+		((s.white_tid=? AND s.black_tid=?) OR (s.white_tid=? AND s.black_tid=?)) AND g.type='RR' \
+		AND g.tid=s.tid AND g.tid=?", (tid_a, tid_b, tid_b, tid_a, app.config['TID']))
+	rows = cur.fetchall()
+	if len(rows) > 0:
+		pod = rows[0]['pod']
+	else:
+		pod = None
+
+	
 	teams = []
 	teams.append(getTeam(tid_a))
 	teams.append(getTeam(tid_b))
 	# sort teams into alphabetical order so I can filter out a & b and b & a
 	teams = sorted(teams) 
-	pod = None
 
-	if endRoundRobin(div_a, pod):
+	if pod:
+		div_a = None
+
+	if endRoundRobin(div_a,pod):
 		flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
 	return 0
 
@@ -540,11 +553,14 @@ def endRoundRobin(division=None, pod=None):
 	db = getDB()
 	if (division == None and pod  == None):
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', app.config['TID'])
-	elif (division == None):
+	elif (division == None and pod ):
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND pod=? AND tid=?',(pod, app.config['TID']))
-	else:
+	elif division:
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', \
 			(division, app.config['TID']))
+	else:
+		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? POD=? AND tid=?', (division, pod, app.config['TID']))
+		
 	row = cur.fetchone()
 
 	rr_games = row['games']
@@ -552,23 +568,27 @@ def endRoundRobin(division=None, pod=None):
 	if (division == None and pod == None):
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?', \
 			app.config['TID'])
-	elif (division == None):
+	elif (division == None and pod):
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=s.tid AND g.tid=?', \
 			(pod, app.config['TID']))	
-	else:
+	elif division:
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND g.division=? AND s.tid=?',\
 			(division, app.config['TID']))
-	
+	else:
+		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" \
+			AND division LIKE ? and pod=? AND g.tid=s.tid AND s.tid=?',(division, pod, app.config['TID']))
+			
+
 	row = cur.fetchone()
 	games_played = row['count']
 
 	#app.logger.debug("%s-%s: RR Games = %s and we've played %s games" % (division, pod, rr_games, games_played))
 
+	# first check if all games have been played
 	if (games_played >= rr_games):
 		return True
 	else:
 		return False
-		
 		
 def checkForTies(standings):
 	x=0
@@ -1125,8 +1145,15 @@ def popSeededPods():
 	pods_done =[]
 	for pod in ("R","L","J","W"):
 		pods_done.append(endRoundRobin(None, pod))
-		
+
 	if not all(done == True for done in pods_done):
+		return 0
+	
+	ties = []
+	for pod in ("R","L","J","W"):
+			ties.append(checkForTies(getStandings(None,pod)))	
+	
+	if not all(tie == False for tie in ties):
 		return 0
 	
  	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
