@@ -1431,6 +1431,15 @@ def renderUpdate():
 		updateGame(request.form)
 		return redirect(request.base_url)
 
+
+@app.route('/faq')
+def renderFAQ():
+	divisions = getDivisionNames()
+	team_list = getTeams()
+	pod_names = getPodNamesActive()
+	
+	return render_template('faq.html', pods=pod_names, divisions=divisions, team_list=team_list)
+
 app.wsgi_app = ProxyFix(app.wsgi_app)
 	
 if __name__ == '__main__':
