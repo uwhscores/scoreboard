@@ -1111,7 +1111,38 @@ def genTieFlashes():
 		name_b = getTeam(tie[1])
 		flash("There is a tie in the standings between %s & %s" % (name_a, name_b))
 
+	flash("A coin flip is required, please see tournament director or head ref")
 	return 0
+
+def getTournamentStats():
+	db = getDB()
+	stats = {}
+
+	# total games
+	cur = db.execute("SELECT count(*) as count FROM games WHERE tid=?", app.config['TID'])
+	row = cur.fetchone()
+	total = row['count']
+
+	# games played
+	cur = db.execute("SELECT count(*) as count FROM scores WHERE tid=?", app.config['TID'])
+	row = cur.fetchone()
+ 	played = row['count']
+
+	stats['total_games'] = (played, total)
+
+	# round robin games
+	cur = db.execute("SELECT count(*) as count FROM games WHERE type='RR' AND tid=?", app.config['TID'])
+	row = cur.fetchone()
+	total = row['count']
+
+	# round robin games played
+	cur  = db.execute("SELECT count(*) as count FROM games g, scores s WHERE g.gid=s.gid \
+		AND g.type='RR' AND g.tid=s.tid AND g.tid=?", app.config['TID'])
+	row = cur.fetchone()
+	played = row['count']
+
+	stats['round_robin'] = (played, total)
+	return stats
 
 
 # takes in form dictionary from POST and updates/creates score for single game
@@ -1206,6 +1237,52 @@ def popSeededPods():
 
 	return 1
 
+def updateSiteStatus(active, message=None):
+	db = getDB()
+
+	# delete first incase message is being updated
+	cur = db.execute("DELETE FROM params where field='site_disabled' AND tid=?", app.config['TID'])
+	db.commit()
+
+	if not active:
+		if message == "":
+			message = "Site disabled temporarily, please check back later."
+
+		cur = db.execute("INSERT OR IGNORE INTO params (tid, field, val) VALUES(?,?,?)", (app.config['TID'], "site_disabled", message))
+		db.commit()
+
+	return 0
+
+def getDisableMessage():
+	db = getDB()
+
+	cur = db.execute("SELECT val FROM params WHERE field=? AND tid=?", ("site_disabled", app.config['TID']))
+	row = cur.fetchone()
+
+	if row:
+		return row['val']
+	else:
+		return False
+
+
+def updateConfig(form):
+	if not "config_id" in form:
+		flash("You didn't give me an ID, go away")
+		return 0
+
+	config_id = form.get('config_id')
+	if config_id == "site_active":
+		switch = form.get('active_toggle')
+		message = form.get('message')
+		if (switch == "on"):
+			updateSiteStatus(False, message)
+		else:
+			updateSiteStatus(True)
+
+	else:
+		flash("I don't understand that config option, nothing changed")
+
+	return 0
 
 #######################################
 ## Main Routes
@@ -1213,6 +1290,10 @@ def popSeededPods():
 
 @app.route('/')
 def renderMain():
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
 
 	games = getGames()
 	pods = getPodsActive()
@@ -1241,6 +1322,11 @@ def renderMain():
 
 @app.route('/div/<division>')
 def renderDivision(division):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+
 	if not isGroup(division):
 		flash("Invalid division")
 		return redirect(request.url_root)
@@ -1277,6 +1363,11 @@ def renderDivision(division):
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+
 	if not isGroup(pod):
 		flash("Invalid pod")
 		return redirect(request.url_root)
@@ -1307,6 +1398,11 @@ def renderPod(pod):
 
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+
 	divisions = getDivisionNames()
 
 	if not team_id.isdigit():
@@ -1356,6 +1452,11 @@ def renderTeam(team_id):
 @app.route('/tv')
 @app.route('/tv/<offset>')
 def renderTV(offset=None):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+
 	#if (division == "A"):
 	#	games = getGames(division)
 	#	teams = getStandings(division)
@@ -1408,8 +1509,15 @@ def apiGetStandings(division=None):
 
 	return json.dumps(standings)
 
+@app.route("/admin")
+def renderAdmin():
 
-@app.route('/update', methods=['POST','GET'])
+	stats = getTournamentStats()
+	genTieFlashes()
+
+	return render_template('admin/show_admin.html', tournament=getTournamentName(), stats=stats, disable_message=getDisableMessage())
+
+@app.route('/admin/update', methods=['POST','GET'])
 #@basic_auth.required
 def renderUpdate():
 	if request.method =='GET':
@@ -1423,14 +1531,22 @@ def renderUpdate():
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
 				return redirect(request.base_url)
-			return render_template('update_single.html', game=game)
+			return render_template('/admin/update_single.html', game=game)
 		else:
 			games = getGames()
-			return render_template('show_update.html', games=games, tournament=getTournamentName())
+			return render_template('/admin/show_update.html', games=games, tournament=getTournamentName())
 	if request.method == 'POST':
 		updateGame(request.form)
 		return redirect(request.base_url)
 
+@app.route('/admin/update_config', methods=['POST','GET'])
+def updateConfigPost():
+	if request.method == 'GET':
+		flash("You're not supposed to do that")
+		return redirect("/admin")
+	elif request.method == 'POST':
+		updateConfig(request.form)
+		return redirect("/admin")
 
 @app.route('/faq')
 def renderFAQ():

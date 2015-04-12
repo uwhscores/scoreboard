@@ -1,4 +1,8 @@
-{% extends "layout.html" %}
+{% extends "/admin/admin_layout.html" %}
+
+{% block nav %}
+	{% include "admin/nav_admin.html" with context %}
+{% endblock nav %}
 
 {% block main %}
 
@@ -42,7 +46,7 @@
 			document.getElementById(fieldName).innerHTML=newVal;
 
 		});
-		
+
 		$('#forfeit_b').click(function (event) {
 			if (event.target.checked) {
 				$('#forfeit_w').removeAttr('checked');
@@ -62,7 +66,7 @@
 	{% for messages in get_flashed_messages() %}
 		<div class=alert alert-warning> {{ message }} </div>
 	{% endfor %}
-	<form action='/update' method=post name='update'>
+	<form action='/admin/update' method=post name='update'>
 		<input type=hidden name=gid value={{ game.gid }}>
 		<input type=hidden name=btid value={{ game.black_tid }}>
 		<input type=hidden name=wtid value={{ game.white_tid }}>
