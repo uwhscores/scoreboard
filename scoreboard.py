@@ -35,7 +35,7 @@ class Stats(object):
 		self.name = name
 		self.team_id = team_id
 		self.division = div
-		self.pod = pod	
+		self.pod = pod
 		self.points = 0
 		self.wins = 0
 		self.losses = 0
@@ -57,23 +57,23 @@ class Stats(object):
 			return True
 		else:
 			return False
-		
+
 class Ranking(object):
 	def __init__(self, div, pod, place, team):
 		self.div = div
 		self.pod = pod
 		self.place = place
 		self.team = team
-		
+
 	def __repr__(self):
 		return '{}-{}-{}: {}'.format(self.div, self.pod, self.place, self.team.name)
-		
+
 	def __eq__(self, other):
 		if cmpTeamsSort(self.team, other.team) == 0:
 			return True
 		else:
 			return False
-			
+
 # DB logic for setting up database connection and teardown
 def connectDB():
 	rv = sqlite3.connect(app.config['DATABASE'])
@@ -89,22 +89,22 @@ def getDB():
 def closeDB(error):
 	if hasattr(g, 'sqlite_db'):
 		g.sqlite_db.close()
-		
+
 # loads in all the rows from the config table for the tournament ID
 # config table is used to store parameters for various logic in the code
 def loadParams():
 	db = getDB()
 	params = {}
-		
+
 	cur = db.execute('SELECT field, val FROM params where tid=?', app.config['TID'])
 
 	rows = cur.fetchall()
-	
+
 	for config in rows:
 		params[config['field']] = config['val']
-		
+
 	return params
-	
+
 def getParams():
 	if not hasattr(g, 'params'):
 		g.params = loadParams()
@@ -142,8 +142,8 @@ def whoWon(team_a, team_b):
 				net_wins += 1
 			elif ( white_tid == tid_b):
 				net_wins -= 1
-			
-	
+
+
 	return net_wins
 
 # dumb function, think its left over, clean it out
@@ -151,7 +151,7 @@ def getPoints(stats):
 	return stats.points
 
 # quick funciton used to convert divisions to an integer used in rankings
-# makes an A team above a B team 
+# makes an A team above a B team
 def divToInt(div):
 	if (div.lower() == 'a'):
 		return 3
@@ -177,7 +177,7 @@ def podToInt(pod):
 
 # function used for sorting Stats class for standings
 # Compares on most points, head to head, most wins, least losses, goals allowed
-# 
+#
 # ONLY USE WHEN COMPARING TEAMS DIRECTLY, DON'T USE IN SORT
 #
 def cmpTeams(team_b, team_a):
@@ -195,7 +195,7 @@ def cmpTeams(team_b, team_a):
 		return team_b.losses - team_a.losses
 	elif (team_a.goals_allowed != team_b.goals_allowed):
 		return team_b.goals_allowed - team_a.goals_allowed
-	else:		
+	else:
 		flip = getCoinFlip(team_a.team_id, team_b.team_id)
 		if flip == team_a.team_id:
 			return 1
@@ -230,11 +230,11 @@ def cmpTeamPoints(team_b, team_a):
 		return team_a.points - team_b.points
 	else:
 		return 0
-		
+
 def cmpRankSort(rank_b, rank_a):
 	return cmpTeamsSort(rank_b.team, rank_a.team)
 
-# Sorts a list of Stats objects, one per team. 
+# Sorts a list of Stats objects, one per team.
 # Returns ordered list of Ranging objects, ranking object has team stat objects
 # along with the division, pod and place
 # Wherever place is displayed/used it would reference the place field, don't use the index for place
@@ -244,7 +244,7 @@ def sortStandings(teamStats):
 	ordered = sorted(ordered, cmp=cmpTeams)
 
 	# first go through the list and assign a place to everybody based on only points
-	# doesn't settle tie breakers yet	
+	# doesn't settle tie breakers yet
 	i = 1
 	standings= []
 	lastDiv = None
@@ -252,7 +252,7 @@ def sortStandings(teamStats):
 	last = None
 	skipped = 0
 	for team in ordered:
-		# reset rank number of its a new division or pod		
+		# reset rank number of its a new division or pod
 		if team.division != lastDiv or team.pod != lastPod:
 			i = 1
 			skipped = 0
@@ -263,10 +263,10 @@ def sortStandings(teamStats):
 			i += 1
 		else:
 			skipped += 1
-			
+
 		rank = i
 		standings.append(Ranking(team.division, team.pod, rank, team))
-		
+
 		lastDiv = team.division
 		lastPod = team.pod
 		last = team
@@ -277,10 +277,10 @@ def sortStandings(teamStats):
 	if pods:
 		divisions = pods
 		is_pods = True
-	
+
 	# use list Comprehensions to find all the tied teams, have to iterate over divisions
-	# to keep 1st in the A from being confused with 1st in the B 
-	for div in divisions:	
+	# to keep 1st in the A from being confused with 1st in the B
+	for div in divisions:
 		if is_pods:
 			div_standings = [x for x in standings if x.team.pod == div]
 		else:
@@ -297,7 +297,7 @@ def sortStandings(teamStats):
 				place += 1
 			elif count == 2: # head to head tie, break based on head-to-head first
 				place += 1
-				a = place_teams[0].team	
+				a = place_teams[0].team
 				b = place_teams[1].team
 				if cmpTeams(a, b) < 0:
 					place_teams[1].place += 1
@@ -310,7 +310,7 @@ def sortStandings(teamStats):
 # 					if flip == b.team_id:
 # 						place_Teams[0] += 1
 					continue
-					
+
 			elif count == 3:
 				#app.logger.debug("working a three-way in %s" % div)
 
@@ -327,20 +327,20 @@ def sortStandings(teamStats):
 					place_teams[0].place += 1
 					place_teams[1].place += 1
 					continue
-				
-				# Check if all the tie breakers are ties 
+
+				# Check if all the tie breakers are ties
 				if place_teams[1:] == place_teams[:-1]:
 					app.logger.debug("three way tie all equal in %s" % div)
 					place += 1
-					continue	
-				
+					continue
+
 				place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
 
 				last = place_teams[-1].team
 				second_last = place_teams[-2].team
 				# don't use head-to-head cmp even though its two because its the 3-way tie braker
-				result = cmpTeamsSort(last, second_last) 
-				
+				result = cmpTeamsSort(last, second_last)
+
 				if result == 0:
 					place_teams[-1].place += 1
 					place_teams[-2].place += 1
@@ -351,7 +351,7 @@ def sortStandings(teamStats):
 			else:
 				app.logger.debug("Greater than three way tie, go home")
 				place += 1
-	
+
 	# resort to make sure in order by place and division
 	tmp=sorted(standings, key=lambda x: x.place)
 	return sorted(tmp, key=lambda x: x.div)
@@ -363,15 +363,15 @@ def addTie(tid_a, tid_b):
 # 	row = cur.fetchone()
 # 	division = row['division']
 # 	pod = row['pod']
-	
+
 	div_a = getDivision(tid_a)
 	div_b = getDivision(tid_b)
-	
+
 	# not quite sure how this would happen, but protecting myself
 	if div_a != div_b:
 		return 0
-	
-	db = getDB()		
+
+	db = getDB()
 	cur = db.execute("SELECT DISTINCT g.pod FROM games g, scores s WHERE g.gid=s.gid AND \
 		((s.white_tid=? AND s.black_tid=?) OR (s.white_tid=? AND s.black_tid=?)) AND g.type='RR' \
 		AND g.tid=s.tid AND g.tid=?", (tid_a, tid_b, tid_b, tid_a, app.config['TID']))
@@ -398,7 +398,7 @@ def addTie(tid_a, tid_b):
 				g.ties.append((tid_b, tid_a))
 			else:
 				g.ties.append((tid_b, tid_a))
-				
+
 	return 0
 
 def getCoinFlip(tid_a, tid_b):
@@ -411,12 +411,12 @@ def getCoinFlip(tid_a, tid_b):
 			(a,b,coin) = split(i,",")
 			a = int(a)
 			b = int(b)
-			if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b): 
+			if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b):
 				#app.logger.debug("returning a coin %s" % coin)
 				return int(coin)
 		else:
 			return -1
-	
+
 
 
 # master function for calculating standings of all teams
@@ -431,9 +431,9 @@ def calcStandings(pod=None):
 	if (pod == None):
 		cur = db.execute('SELECT team_id FROM teams WHERE tid=?',app.config['TID'])
 	else:
-		cur = db.execute('SELECT team_id FROM pods WHERE tid=? AND pod=?',(app.config['TID'], pod)) 
-				
-		
+		cur = db.execute('SELECT team_id FROM pods WHERE tid=? AND pod=?',(app.config['TID'], pod))
+
+
 	team_ids = cur.fetchall()
 
 	for team in team_ids:
@@ -444,12 +444,12 @@ def calcStandings(pod=None):
 
 	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g \
 							WHERE g.gid=s.gid AND g.tid=s.tid  AND s.tid=?', (app.config['TID']))
-	
+
 	games = cur.fetchall()
 
 	for game in games:
 
-	
+
 		black_tid = game['black_tid']
 		white_tid = game['white_tid']
 		score_b = game['score_b']
@@ -458,26 +458,26 @@ def calcStandings(pod=None):
 
 
 		if ( score_b > score_w ):
-			if black_tid in standings: standings[black_tid].wins_t += 1 
-			if white_tid in standings: standings[white_tid].losses_t += 1 		 	
-		elif (score_w > score_b): 
-			if white_tid in standings: standings[white_tid].wins_t +=1 
-			if black_tid in standings: standings[black_tid].losses_t += 1 
+			if black_tid in standings: standings[black_tid].wins_t += 1
+			if white_tid in standings: standings[white_tid].losses_t += 1
+		elif (score_w > score_b):
+			if white_tid in standings: standings[white_tid].wins_t +=1
+			if black_tid in standings: standings[black_tid].losses_t += 1
 		elif (score_w == score_b):
 			if black_tid in standings: standings[black_tid].ties_t += 1
-			if white_tid in standings: standings[white_tid].ties_t += 1 
-		
-		
+			if white_tid in standings: standings[white_tid].ties_t += 1
+
+
 		if game['type'] != "RR":
 			continue
-			
+
 		if pod and game['pod'] != pod:
 			continue
-				
+
 		standings[black_tid].games_played += 1
 		standings[white_tid].games_played += 1
 
-		if (score_b >= 0 and score_w >= 0 ): 
+		if (score_b >= 0 and score_w >= 0 ):
 			standings[black_tid].goals_allowed += score_w
 			standings[white_tid].goals_allowed += score_b
 
@@ -491,29 +491,29 @@ def calcStandings(pod=None):
 		elif (score_w == -1 or forfeit == "w"): #white forfeit
 			standings[white_tid].points -= 2
 			standings[white_tid].losses += 1
-	
+
 			standings[black_tid].wins += 1
 			standings[black_tid].points += 2
-	
+
 		elif ( score_b > score_w ):
 			standings[black_tid].wins += 1
 			standings[white_tid].losses += 1
 
 			standings[black_tid].points += 2
-				
-		elif (score_w > score_b): 
-			standings[white_tid].wins +=1 
-			standings[black_tid].losses += 1 
-	
+
+		elif (score_w > score_b):
+			standings[white_tid].wins +=1
+			standings[black_tid].losses += 1
+
 			standings[white_tid].points += 2
 
 		elif (score_w == score_b):
 			standings[black_tid].ties += 1;
 			standings[white_tid].ties += 1;
-		
+
 			standings[black_tid].points += 1;
 			standings[white_tid].points += 1;
-	
+
 	return sortStandings(standings)
 
 
@@ -522,7 +522,7 @@ def calcStandings(pod=None):
 def getStandings(div=None, pod=None):
 	#if not hasattr(g, 'standings'):
 	#	g.standings = calcStandings()
-	
+
 	# filter for pod and div
 	#if pod:
 	#	standings = [x for x in g.standings if x.pod == pod]
@@ -530,15 +530,15 @@ def getStandings(div=None, pod=None):
 	#	standings = [x for x in g.standings if x.div == div]
 	#else:
 	#	standings = g.standings
-	
+
 	if pod:
 		standings = calcStandings(pod)
 	elif div :
 		standings = calcStandings()
-		standings = [x for x in standings if x.div == div]	
+		standings = [x for x in standings if x.div == div]
 	else:
 		standings = calcStandings()
-		
+
 	return standings
 
 # simple function for converting team ID index to real name
@@ -566,7 +566,7 @@ def endRoundRobin(division=None, pod=None):
 			(division, app.config['TID']))
 	else:
 		cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? POD=? AND tid=?', (division, pod, app.config['TID']))
-		
+
 	row = cur.fetchone()
 
 	rr_games = row['games']
@@ -576,14 +576,14 @@ def endRoundRobin(division=None, pod=None):
 			app.config['TID'])
 	elif (division == None and pod):
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=s.tid AND g.tid=?', \
-			(pod, app.config['TID']))	
+			(pod, app.config['TID']))
 	elif division:
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND g.division=? AND s.tid=?',\
 			(division, app.config['TID']))
 	else:
 		cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" \
 			AND division LIKE ? and pod=? AND g.tid=s.tid AND s.tid=?',(division, pod, app.config['TID']))
-			
+
 
 	row = cur.fetchone()
 	games_played = row['count']
@@ -595,14 +595,14 @@ def endRoundRobin(division=None, pod=None):
 		return True
 	else:
 		return False
-		
+
 def checkForTies(standings):
 	x=0
 	while x < len(standings)-1:
 		if cmpTeams(standings[x].team, standings[x+1].team) == 0:
 			return True
 		x = x+1
-		
+
 	x=0
 	last=0
 	while x < len(standings)-1:
@@ -615,7 +615,7 @@ def checkForTies(standings):
 		else:
 			last = 0
 		x = x+1
-		
+
 	return False
 
 # gets team ID back from seed ranking, returns -1 if seeding isn't final
@@ -624,7 +624,7 @@ def getSeed(seed, division=None, pod=None):
 		standings = getStandings(division, pod)
 		if checkForTies(standings):
 			return -1
-		seed = int(seed) - 1	
+		seed = int(seed) - 1
 		return standings[seed].team.team_id
 	else:
 		return -1
@@ -649,14 +649,14 @@ def getPlacings(div=None):
 
 	rankings = cur.fetchall()
 
-	final = [] 
+	final = []
 	for rank in rankings:
 		entry = {}
 		style=""
 		place = rank['place']
-		game = rank['game']	
+		game = rank['game']
 
-		# Winner of	
+		# Winner of
 		match = re.search( '^W(\d+)$', game)
 		if match:
 			gid = match.group(1)
@@ -684,12 +684,12 @@ def getPlacings(div=None):
 				team = getTeam(team_id)
 				game = team
 
-		#Seeded div/pod notation	
+		#Seeded div/pod notation
 		match = re.search( '^S([\w])(\d+)$', game)
 		if match:
 			group = match.group(1)
 			seed = match.group(2)
-			
+
 			if group in getPods():
 				team_id = getSeed( seed, None, group)
 			elif group in getDivision():
@@ -697,19 +697,19 @@ def getPlacings(div=None):
 			else:
 				team_id = -1
 
-			if ( team_id < 0 ):	
+			if ( team_id < 0 ):
 				game = "Pod " + pod + " seed " + seed
 				style="soft"
 			else:
 				name = getTeam(team_id)
-				game = name 
+				game = name
 		else:
 			app.logger.debug("Failure in getPlacings, no regex match")
 
 
 
 		entry['place']= place
-		entry['name'] = game	
+		entry['name'] = game
 		entry['style'] = style
 
 		final.append(entry)
@@ -734,7 +734,7 @@ def getWinner(game_id):
 		else:
 			return -2
 	else:
-		return -1 
+		return -1
 
 # returns loser team ID of game by ID
 def getLoser(game_id):
@@ -754,14 +754,14 @@ def getLoser(game_id):
 		else:
 			return -2
 	else:
-		return -1 
-	
+		return -1
+
 # Converts short hand notation for game schedule into human readable names
 # Team IDs, seeding games and "winner/loser of" games
 def parseGame(game):
 	style = ""
 	team_id = -1
-	
+
 	# Team notation
 	match = re.search( '^T(\d+)$', game)
 	if match:
@@ -773,7 +773,7 @@ def parseGame(game):
 	if match:
 		pod = match.group(1)
 		pod_id = match.group(2)
-		team_id = getPodID(pod, pod_id)		
+		team_id = getPodID(pod, pod_id)
 
 		if ( team_id < 0):
 			game = "Pod " + pod + " team " + pod_id
@@ -781,7 +781,7 @@ def parseGame(game):
 		else:
 			name = getTeam(team_id)
 			game = name + " ("+pod+pod_id+")"
- 
+
 	# Seed notation - Division or Pod
 	#match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
 	match = re.search( '^S(\d\w|\w)(\d+)$', game )
@@ -789,14 +789,14 @@ def parseGame(game):
 		group = match.group(1)
 		seed = match.group(2)
 		#app.logger.debug("Matching pod or division - %s" % group)
-		
+
 		if group in getPods():
 			team_id = getSeed( seed, None, group)
 		elif group in getDivisions():
 			team_id = getSeed( seed, group, None)
 		else:
 			team_id = -1
-		
+
 		if ( team_id < 0 ):
 			game = "%s Seed %s" % (group, seed)
 			style="soft"
@@ -805,7 +805,7 @@ def parseGame(game):
 			if group:
 				game = "%s (%s-%s)" % (team, group, seed)
 
-	# Winner of	
+	# Winner of
 	match = re.search( '^W(\d+)$', game)
 	if match:
 		gid = match.group(1)
@@ -837,9 +837,9 @@ def parseGame(game):
 	match = re.search('^TBD.*', game)
 	if match:
 		style="soft"
-	
+
 	team_id = int(team_id)
-	
+
 	return (team_id,game,style)
 
 # loops through all games and creates expanded dictionary of games
@@ -852,9 +852,9 @@ def expandGames(games):
 	#		'b':'#81F7F3','g':'#81F781','d':'#FF0000','e':'#F5D0A9','z':'#948A54',\
 	#		'D':'#FF00FF'
 	#	}
-	
+
 	podColors = {}
-	
+
 	for info in games:
 		game = {}
 		game["gid"] = info['gid']
@@ -876,7 +876,7 @@ def expandGames(games):
 			game["pod_color"] = podColors[pod]
 		else:
 			game["pod_color"] = None
-		
+
 
 		cur = db.execute('SELECT score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?', (game['gid'],app.config['TID']))
 		score = cur.fetchone()
@@ -884,7 +884,7 @@ def expandGames(games):
 		game['note_b'] = ""
 		game['note_w'] = ""
 		if score:
-			game['score_b'] = score['score_b']		
+			game['score_b'] = score['score_b']
 			game['score_w'] = score['score_w']
 			if score['forfeit']:
 				game['forfeit'] = score['forfeit']
@@ -895,12 +895,12 @@ def expandGames(games):
 		else:
 			game['score_b'] = "--"
 			game['score_w'] = "--"
-		
+
 		expanded.append(game)
 
-	return expanded 
-	
-# gets full list of games for display	
+	return expanded
+
+# gets full list of games for display
 # returns list of dictionaries for each game
 def getGames(division= None, pod=None, offset=None ):
 	db = getDB()
@@ -919,7 +919,7 @@ def getGames(division= None, pod=None, offset=None ):
 		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
 							WHERE POD like ? AND tid=? ORDER BY day, start_time",\
 			 				(pod, app.config['TID']))
-	
+
 	#if (division == None and pod==None and offset):
 	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
 	#					WHERE tid=? ORDER BY day, start_time LIMIT ?,40",\
@@ -927,8 +927,8 @@ def getGames(division= None, pod=None, offset=None ):
 	#else:
 	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
 	#					WHERE tid=? ORDER BY day, start_time",\
-	#					(app.config['TID']))	
-		
+	#					(app.config['TID']))
+
 	games = expandGames(cur.fetchall())
 
 	return games;
@@ -948,15 +948,15 @@ def getTeamGames(team_id):
 	allGames = expandGames(cur.fetchall())
 
 	games = []
-	for game in allGames: 
-		if game['black_tid'] == team_id or game['white_tid'] == team_id: 
+	for game in allGames:
+		if game['black_tid'] == team_id or game['white_tid'] == team_id:
 		#if (game['black_tid'] == team_id or game['white_tid'] == team_id) or (game['black_tid'] < 0 or game['white_tid'] < 0):
 			if game['black_tid'] == team_id:
 				game['style_b'] = "strong"
 			elif game['white_tid'] == team_id:
 				game['style_w'] = "strong"
 			games.append(game)
-							
+
 	return games;
 
 # returns dictionary of teams indexed by team id
@@ -970,17 +970,17 @@ def getTeams(div=None, pod=None):
 	elif (div == None):
 		cur = db.execute("SELECT t.team_id, t.name FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",\
 			 				(pod, app.config['TID']))
-	
+
 	teams = []
 	for team in cur.fetchall():
 		teams.append({'team_id':team['team_id'],'name':team['name']})
-		
+
 	return teams
 
 # returns list of all pod abbreviations that have teams assigned
 def getPodsActive(div=None):
 	db = getDB()
-	if (div):	
+	if (div):
 		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
 			 AND t.division=? and p.tid=?',(div,app.config['TID']))
 	else:
@@ -994,48 +994,48 @@ def getPodsActive(div=None):
 
 def getPodNamesActive(div=None):
 	pods = getPodsActive(div)
-	
+
 	pod_names = []
 	for pod in pods:
 		name = expandGroupAbbr(pod)
 		pod_names.append({'id':pod,'name':name})
-		
+
 	return pod_names
 
-# returns list of all pod abbreviations  
+# returns list of all pod abbreviations
 def getPods(div=None):
 	db = getDB()
 	if (div):
 		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.division=? AND g.tid=?', (div, app.config['TID']))
 	else:
 		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.tid=?', app.config['TID'])
-	
+
 	pods = []
 	for r in cur.fetchall():
 		pods.append(r['pod'])
 
-	return pods	
+	return pods
 
 # returns list of division abbreviations
 def getDivisions():
 	db = getDB()
 	cur = db.execute("SELECT DISTINCT division FROM games WHERE tid=?", app.config['TID'])
-	
+
 	divisions = []
 	for r in cur.fetchall():
 		divisions.append(r['division'])
 
 	return divisions
-	
+
 # returns dictionary of division abbreviation and full name
 def getDivisionNames():
 	divs = getDivisions()
-	
+
 	div_names = []
 	for div in divs:
 		name = expandGroupAbbr(div)
 		div_names.append({'id':div,'name':name})
-	
+
 	return div_names
 
 # return division as string from team_id
@@ -1053,9 +1053,9 @@ def getDivision(team_id):
 def expandGroupAbbr(group):
 	db = getDB()
 	cur = db.execute('SELECT name FROM groups WHERE group_id=? and tid=?', (group, app.config['TID']))
-	
+
 	row = cur.fetchone()
-	
+
 	if row:
 		return row['name']
 	else:
@@ -1089,33 +1089,33 @@ def getTournamentName():
 def isGroup(group):
 	db = getDB()
 	cur = db.execute("SELECT count(*) FROM games WHERE (pod=? OR division=?) AND tid=?", (group, group, app.config['TID']))
-	
+
 	count = cur.fetchone()[0]
-	
+
 	if count > 0:
 		return True
 	else:
 		return False
-		
+
 def genTieFlashes():
 	if not hasattr(g, 'ties'):
 		return 0
-	
+
 	ties = g.ties
-	
+
 	seen = set()
 	list = [x for x in ties if x not in seen and not seen.add(x)]
-	
+
 	for tie in list:
 		name_a = getTeam(tie[0])
 		name_b = getTeam(tie[1])
 		flash("There is a tie in the standings between %s & %s" % (name_a, name_b))
-		
+
 	return 0
-		
+
 
 # takes in form dictionary from POST and updates/creates score for single game
-def updateGame(form):	
+def updateGame(form):
 	db = getDB()
 	gid = int(form.get('gid'))
 	score_b = int(form.get('score_b'))
@@ -1133,51 +1133,51 @@ def updateGame(form):
 		forfeit = "w"
 	else:
 		forfeit = None
-		
+
 	if not isinstance(score_b, int):
 		return -1
 
 	if not isinstance(score_w, int):
 		return -1
-	
+
 	cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)", \
 		(black_tid,white_tid,score_w,score_b,app.config['TID'],gid, pod, forfeit))
 	db.commit()
-        
+
 	cur = db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?", (score_b,score_w, forfeit, app.config['TID'],gid))
 	db.commit()
-	
+
 	popSeededPods()
 
 	return 1
 
-# Checks if first round of pods is all finished and populates seeded pods if necessary 
+# Checks if first round of pods is all finished and populates seeded pods if necessary
 # NOT DYNAMIC requires hard coding right now
 def popSeededPods():
 	app.logger.debug("popping some pods")
 
 	params = getParams()
 
-	if 'seeded_pods' in params: 
+	if 'seeded_pods' in params:
 		if params['seeded_pods'] == 1:
 			return 0
 	else:
 		return 0
-			
+
 	pods_done =[]
 	for pod in ("R","L","J","W"):
 		pods_done.append(endRoundRobin(None, pod))
 
 	if not all(done == True for done in pods_done):
 		return 0
-	
+
 	ties = []
 	for pod in ("R","L","J","W"):
-			ties.append(checkForTies(getStandings(None,pod)))	
-	
+			ties.append(checkForTies(getStandings(None,pod)))
+
 	if not all(tie == False for tie in ties):
 		return 0
-	
+
  	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
 
 	db = getDB()
@@ -1203,9 +1203,9 @@ def popSeededPods():
 
 	cur = db.execute("UPDATE params SET val=1 WHERE tid=? and field='seeded_pods'" , (app.config['TID'],))
 	db.commit()
-	
+
 	return 1
-	
+
 
 #######################################
 ## Main Routes
@@ -1221,7 +1221,7 @@ def renderMain():
 	pods = getPodsActive()
 	team_list = getTeams()
 	pod_names = getPodNamesActive()
-	
+
 	teams = []
 	if pods:
 		for pod in pods:
@@ -1229,13 +1229,13 @@ def renderMain():
 	else:
 		teams = getStandings()
 
-	titleText="Full "	
-	standings = [] 
+	titleText="Full "
+	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
-		
+
 	genTieFlashes()
-	
+
 	return render_template('show_main.html', tournament=getTournamentName(),\
 		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
 
@@ -1250,9 +1250,9 @@ def renderDivision(division):
 	divisions = getDivisions()
 	team_list = getTeams(division, None)
 	pod_names = getPodNamesActive(division)
-	
+
 	pods = getPodsActive(division)
-	
+
 
 	teams = []
 	if len(pods) > 0:
@@ -1268,7 +1268,7 @@ def renderDivision(division):
 		titleText = div_name
 	else:
 		titleText = "%s Div" % division.upper()
-		
+
 	genTieFlashes()
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
@@ -1292,15 +1292,15 @@ def renderPod(pod):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	
+
 	pod_name = expandGroupAbbr(pod)
 	if pod_name:
 		titleText = pod_name
 	else:
 		titleText = pod.upper() + " Pod"
-		
+
 	genTieFlashes()
-	
+
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
 		games=games, titleText=titleText, pods=pod_names, team_list=team_list)
 
@@ -1308,26 +1308,26 @@ def renderPod(pod):
 @app.route('/team/<team_id>')
 def renderTeam(team_id):
 	divisions = getDivisionNames()
-	
+
 	if not team_id.isdigit():
 		flash("Invalid team ID, must be integer")
 		return redirect(request.url_root)
-		
+
 	team_id = int(team_id)
 
 	titleText = getTeam(team_id)
-	
+
 	if titleText == None:
 		flash("Team ID %s doesn't exist" % team_id)
 		return redirect(request.url_root)
-		
+
 	division = getDivision(team_id)
 	pod_names = getPodNamesActive(division)
 
 
 	teams = []
 	games = getTeamGames(team_id)
-	
+
 
 	pods = getTeamPods(team_id)
 	if len(pods) > 0:
@@ -1335,7 +1335,7 @@ def renderTeam(team_id):
 			teams.append(getStandings(None, pod))
 	else:
 		teams.append(getStandings(division))
-	
+
 	standings = []
 	for div in teams:
 		for team in div:
@@ -1346,7 +1346,7 @@ def renderTeam(team_id):
 	#noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
 	#games determined by win/loss, etc. for the finals). Check schedule throughout tournament for updates."
 	noteText=None
-	
+
 	genTieFlashes()
 
 	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
@@ -1361,18 +1361,18 @@ def renderTV(offset=None):
 	#	teams = getStandings(division)
 	#	placings = getPlacings(division)
 	#else:
-	
+
 	division=None
-	
+
 	games = getGames(division,None,offset)
 	#pods = getPodsInPlay(division)
 	placings = getPlacings(division)
 
-	teams = []		
+	teams = []
 	teams = getStandings()
-	
-	titleText="Full "	
-	standings = [] 
+
+	titleText="Full "
+	standings = []
 	for team in teams:
 		standings.append(team.__dict__)
 
@@ -1414,12 +1414,12 @@ def apiGetStandings(division=None):
 def renderUpdate():
 	if request.method =='GET':
 		if request.args.get('gid'):
-			game = getGame( request.args.get('gid') ) 
+			game = getGame( request.args.get('gid') )
 			if ( game['score_b'] == "--"):
 				game['score_b'] = "0"
 			if ( game['score_w'] == "--"):
 				game['score_w'] = "0"
-				
+
 			if ( game['black_tid'] < 0 or game['white_tid'] < 0):
 				flash('Team(s) not determined yet. Cannot set score')
 				return redirect(request.base_url)
@@ -1437,10 +1437,10 @@ def renderFAQ():
 	divisions = getDivisionNames()
 	team_list = getTeams()
 	pod_names = getPodNamesActive()
-	
+
 	return render_template('faq.html', pods=pod_names, divisions=divisions, team_list=team_list)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
-	
+
 if __name__ == '__main__':
 	app.run(host='0.0.0.0 ')
