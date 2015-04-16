@@ -74,11 +74,41 @@
                             	<div class="well well-sm">
                             		Use this to disable the page if there is an issue. Users will be presented with the
                             		above message until the issue can be resolved.
-								</div>
-
+															</div>
                             </div>
+													</div>
 
+													{% if ties -%}
+													<div class="panel panel-default">
+														<div class="panel-heading">
+																<h3 class="panel-title"><i class="fa fa-bar-bell fa-fw"></i> Coin Flips</h3>
+														</div>
+														<div class="panel-body">
+                            	<h4>Resolve Ties</h4>
+															{% for tie in ties -%}
+																<form name="site-active" action="/admin/update_config" method="POST" class="coin-flip">
+																		<input type="hidden" name="config_id" value="coin_flip"/>
+																		<input type="hidden" name="id_a" value="{{tie.id_a}}"/>
+																		<input type="hidden" name="id_b" value="{{tie.id_b}}"/>
+
+																		<div class="coin-flip">
+																			<span>
+																				<input type="radio" name="winner" value={{ tie.id_a }}>
+																				{{ tie.team_a }}
+																			</span>
+																			vs.
+																			<span>
+																				{{ tie.team_b}}
+																				<input type="radio" name="winner" value={{ tie.id_b }}>
+																			</span>
+																			<button class="btn btn-default" type="submit">Enter</button>
+																		</div><!-- /input-group -->
+																</form>
+															{%- endfor %}
+                            </div>
                         </div>
+												{%- endif %}
+
                     </div>
                     <div class="col-lg-4">
                         <div class="panel panel-default">

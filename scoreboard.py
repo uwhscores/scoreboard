@@ -110,6 +110,24 @@ def getParams():
 		g.params = loadParams()
 	return g.params
 
+# add new value to params list
+def addParam(field, val):
+	db = getDB()
+
+	cur = db.execute('INSERT INTO params VALUES (?,?,?)', (app.config['TID'], field, val))
+	db.commit()
+
+	return 0
+
+def updateParam(field, val):
+	db = getDB()
+	
+	cur = db.execute('UPDATE params SET val=? WHERE field=? and tid=?', (val, field, app.config['TID']))
+	db.commit()
+
+	return 0
+
+
 # simple function for calculating the win/loss ration between two teams
 # returns number of wins team_a has over team_b, negative number if more losses
 def whoWon(team_a, team_b):
@@ -401,6 +419,7 @@ def addTie(tid_a, tid_b):
 
 	return 0
 
+# gets the winning team id for a coin flip, returns -1 if no coin flip yet entered
 def getCoinFlip(tid_a, tid_b):
 	params = getParams()
 	#app.logger.debug("looking for a coin flip between %s and %s " % (tid_a, tid_b))
@@ -417,7 +436,20 @@ def getCoinFlip(tid_a, tid_b):
 		else:
 			return -1
 
+# fuction to add winner of a coin flip
+def addCoinFlip(tid_a, tid_b, winner):
+	db = getDB()
+	val = "%s,%s,%s" % (tid_a, tid_b, winner)
 
+	params = getParams()
+
+	if 'coin_flips' in params:
+		val = "%s;%s" %(params['coin_flips'], val)
+		updateParam("coin_flips", val)
+	else:
+		addParam("coin_flips", val)
+
+	return 0
 
 # master function for calculating standings of all teams
 # shouldn't be called directly, use getStandings() to avoid
@@ -1114,6 +1146,25 @@ def genTieFlashes():
 	flash("A coin flip is required, please see tournament director or head ref")
 	return 0
 
+def getTies():
+	if not hasattr(g, 'ties'):
+		return None
+
+	ties = g.ties
+	seen = set()
+	list = [x for x in ties if x not in seen and not seen.add(x)]
+
+	ties = []
+	for tie in list:
+		id_a = tie[0]
+		id_b = tie[1]
+		team_a = getTeam(id_a)
+		team_b = getTeam(id_b)
+
+		ties.append({'id_a':id_a, 'id_b':id_b,'team_a':team_a,'team_b':team_b})
+
+	return ties
+
 def getTournamentStats():
 	db = getDB()
 	stats = {}
@@ -1248,8 +1299,9 @@ def updateSiteStatus(active, message=None):
 		if message == "":
 			message = "Site disabled temporarily, please check back later."
 
-		cur = db.execute("INSERT OR IGNORE INTO params (tid, field, val) VALUES(?,?,?)", (app.config['TID'], "site_disabled", message))
-		db.commit()
+		#cur = db.execute("INSERT OR IGNORE INTO params (tid, field, val) VALUES(?,?,?)", (app.config['TID'], "site_disabled", message))
+		#db.commit()
+		addParam("site_disabled", message)
 
 	return 0
 
@@ -1278,7 +1330,12 @@ def updateConfig(form):
 			updateSiteStatus(False, message)
 		else:
 			updateSiteStatus(True)
+	elif config_id == "coin_flip":
+		id_a = form.get('id_a')
+		id_b = form.get('id_b')
+		winner = form.get('winner')
 
+		addCoinFlip(id_a, id_b, winner)
 	else:
 		flash("I don't understand that config option, nothing changed")
 
@@ -1509,13 +1566,21 @@ def apiGetStandings(division=None):
 
 	return json.dumps(standings)
 
+#######################################
+## Admin panel functions
+#######################################
 @app.route("/admin")
 def renderAdmin():
+	stats = getTournamentStats()
+	teams = getStandings()
+
+	ties     = getTies()
 
 	stats = getTournamentStats()
 	genTieFlashes()
 
-	return render_template('admin/show_admin.html', tournament=getTournamentName(), stats=stats, disable_message=getDisableMessage())
+	return render_template('admin/show_admin.html', tournament=getTournamentName(), stats=stats, \
+		ties=ties, disable_message=getDisableMessage())
 
 @app.route('/admin/update', methods=['POST','GET'])
 #@basic_auth.required

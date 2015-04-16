@@ -50,12 +50,26 @@ tr.odd {
 	text-align: right;
 }
 
+.coin-flip {
+	line-height:2.4em;
+}
+
+.coin-flip input {
+	margin: 1em;
+}
+.team-name-coin{
+	margin-left: 1em;
+	font-size: 1.25em;
+}
+
+
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
 		display: none;
 	}
-	
+
 	h1 {
 		font-size:24px;
 	}
