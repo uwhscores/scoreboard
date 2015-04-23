@@ -1126,6 +1126,44 @@ def getTournamentName():
 
 	return row['name']
 
+def getTournamentID(short_name):
+	db = getDB()
+
+	cur = db.execute("SELECT tid FROM tournaments WHERE short_name=?", short_name)
+
+	row = cur.fetchone()
+	if row:
+		return row['tid']
+	else:
+		return None
+
+def getTournamentDetails(short_name=None):
+	if short_name:
+		tid = getTournamentID(short_name)
+		if not tid:
+			return None
+	else:
+		tid= app.config['TID']
+
+	db = getDB()
+	cur = db.execute("SELECT name, short_name, start_date, end_date, location FROM tournaments WHERE tid=?", tid)
+
+	row = cur.fetchone()
+	info = {}
+	info['name'] = row['name']
+	info['short_name'] = row['short_name']
+
+	start_date = datetime.strptime(row['start_date'],"%Y-%M-%d")
+	info['start_date'] = start_date
+	end_date = datetime.strptime(row['end_date'],"%Y-%M-%d")
+	info['end_date'] = end_date
+	info['location'] = row['location']
+
+	info['date_string'] = "%s-%s" % (start_date.strftime("%B %d"), end_date.strftime("%d, %Y" ))
+
+	return info
+
+
 def isGroup(group):
 	db = getDB()
 	cur = db.execute("SELECT count(*) FROM games WHERE (pod=? OR division=?) AND tid=?", (group, group, app.config['TID']))
@@ -1382,7 +1420,7 @@ def renderMain():
 
 	genTieFlashes()
 
-	return render_template('show_main.html', tournament=getTournamentName(),\
+	return render_template('show_main.html', tournament=getTournamentDetails(),\
 		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
 
 @app.route('/div/<division>')
@@ -1423,7 +1461,7 @@ def renderDivision(division):
 	genTieFlashes()
 
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
+	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
 		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list)
 
 @app.route('/pod/<pod>')
@@ -1457,7 +1495,7 @@ def renderPod(pod):
 
 	genTieFlashes()
 
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings,\
+	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
 		games=games, titleText=titleText, pods=pod_names, team_list=team_list)
 
 
@@ -1510,7 +1548,7 @@ def renderTeam(team_id):
 
 	genTieFlashes()
 
-	return render_template('show_main.html', tournament=getTournamentName(), standings=standings, games=games,\
+	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings, games=games,\
 		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions)
 
 
@@ -1542,7 +1580,7 @@ def renderTV(offset=None):
 	for team in teams:
 		standings.append(team.__dict__)
 
-	return render_template('show_tv.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText, request=request, placings=placings)
+	return render_template('show_tv.html', standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
 #######################################
 ## APIs
@@ -1593,7 +1631,7 @@ def renderAdmin():
 
 	stats = getTournamentStats()
 
-	return render_template('admin/show_admin.html', tournament=getTournamentName(), stats=stats, \
+	return render_template('admin/show_admin.html', tournament=getTournamentDetails(), stats=stats, \
 		ties=ties, disable_message=getDisableMessage())
 
 @app.route('/admin/update', methods=['POST','GET'])

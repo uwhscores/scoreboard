@@ -1,5 +1,13 @@
-#tournamentTitle {
+.tournament-header {
 	margin-top: 0px;
+}
+
+.tournament-title {
+	margin-top: 0px;
+}
+
+.tournament-info {
+	color: gray;
 }
 
 #dayPager {

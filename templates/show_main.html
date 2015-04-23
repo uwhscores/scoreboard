@@ -6,8 +6,9 @@
 
 {% block main %}
 <div id="page_body" class="container">
-	<div class="page-header" style="margin-top:0px;">
-		<h1 id="tournamentTitle">{{ tournament }}</h1>
+	<div class="page-header tournament-header">
+		<h1 class="tournament-title">{{ tournament.name }}</h1>
+		<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
 	</div>
 	<div class="row">
 	{% if team_list -%}

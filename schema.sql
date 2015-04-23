@@ -9,7 +9,7 @@ CREATE TABLE games(
 );
 
 CREATE TABLE scores(
-	tid INTEGER NOT NULL, gid INTEGER NOT NULL, black_tid INTEGER, white_tid INTEGER, score_b INTEGER, score_w INTEGER, 
+	tid INTEGER NOT NULL, gid INTEGER NOT NULL, black_tid INTEGER, white_tid INTEGER, score_b INTEGER, score_w INTEGER,
 	pod text, forfeit TEXT, PRIMARY KEY (tid,gid)
 );
 
@@ -18,15 +18,15 @@ CREATE TABLE teams(
 );
 
 CREATE TABLE tournaments(
-	tid INTEGER PRIMARY KEY, name TEXT, short_name TEXT
+	tid INTEGER PRIMARY KEY, name TEXT, short_name TEXT, start_date datetime, end_date datetime, location TEXT
 );
 
 CREATE TABLE pods(
-	tid INTEGER, team_id INTEGER, pod Text, pod_id INTEGER
+	tid INTEGER NOT NULL, team_id INTEGER, pod Text, pod_id INTEGER
 );
 
 CREATE TABLE rankings(
-	tid INTEGER NOT NULL, place text NOT NULL, game text, division text, PRIMARY KEY(tid, place)
+	tid INTEGER, place text NOT NULL, game text, division text, PRIMARY KEY(tid, place)
 );
 
 CREATE TABLE params(
@@ -36,3 +36,5 @@ CREATE TABLE params(
 CREATE TABLE groups(
 	tid INTEGER NOT NULL, group_id text NOT NULL, name text NOT NULL, PRIMARY KEY(tid, group_id)
 );
+
+CREATE UNIQUE INDEX unique_name on tournaments(short_name);

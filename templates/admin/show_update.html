@@ -36,8 +36,8 @@ jQuery(document).ready(function($) {
 </script>
 <div id="page-wrapper">
 	<div class="container-fluid">
-		<div class="row">
-			<h1 class="page-header">Update scores for {{ tournament }}</h1>
+		<div class="page-header tournament-header">
+			<h1 class="tournament-title">Update scores for {{ tournament }}</h1>
 		</div>
 		{% with messages = get_flashed_messages() -%}
 			{% if messages %}
