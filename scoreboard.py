@@ -495,7 +495,7 @@ def calcStandings(pod=None):
 			if white_tid in standings: standings[white_tid].wins_t += 1
 		elif forfeit == "w":
 			if black_tid in standings: standings[black_tid].wins_t += 1
-			if white_tid in standings: standings[white_tid].losses_t += 1	
+			if white_tid in standings: standings[white_tid].losses_t += 1
 		elif ( score_b > score_w ):
 			if black_tid in standings: standings[black_tid].wins_t += 1
 			if white_tid in standings: standings[white_tid].losses_t += 1
@@ -1579,13 +1579,19 @@ def apiGetStandings(division=None):
 #######################################
 @app.route("/admin")
 def renderAdmin():
-	stats = getTournamentStats()
-	teams = getStandings()
+	pods = getPodsActive()
+
+	teams = []
+	if pods:
+		for pod in pods:
+			teams += getStandings(None, pod)
+	else:
+		teams = getStandings()
 
 	ties     = getTies()
+	genTieFlashes()
 
 	stats = getTournamentStats()
-	genTieFlashes()
 
 	return render_template('admin/show_admin.html', tournament=getTournamentName(), stats=stats, \
 		ties=ties, disable_message=getDisableMessage())
