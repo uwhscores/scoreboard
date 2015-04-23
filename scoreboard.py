@@ -1435,7 +1435,6 @@ def renderDivision(division):
 		return redirect(request.url_root)
 
 	games = getGames(division)
-	teams = getStandings(division)
 	divisions = getDivisions()
 	team_list = getTeams(division, None)
 	pod_names = getPodNamesActive(division)
@@ -1447,6 +1446,8 @@ def renderDivision(division):
 	if len(pods) > 0:
 		for pod in pods:
 			teams += getStandings(None, pod)
+	else:
+		teams = getStandings(division)
 
 	standings = []
 	for team in teams:
