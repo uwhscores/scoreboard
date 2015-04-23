@@ -84,24 +84,23 @@
 			</tr>
 			</tbody>
 			<thead>
-				<tr> <th colspan=2>Black</td> <th colspan=2>White</td></tr>
+				<tr> <th colspan=2><h4>White</h4></td> <th colspan=2><h4>Black</h4></td></tr>
 			</thead>
 			<tbody>
 				<tr>
-					<td colspan=2>
-						<h4>{{ game.black }}</h4>
-						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_b' />
-						<input type=hidden  name=score_b value='{{ game.score_b }}'>
-						<span id=score_b class=score>{{ game.score_b }}</span>
-						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_b' />
-					</td>
 					<td colspan=2>
 						<h4>{{ game.white }}</h4>
 						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_w' />
 						<input type=hidden  name=score_w value='{{ game.score_w }}'>
 						<span id=score_w class=score>{{ game.score_w }}</span>
 						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_w' />
-
+					</td>
+					<td colspan=2>
+						<h4>{{ game.black }}</h4>
+						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_b' />
+						<input type=hidden  name=score_b value='{{ game.score_b }}'>
+						<span id=score_b class=score>{{ game.score_b }}</span>
+						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_b' />
 					</td>
 				</tr>
 				<tr>
@@ -112,10 +111,10 @@
 						{% set white_check="checked=checked" %}
 					{%- endif %}
 					<td colspan=2>
-						<input id="forfeit_b" type="checkbox" name="forfeit_b" {{ black_check }}> Forfeit Black
+						<input id="forfeit_w" type="checkbox" name="forfeit_w" {{ white_check }}> Forfeit White
 					</td>
 					<td colspan=2>
-						<input id="forfeit_w" type="checkbox" name="forfeit_w" {{ white_check }}> Forfeit White
+						<input id="forfeit_b" type="checkbox" name="forfeit_b" {{ black_check }}> Forfeit Black
 					</td>
 				</tr>
 				<tr>

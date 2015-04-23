@@ -32,6 +32,10 @@ tr.odd {
 	vertical-align: middle;
 }
 
+.border-right {
+	border-right: 1px solid #ddd;
+}
+
 .color-box {
     width: 10px;
     height: 10px;
