@@ -121,7 +121,7 @@ def addParam(field, val):
 
 def updateParam(field, val):
 	db = getDB()
-	
+
 	cur = db.execute('UPDATE params SET val=? WHERE field=? and tid=?', (val, field, app.config['TID']))
 	db.commit()
 
@@ -322,11 +322,11 @@ def sortStandings(teamStats):
 				elif cmpTeams(a, b) > 0:
 					place_teams[0].place += 1
 				else:
-# 					flip = getCoinFlip(a.team_id, b.team_id)
-# 					if flip == a.team_id:
-# 						place_teams[1] += 1
-# 					if flip == b.team_id:
-# 						place_Teams[0] += 1
+ 					#flip = getCoinFlip(a.team_id, b.team_id)
+ 					#if flip == a.team_id:
+ 					#	place_teams[1] += 1
+ 					#if flip == b.team_id:
+ 					#	place_Teams[0] += 1
 					continue
 
 			elif count == 3:
@@ -369,6 +369,7 @@ def sortStandings(teamStats):
 			else:
 				app.logger.debug("Greater than three way tie, go home")
 				place += 1
+
 
 	# resort to make sure in order by place and division
 	tmp=sorted(standings, key=lambda x: x.place)
@@ -489,7 +490,13 @@ def calcStandings(pod=None):
 		forfeit = game['forfeit']
 
 
-		if ( score_b > score_w ):
+		if forfeit == "b":
+			if black_tid in standings: standings[black_tid].losses_t += 1
+			if white_tid in standings: standings[white_tid].wins_t += 1
+		elif forfeit == "w":
+			if black_tid in standings: standings[black_tid].wins_t += 1
+			if white_tid in standings: standings[white_tid].losses_t += 1	
+		elif ( score_b > score_w ):
 			if black_tid in standings: standings[black_tid].wins_t += 1
 			if white_tid in standings: standings[white_tid].losses_t += 1
 		elif (score_w > score_b):
@@ -512,6 +519,7 @@ def calcStandings(pod=None):
 		if (score_b >= 0 and score_w >= 0 ):
 			standings[black_tid].goals_allowed += score_w
 			standings[white_tid].goals_allowed += score_b
+
 
 		if (score_b == -1 or forfeit == "b"): #black forfeit
 			standings[black_tid].points -= 2
