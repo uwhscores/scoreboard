@@ -1154,9 +1154,9 @@ def getTournamentDetails(short_name=None):
 	info['name'] = row['name']
 	info['short_name'] = row['short_name']
 
-	start_date = datetime.strptime(row['start_date'],"%Y-%M-%d")
+	start_date = datetime.strptime(row['start_date'],"%Y-%m-%d")
 	info['start_date'] = start_date
-	end_date = datetime.strptime(row['end_date'],"%Y-%M-%d")
+	end_date = datetime.strptime(row['end_date'],"%Y-%m-%d")
 	info['end_date'] = end_date
 	info['location'] = row['location']
 
