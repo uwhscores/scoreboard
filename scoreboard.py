@@ -1584,6 +1584,30 @@ def renderTV(offset=None):
 
 	return render_template('show_tv.html', standings=standings, games=games, titleText=titleText, request=request, placings=placings)
 
+@app.route('/print')
+@app.route('/print/<offset>')
+def renderPrint(offset=None):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+
+	division=None
+
+	games = getGames(division,None,offset)
+	#pods = getPodsInPlay(division)
+	#placings = getPlacings(division)
+
+	#teams = []
+	#teams = getStandings()
+
+	titleText="Full "
+	#standings = []
+	#for team in teams:
+	#	standings.append(team.__dict__)
+
+	return render_template('show_print.html', games=games, titleText=titleText)
+
 #######################################
 ## APIs
 #######################################
