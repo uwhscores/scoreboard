@@ -23,7 +23,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='5'
+	TID='6'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -1063,7 +1063,8 @@ def getDivisions():
 
 	divisions = []
 	for r in cur.fetchall():
-		divisions.append(r['division'])
+		if r['division'] != "":
+			divisions.append(r['division'])
 
 	return divisions
 
@@ -1435,7 +1436,7 @@ def renderDivision(division):
 		return redirect(request.url_root)
 
 	games = getGames(division)
-	divisions = getDivisions()
+	divisions = getDivisionNames()
 	team_list = getTeams(division, None)
 	pod_names = getPodNamesActive(division)
 
@@ -1460,7 +1461,7 @@ def renderDivision(division):
 		titleText = "%s Div" % division.upper()
 
 	genTieFlashes()
-
+	
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
 		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list)
