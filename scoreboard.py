@@ -709,7 +709,7 @@ def getPlacings(div=None):
 				game = "Winner of " + gid
 				style="soft"
 			elif (team_id == -2):
-				game = "TIE IN BRACKET!!"
+				game = "TIE IN GAME %s!!" % gid
 			else:
 				team = getTeam(team_id)
 				game = team
@@ -723,7 +723,7 @@ def getPlacings(div=None):
 				game = "Loser of " + gid
 				style="soft"
 			elif (team_id == -2):
-				game = "TIE IN BRACKET!!"
+				game = "TIE IN GAME %s!!" % gid
 			else:
 				team = getTeam(team_id)
 				game = team
@@ -858,7 +858,7 @@ def parseGame(game):
 			game = "Winner of " + gid
 			style="soft"
 		elif (team_id == -2):
-			game = "TIE IN BRACKET!!"
+			game = "TIE IN GAME %s!!" % gid
 		else:
 			team = getTeam(team_id)
 			game = team + " (W" + gid + ")"
@@ -872,7 +872,7 @@ def parseGame(game):
 			game = "Loser of " + gid
 			style="soft"
 		elif (team_id == -2):
-			game = "TIE IN BRACKET!!"
+			game = "TIE IN GAME %s!!" % gid
 		else:
 			team = getTeam(team_id)
 			game = team + " (L" + gid + ")"
