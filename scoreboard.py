@@ -906,6 +906,7 @@ def expandGames(games):
 		start_time = info['start_time']
 		game["start_time"] = datetime.strptime(start_time, '%H:%M').strftime('%I:%M %p')
 		game["pool"] = info['pool']
+		game["type"] = info['type']
 		if hasattr(info,'pod'):
 			game["pod"] = info['pod']
 			game["pod_color"] = podColors[info['pod']]
@@ -949,20 +950,30 @@ def expandGames(games):
 def getGames(division= None, pod=None, offset=None ):
 	db = getDB()
 	if (offset != None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
 						WHERE tid=? ORDER BY day, start_time LIMIT ?,45",\
 						(app.config['TID'], offset))
+	# whole schedule
 	elif (division == None and pod == None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
 							WHERE tid=? ORDER BY day, start_time",app.config['TID'])
+	# division schedule
 	elif (pod == None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
-							WHERE division LIKE ? AND tid=? ORDER BY day, start_time", \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+							WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY day, start_time", \
 							(division, app.config['TID']))
+	# pod schedule
 	elif (division == None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
-							WHERE POD like ? AND tid=? ORDER BY day, start_time",\
-			 				(pod, app.config['TID']))
+		# trickery to see if it is a division pod and get crossover games or not
+		if pod in getDivisions():
+			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+								WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",\
+								(pod, app.config['TID']))
+		else:
+			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+								WHERE pod like ? AND tid=? ORDER BY day, start_time",\
+								(pod, app.config['TID']))	 				
+		
 
 	#if (division == None and pod==None and offset):
 	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
@@ -980,7 +991,7 @@ def getGames(division= None, pod=None, offset=None ):
 # gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
 	return game[0];
@@ -988,7 +999,7 @@ def getGame(gid):
 def getTeamGames(team_id):
 	db = getDB()
 
-	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white FROM games WHERE tid=? ORDER BY day, start_time',(app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type FROM games WHERE tid=? ORDER BY day, start_time',(app.config['TID']))
 	allGames = expandGames(cur.fetchall())
 
 	games = []
@@ -1026,9 +1037,9 @@ def getPodsActive(div=None):
 	db = getDB()
 	if (div):
 		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
-			 AND t.division=? and p.tid=? ORDER BY p.pod',(div,app.config['TID']))
+			 AND t.division=? and p.tid=? ORDER BY p.pod + 0 ASC',(div,app.config['TID']))
 	else:
-		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? ORDER BY p.pod',(app.config['TID']))
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? ORDER BY p.pod + 0 ASC',(app.config['TID']))
 
 	pods = []
 	for r in cur.fetchall():
@@ -1657,6 +1668,8 @@ def renderPrintPods(pod=None):
 	else:
 		pod_names = getPods()
 		for pod in pod_names:
+			if pod == "":
+				continue
 			single = {}
 			single['pod'] = pod
 			single['name'] = expandGroupAbbr(pod)
