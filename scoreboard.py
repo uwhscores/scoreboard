@@ -1026,9 +1026,9 @@ def getPodsActive(div=None):
 	db = getDB()
 	if (div):
 		cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
-			 AND t.division=? and p.tid=?',(div,app.config['TID']))
+			 AND t.division=? and p.tid=? ORDER BY p.pod',(div,app.config['TID']))
 	else:
-		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=?',(app.config['TID']))
+		cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? ORDER BY p.pod',(app.config['TID']))
 
 	pods = []
 	for r in cur.fetchall():
@@ -1050,9 +1050,9 @@ def getPodNamesActive(div=None):
 def getPods(div=None):
 	db = getDB()
 	if (div):
-		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.division=? AND g.tid=?', (div, app.config['TID']))
+		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.division=? AND g.tid=? ORDER BY g.pod + 0 ASC', (div, app.config['TID']))
 	else:
-		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.tid=?', app.config['TID'])
+		cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.tid=? ORDER BY g.pod + 0 ASC', app.config['TID'])
 
 	pods = []
 	for r in cur.fetchall():
@@ -1638,6 +1638,34 @@ def renderPrint(offset=None):
 	#	standings.append(team.__dict__)
 
 	return render_template('show_print.html', games=games, titleText=titleText)
+	
+@app.route('/print/pod')
+@app.route('/print/pod/<pod>')
+def renderPrintPods(pod=None):
+
+	message = getDisableMessage()
+	if message:
+		return render_template('site_down.html', message=message)
+	
+	pods_games = []
+	if pod:
+		single = {}
+		single['pod'] = pod
+		single['name'] = expandGroupAbbr(pod)
+		single['games'] = getGames(None,pod)
+		pods_games.append(single)
+	else:
+		pod_names = getPods()
+		for pod in pod_names:
+			single = {}
+			single['pod'] = pod
+			single['name'] = expandGroupAbbr(pod)
+			single['games'] = getGames(None,pod)
+			pods_games.append(single)
+	
+	titleText="Pods "
+
+	return render_template('show_print_pods.html', pods_games=pods_games, titleText=titleText)
 
 #######################################
 ## APIs
