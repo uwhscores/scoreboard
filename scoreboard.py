@@ -391,32 +391,36 @@ def addTie(tid_a, tid_b):
 		return 0
 
 	db = getDB()
-	cur = db.execute("SELECT DISTINCT g.pod FROM games g, scores s WHERE g.gid=s.gid AND \
-		((s.white_tid=? AND s.black_tid=?) OR (s.white_tid=? AND s.black_tid=?)) AND g.type='RR' \
-		AND g.tid=s.tid AND g.tid=?", (tid_a, tid_b, tid_b, tid_a, app.config['TID']))
+	#cur = db.execute("SELECT DISTINCT g.pod FROM games g, scores s WHERE g.gid=s.gid AND \
+	#	((s.white_tid=? AND s.black_tid=?) OR (s.white_tid=? AND s.black_tid=?)) AND g.type='RR' \
+	#	AND g.tid=s.tid AND g.tid=?", (tid_a, tid_b, tid_b, tid_a, app.config['TID']))
+	
+	cur = db.execute("SELECT DISTINCT p.pod FROM pods p WHERE (team_id=? OR team_id=?) AND tid=?", (tid_a, tid_b, app.config['TID']))
 	rows = cur.fetchall()
+
 	if len(rows) > 0:
-		pod = rows[0]['pod']
+		for row in rows:
+			pod = row['pod']
+			if not endRoundRobin(None, pod):
+				return 1
 	else:
 		pod = None
+		# code to add divisional check goes here
 
-	if pod:
-		div_a = None
-
-	if endRoundRobin(div_a,pod):
-		#flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
-		if tid_a < tid_b:
-			if not hasattr(g, 'ties'):
-				g.ties = []
-				g.ties.append((tid_a, tid_b))
-			else:
-				g.ties.append((tid_a, tid_b))
+	#flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
+	
+	if tid_a < tid_b:
+		if not hasattr(g, 'ties'):
+			g.ties = []
+			g.ties.append((tid_a, tid_b))
 		else:
-			if not hasattr(g, 'ties'):
-				g.ties = []
-				g.ties.append((tid_b, tid_a))
-			else:
-				g.ties.append((tid_b, tid_a))
+			g.ties.append((tid_a, tid_b))
+	else:
+		if not hasattr(g, 'ties'):
+			g.ties = []
+			g.ties.append((tid_b, tid_a))
+		else:
+			g.ties.append((tid_b, tid_a))
 
 	return 0
 
@@ -456,7 +460,7 @@ def addCoinFlip(tid_a, tid_b, winner):
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
 def calcStandings(pod=None):
-	#app.logger.debug("calculating standings")
+	app.logger.debug("calculating standings, pod = %s" , (pod,))
 
 	standings = {}
 
@@ -1292,42 +1296,69 @@ def popSeededPods():
 			return 0
 	else:
 		return 0
+		
+	round1 = ("7P","1P","2P","3P","4P","5P")
 
 	pods_done =[]
-	for pod in ("R","L","J","W"):
+	for pod in round1:
 		pods_done.append(endRoundRobin(None, pod))
 
 	if not all(done == True for done in pods_done):
 		return 0
 
 	ties = []
-	for pod in ("R","L","J","W"):
+	for pod in round1:
 			ties.append(checkForTies(getStandings(None,pod)))
 
 	if not all(tie == False for tie in ties):
 		return 0
 
  	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
-
+	
 	db = getDB()
 
-	seededPods = ['1s','2s','3s','4s']
+	seededPods = ['A','B','C']
 	pod_id = 1
+	seeding = {}
+# 	seeding['7P'] = {'1':'A','2':'A','3':'A'}
+# 	seeding['1P'] = {'1':'A','2':'A','3':'A','4':'B'}
+# 	seeding['2P'] = {'1':'A','2':'A','3':'B','4':'B'}
+# 	seeding['3P'] = {'1':'B','2':'B','3':'C','4':'C'}
+# 	seeding['4P'] = {'1':'B','2':'B','3':'C','4':'C'}
+# 	seeding['5P'] = {'1':'B','2':'C','3':'C','4':'C'}
+	seeding['7P'] = ['A','A','A']
+	seeding['1P'] = ['A','A','A','B']
+	seeding['2P'] = ['A','A','B','B']
+	seeding['3P'] = ['B','B','C','C']
+	seeding['4P'] = ['B','B','C','C']
+	seeding['5P'] = ['B','C','C','C']
 
-	# green, blue, orange, yellow
-	for pod in ("W","J","L","R"):
+
+	for pod in round1:
 		podStandings = getStandings(None,pod)
 
-		pod_offset=0
+# 		pod_offset=0
+# 		for rank in podStandings:
+# 			team = rank.team
+# 			team_id = team.team_id
+# 			pod = seededPods[pod_offset]
+# 			cur = db.execute("INSERT INTO pods (tid, team_id, pod, pod_id) VALUES (?,?,?,?)",(app.config['TID'], team_id, pod, pod_id))
+# 			db.commit()
+# 			pod_offset +=1
+# 
+# 		pod_id +=1
+	
+		rules = seeding[pod]
+		offset = 0
 		for rank in podStandings:
 			team = rank.team
 			team_id = team.team_id
-			pod = seededPods[pod_offset]
-			cur = db.execute("INSERT INTO pods (tid, team_id, pod, pod_id) VALUES (?,?,?,?)",(app.config['TID'], team_id, pod, pod_id))
-			db.commit()
-			pod_offset +=1
-
-		pod_id +=1
+			pod = rules[offset]
+			cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)",(app.config['TID'], team_id, pod))
+ 			db.commit()
+ 			cur = db.execute("UPDATE teams SET division=? WHERE team_id=? and tid=?",(pod, team_id, app.config['TID']))
+ 			db.commit()
+ 			offset +=1
 
 
 	cur = db.execute("UPDATE params SET val=1 WHERE tid=? and field='seeded_pods'" , (app.config['TID'],))
@@ -1394,7 +1425,7 @@ def updateConfig(form):
 
 @app.route('/')
 def renderMain():
-
+	
 	message = getDisableMessage()
 	if message:
 		return render_template('site_down.html', message=message)
@@ -1420,7 +1451,7 @@ def renderMain():
 		standings.append(team.__dict__)
 
 	genTieFlashes()
-
+	
 	return render_template('show_main.html', tournament=getTournamentDetails(),\
 		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
 

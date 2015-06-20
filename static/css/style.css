@@ -86,3 +86,9 @@ tr.odd {
 		font-size:24px;
 	}
 }
+
+@media print {
+	body{
+		font-size: 8px;
+	}
+}
