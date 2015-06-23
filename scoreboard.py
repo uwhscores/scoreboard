@@ -1646,13 +1646,23 @@ def renderPrint(offset=None):
 
 	#teams = []
 	#teams = getStandings()
+	
+	days_games = []
+	days = {} 
+	days['Fri'] = []
+	days['Sat'] = []
+	days['Sun'] = []
+	for game in games:
+		days[game['day']].append( game )
+		
+	days_games.append({'name':'Friday', 'games':days['Fri']})
+	days_games.append({'name':'Saturday', 'games':days['Sat']})
+	days_games.append({'name':'Sunday', 'games':days['Sun']})
 
-	titleText="Full "
-	#standings = []
-	#for team in teams:
-	#	standings.append(team.__dict__)
 
-	return render_template('show_print.html', games=games, titleText=titleText)
+	titleText="Day "
+
+	return render_template('show_print_groups.html', group_games=days_games, titleText=titleText)
 	
 @app.route('/print/pod')
 @app.route('/print/pod/<pod>')
@@ -1675,14 +1685,13 @@ def renderPrintPods(pod=None):
 			if pod == "":
 				continue
 			single = {}
-			single['pod'] = pod
 			single['name'] = expandGroupAbbr(pod)
 			single['games'] = getGames(None,pod)
 			pods_games.append(single)
 	
 	titleText="Pods "
 
-	return render_template('show_print_pods.html', pods_games=pods_games, titleText=titleText)
+	return render_template('show_print_groups.html', group_games=pods_games, titleText=titleText)
 
 #######################################
 ## APIs

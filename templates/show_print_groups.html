@@ -6,10 +6,10 @@
 
 {% block games %}
 
-{% for pod in pods_games -%}
+{% for group in group_games -%}
 <div class=row>
 	<div id="schedule" class="col-md-8">
-		<h1>Schedule for {{ pod.name }}</h1>
+		<h1>Schedule for {{ group.name }}</h1>
 		<table id=games class="table table-striped">
 			<thead>
 				<tr>
@@ -22,7 +22,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for game in pod.games %}
+			{% for game in group.games %}
 				<tr>
 					<td>{{ game.gid }}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
