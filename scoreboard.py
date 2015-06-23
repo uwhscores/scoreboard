@@ -117,6 +117,7 @@ def addParam(field, val):
 	cur = db.execute('INSERT INTO params VALUES (?,?,?)', (app.config['TID'], field, val))
 	db.commit()
 
+	g.params = loadParams()
 	return 0
 
 def updateParam(field, val):
@@ -125,6 +126,7 @@ def updateParam(field, val):
 	cur = db.execute('UPDATE params SET val=? WHERE field=? and tid=?', (val, field, app.config['TID']))
 	db.commit()
 
+	g.params = loadParams()
 	return 0
 
 
@@ -453,6 +455,8 @@ def addCoinFlip(tid_a, tid_b, winner):
 		updateParam("coin_flips", val)
 	else:
 		addParam("coin_flips", val)
+
+	popSeededPods()
 
 	return 0
 
