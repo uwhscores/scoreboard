@@ -31,6 +31,12 @@
 	</div>
 	{%- endif %}
 	<div class="col-md-8">
+	{% if site_message -%}
+			<div class="alert alert-info" role="alert">
+				<strong>Announcement:</strong>
+				<p>{{ site_message }}</p>
+			</div>	
+	{%- endif %}
 	{% with messages = get_flashed_messages() -%}
 		{% if messages %}
 			<div class="alert alert-danger alert-dismissible" role="alert">

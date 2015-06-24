@@ -109,6 +109,14 @@ def getParams():
 	if not hasattr(g, 'params'):
 		g.params = loadParams()
 	return g.params
+	
+def getParam(param):
+	params = getParams()
+	
+	if param in params:
+		return params[param]
+	else:
+		return None
 
 # add new value to params list
 def addParam(field, val):
@@ -128,6 +136,15 @@ def updateParam(field, val):
 
 	g.params = loadParams()
 	return 0
+	
+def clearParam(field):
+	db = getDB()
+
+	cur = db.execute("DELETE FROM params where field=? AND tid=?", (field, app.config['TID']))
+	db.commit()
+	
+	g.params = loadParams()
+	return 0 
 
 
 # simple function for calculating the win/loss ration between two teams
@@ -996,7 +1013,7 @@ def getGames(division= None, pod=None, offset=None ):
 # gets single game by ID, returns single dictionary
 def getGame(gid):
 	db = getDB()
-	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type, description FROM games WHERE gid=? AND tid=? ',(gid, app.config['TID']))
 	game = expandGames(cur.fetchall())
 
 	return game[0];
@@ -1004,7 +1021,7 @@ def getGame(gid):
 def getTeamGames(team_id):
 	db = getDB()
 
-	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type FROM games WHERE tid=? ORDER BY day, start_time',(app.config['TID']))
+	cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, pod, type, description FROM games WHERE tid=? ORDER BY day, start_time',(app.config['TID']))
 	allGames = expandGames(cur.fetchall())
 
 	games = []
@@ -1383,18 +1400,13 @@ def popSeededPods():
 	return 1
 
 def updateSiteStatus(active, message=None):
-	db = getDB()
-
 	# delete first incase message is being updated
-	cur = db.execute("DELETE FROM params where field='site_disabled' AND tid=?", app.config['TID'])
-	db.commit()
+	clearParam("site_disabled")
 
 	if not active:
 		if message == "":
 			message = "Site disabled temporarily, please check back later."
 
-		#cur = db.execute("INSERT OR IGNORE INTO params (tid, field, val) VALUES(?,?,?)", (app.config['TID'], "site_disabled", message))
-		#db.commit()
 		addParam("site_disabled", message)
 
 	return 0
@@ -1409,6 +1421,17 @@ def getDisableMessage():
 		return row['val']
 	else:
 		return False
+		
+def updateSiteMessage(message):
+	db = getDB()
+	
+	if message:
+		clearParam("site_message")
+		addParam("site_message", message)
+	else:
+		clearParam("site_message")
+		
+	return 0 
 
 
 def updateConfig(form):
@@ -1430,6 +1453,13 @@ def updateConfig(form):
 		winner = form.get('winner')
 
 		addCoinFlip(id_a, id_b, winner)
+	elif config_id == "site_message":
+		switch = form.get('active_toggle')
+		message = form.get('message')
+		if (switch == "on"):
+			updateSiteMessage(message)
+		else:
+			updateSiteMessage(None)
 	else:
 		flash("I don't understand that config option, nothing changed")
 
@@ -1469,7 +1499,8 @@ def renderMain():
 	genTieFlashes()
 	
 	return render_template('show_main.html', tournament=getTournamentDetails(),\
-		standings=standings, games=games, pods=pod_names, titleText=titleText, placings=placings, divisions=divisions, team_list=team_list)
+		standings=standings, games=games, pods=pod_names, titleText=titleText, \
+		placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
 @app.route('/div/<division>')
 def renderDivision(division):
@@ -1511,7 +1542,7 @@ def renderDivision(division):
 	
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
-		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list)
+		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
 @app.route('/pod/<pod>')
 def renderPod(pod):
@@ -1545,7 +1576,7 @@ def renderPod(pod):
 	genTieFlashes()
 
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
-		games=games, titleText=titleText, pods=pod_names, team_list=team_list)
+		games=games, titleText=titleText, pods=pod_names, team_list=team_list, site_message=getParam('site_message'))
 
 
 @app.route('/team/<team_id>')
@@ -1598,7 +1629,7 @@ def renderTeam(team_id):
 	genTieFlashes()
 
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings, games=games,\
-		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions)
+		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions, site_message=getParam('site_message'))
 
 
 @app.route('/tv')
@@ -1744,7 +1775,7 @@ def renderAdmin():
 	stats = getTournamentStats()
 
 	return render_template('admin/show_admin.html', tournament=getTournamentDetails(), stats=stats, \
-		ties=ties, disable_message=getDisableMessage())
+		ties=ties, disable_message=getDisableMessage(), site_message=getParam('site_message'))
 
 @app.route('/admin/update', methods=['POST','GET'])
 #@basic_auth.required

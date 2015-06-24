@@ -44,8 +44,42 @@
 			<div class="col-lg-8">
 				<div class="panel panel-default">
 					<div class="panel-heading">
-						<h3 class="panel-title"><i class="fa fa-bar-wrench fa-fw"></i> Configs</h3>
+						<h3 class="panel-title"><i class="fa fa-fw fa-wrench"></i> Configs</h3>
 					</div>
+					
+					<div class="panel-body">
+						<h4>Message Banner</h4>
+						{% if site_message -%}
+						<div class="alert alert-info" role="alert">
+							<p>{{ site_message }}</p>
+						</div>
+						{%- endif %}
+						<form name="site_message" action="/admin/update_config" method="POST">
+						<div class="input-group">
+							<input type="hidden" name="config_id" value="site_message"/>
+							{% if site_message -%}
+							<span class="input-group-addon">
+							<input type="checkbox" aria-label="enabled" checked=checked name="active_toggle">
+							</span>
+							<input type="text" class="form-control" aria-label="site message" name="message" value="{{ site_message }}">
+							{% else %}
+							<span class="input-group-addon">
+							<input type="checkbox" aria-label="disabled" name="active_toggle">
+							</span>
+							<input type="text" class="form-control" aria-label="..." name="message">
+							{%- endif %}
+							<span class="input-group-btn">
+							<button class="btn btn-default" type="submit">Update</button>
+							</span>
+						</div><!-- /input-group -->
+						</form>
+						<div class="well well-sm">
+							Use this to display an announcement at the top of the pages for the users. Such as "Beer will be
+							served at 7!"
+						</div>
+					</div>
+					
+					
 					<div class="panel-body">
 						<h4>Disable Webpage</h4>
 						{% if disable_message -%}
@@ -72,17 +106,17 @@
 							</span>
 						</div><!-- /input-group -->
 						</form>
-					<div class="well well-sm">
-						Use this to disable the page if there is an issue. Users will be presented with the
-						above message until the issue can be resolved.
+						<div class="well well-sm">
+							Use this to disable the page if there is an issue. Users will be presented with the
+							above message until the issue can be resolved.
+						</div>
 					</div>
 				</div>
-			</div>
 
 			{% if ties -%}
 			<div class="panel panel-default">
 				<div class="panel-heading">
-					<h3 class="panel-title"><i class="fa fa-bar-bell fa-fw"></i> Coin Flips</h3>
+					<h3 class="panel-title"><i class="fa fa-fw fa-random"></i> Coin Flips</h3>
 				</div>
 				<div class="panel-body">
 					<h4>Resolve Ties</h4>
