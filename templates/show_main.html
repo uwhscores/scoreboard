@@ -91,7 +91,10 @@
 								{% elif game.pod %}
 									Pod: {{ game.pod }}
 								{% elif game.type == "CO" %}
-									<span style="background-color:#ccc; padding:0.2em">Cross Over</span>
+									</br><span style="background-color:#ccc; padding:0.2em">Cross Over</span>
+								{% endif %}
+								{% if game.description -%}
+									</br><span style="background-color:#ccc; padding:0.2em">{{ game.description }}</span>
 								{% endif %}
 								</td>
 								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>

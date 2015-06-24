@@ -5,7 +5,7 @@ drop table if exists tournaments;
 
 
 CREATE TABLE games(
-	tid INTEGER NOT NULL, gid INTEGER NOT NULL, day text, start_time datetime, pool text, black text, white text, type text, division text, pod text, PRIMARY KEY (tid, gid)
+	tid INTEGER NOT NULL, gid INTEGER NOT NULL, day text, start_time datetime, pool text, black text, white text, type text, division text, pod text, description text, PRIMARY KEY (tid, gid)
 );
 
 CREATE TABLE scores(

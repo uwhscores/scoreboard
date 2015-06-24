@@ -911,6 +911,7 @@ def expandGames(games):
 		game["start_time"] = datetime.strptime(start_time, '%H:%M').strftime('%I:%M %p')
 		game["pool"] = info['pool']
 		game["type"] = info['type']
+		game["description"] = info['description']
 		if hasattr(info,'pod'):
 			game["pod"] = info['pod']
 			game["pod_color"] = podColors[info['pod']]
@@ -954,27 +955,27 @@ def expandGames(games):
 def getGames(division= None, pod=None, offset=None ):
 	db = getDB()
 	if (offset != None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 						WHERE tid=? ORDER BY day, start_time LIMIT ?,45",\
 						(app.config['TID'], offset))
 	# whole schedule
 	elif (division == None and pod == None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 							WHERE tid=? ORDER BY day, start_time",app.config['TID'])
 	# division schedule
 	elif (pod == None):
-		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+		cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 							WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY day, start_time", \
 							(division, app.config['TID']))
 	# pod schedule
 	elif (division == None):
 		# trickery to see if it is a division pod and get crossover games or not
 		if pod in getDivisions():
-			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 								WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",\
 								(pod, app.config['TID']))
 		else:
-			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type FROM games \
+			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 								WHERE pod like ? AND tid=? ORDER BY day, start_time",\
 								(pod, app.config['TID']))	 				
 		
