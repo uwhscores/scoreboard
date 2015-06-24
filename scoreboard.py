@@ -1663,7 +1663,7 @@ def renderPrint(offset=None):
 
 	titleText="Day "
 
-	return render_template('show_print_groups.html', group_games=days_games, titleText=titleText)
+	return render_template('show_print_groups.html', group_games=days_games, titleText=titleText, tournament=getTournamentDetails())
 	
 @app.route('/print/pod')
 @app.route('/print/pod/<pod>')
@@ -1692,7 +1692,7 @@ def renderPrintPods(pod=None):
 	
 	titleText="Pods "
 
-	return render_template('show_print_groups.html', group_games=pods_games, titleText=titleText)
+	return render_template('show_print_groups.html', group_games=pods_games, titleText=titleText, tournament=getTournamentDetails())
 
 #######################################
 ## APIs
