@@ -6,9 +6,21 @@
 
 {% block main %}
 <div id="page_body" class="container">
-	<div class="page-header tournament-header">
-		<h1 class="tournament-title">{{ tournament.name }}</h1>
-		<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
+	<div class="row">
+		<div class="col-md-6">
+			<div class="page-header tournament-header">
+				<h1 class="tournament-title">{{ tournament.name }}</h1>
+				<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
+			</div>
+		</div>
+		{% if site_message -%}
+		<div class="col-md-6">
+			<div class="alert alert-info" role="alert">
+				<strong>Announcement:</strong>
+				<p>{{ site_message }}</p>
+			</div>	
+		</div>
+		{%- endif %}
 	</div>
 	<div class="row">
 	{% if team_list -%}
@@ -31,12 +43,6 @@
 	</div>
 	{%- endif %}
 	<div class="col-md-8">
-	{% if site_message -%}
-			<div class="alert alert-info" role="alert">
-				<strong>Announcement:</strong>
-				<p>{{ site_message }}</p>
-			</div>	
-	{%- endif %}
 	{% with messages = get_flashed_messages() -%}
 		{% if messages %}
 			<div class="alert alert-danger alert-dismissible" role="alert">
