@@ -156,10 +156,22 @@ def whoWon(team_a, team_b):
 	tid_a = team_a.team_id
 	tid_b = team_b.team_id
 
-	cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
-				WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
-				OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.tid=?', \
-				(tid_a, tid_b, tid_b, tid_a, app.config['TID']) )
+
+	if team_a.pod != team_b.pod:
+		app.logger.debug("Comparing two teams that aren't in the same pod, that's ok")
+		
+	pod = team_a.pod
+	
+	if pod:
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
+						WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
+						OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.pod=? AND g.tid=?', \
+						(tid_a, tid_b, tid_b, tid_a, pod, app.config['TID']) )	
+	else:
+		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
+						WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
+						OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.tid=?', \
+						(tid_a, tid_b, tid_b, tid_a, app.config['TID']) )
 
 	games = cur.fetchall()
 
@@ -204,9 +216,10 @@ def divToInt(div):
 		return 0
 
 def podToInt(pod):
-	sortOrder = "b,g,d,e,z,B,G,O,Y"
-	sortOrder = "Y,O,G,B,z,e,d,g,b,A"
-	sortOrder = "w,x,y,z,A,B,C,D"
+	#sortOrder = "b,g,d,e,z,B,G,O,Y"
+	#sortOrder = "Y,O,G,B,z,e,d,g,b,A"
+	#sortOrder = "w,x,y,z,A,B,C,D"
+	sortOrder = "A,B,C,1P,2P,3P,4P,5P,6P,7P"
 	if pod in SortOrder:
 		return sortOrder.index(pod)
 	else:
@@ -217,7 +230,7 @@ def podToInt(pod):
 #
 # ONLY USE WHEN COMPARING TEAMS DIRECTLY, DON'T USE IN SORT
 #
-def cmpTeams(team_b, team_a):
+def cmpTeams(team_b, team_a, pod=None):
 	if (team_a.division.lower() != team_b.division.lower()):
 		return divToInt(team_a.division) - divToInt(team_b.division)
 	elif (team_a.pod != team_b.pod):
@@ -275,9 +288,17 @@ def cmpRankSort(rank_b, rank_a):
 # Returns ordered list of Ranging objects, ranking object has team stat objects
 # along with the division, pod and place
 # Wherever place is displayed/used it would reference the place field, don't use the index for place
-def sortStandings(teamStats):
+def sortStandings(team_stats, pod=None):
+	if not pod:
+		app.logger.debug("sorting standings without pod")
+
+	for team in team_stats.values():
+		#team = team_stats[place]
+		if team.pod != pod:
+			app.logger.debug("I have standings that aren't for my pod")
+
 	# pre-sort required for three-way ties
-	ordered = sorted(teamStats.values(), cmp=cmpTeamsSort)
+	ordered = sorted(team_stats.values(), cmp=cmpTeamsSort)
 	ordered = sorted(ordered, cmp=cmpTeams)
 
 	# first go through the list and assign a place to everybody based on only points
@@ -307,7 +328,7 @@ def sortStandings(teamStats):
 		lastDiv = team.division
 		lastPod = team.pod
 		last = team
-
+	
 	divisions = getDivisions()
 	pods = getPodsActive()
 	is_pods = False
@@ -319,6 +340,7 @@ def sortStandings(teamStats):
 	# to keep 1st in the A from being confused with 1st in the B
 	for div in divisions:
 		if is_pods:
+			#app.logger.debug("working on pod %s" % div)
 			div_standings = [x for x in standings if x.team.pod == div]
 		else:
 			div_standings = [x for x in standings if x.team.division == div]
@@ -328,6 +350,7 @@ def sortStandings(teamStats):
 		while place <= places:
 			place_teams = [x for x in div_standings if x.place == place]
 			count = len(place_teams)
+			#app.logger.debug("place_teams =  %s" % place_teams)
 			if count == 0: # nobody is in this place, probably do to ties, move on
 				place += 1
 			elif count == 1: # one team alone, nothing to do
@@ -369,22 +392,22 @@ def sortStandings(teamStats):
 				if place_teams[1:] == place_teams[:-1]:
 					app.logger.debug("three way tie all equal in %s" % div)
 					place += 1
-					continue
-
-				place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
-
-				last = place_teams[-1].team
-				second_last = place_teams[-2].team
-				# don't use head-to-head cmp even though its two because its the 3-way tie braker
-				result = cmpTeamsSort(last, second_last)
-
-				if result == 0:
-					place_teams[-1].place += 1
-					place_teams[-2].place += 1
-				elif result < 0:
-					place_teams[-2].place += 1
+					#continue
 				else:
-					place_teams[-1].place += 1
+					place_teams = sorted(place_teams, cmp=cmpRankSort) #sort teams based on rules w/o head-to-head
+
+					last = place_teams[-1].team
+					second_last = place_teams[-2].team
+					# don't use head-to-head cmp even though its two because its the 3-way tie braker
+					result = cmpTeamsSort(last, second_last)
+
+					if result == 0:
+						place_teams[-1].place += 1
+						place_teams[-2].place += 1
+					elif result < 0:
+						place_teams[-2].place += 2
+					else:
+						place_teams[-1].place += 2
 			else:
 				app.logger.debug("Greater than three way tie, go home")
 				place += 1
@@ -481,7 +504,7 @@ def addCoinFlip(tid_a, tid_b, winner):
 # shouldn't be called directly, use getStandings() to avoid
 # recalculating multiple times per load
 def calcStandings(pod=None):
-	app.logger.debug("calculating standings, pod = %s" , (pod,))
+	#app.logger.debug("calculating standings, pod = %s" , (pod,))
 
 	standings = {}
 
@@ -579,7 +602,7 @@ def calcStandings(pod=None):
 			standings[black_tid].points += 1;
 			standings[white_tid].points += 1;
 
-	return sortStandings(standings)
+	return sortStandings(standings, pod)
 
 
 # wrapper function for standings, use to ger dictionary of standings
@@ -768,8 +791,9 @@ def getPlacings(div=None):
 			else:
 				name = getTeam(team_id)
 				game = name
-		else:
-			app.logger.debug("Failure in getPlacings, no regex match")
+		# broken logic
+		#else:
+		#	app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
 
 
 
