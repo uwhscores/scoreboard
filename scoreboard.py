@@ -23,7 +23,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='6'
+	TID='7'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -109,10 +109,10 @@ def getParams():
 	if not hasattr(g, 'params'):
 		g.params = loadParams()
 	return g.params
-	
+
 def getParam(param):
 	params = getParams()
-	
+
 	if param in params:
 		return params[param]
 	else:
@@ -136,15 +136,15 @@ def updateParam(field, val):
 
 	g.params = loadParams()
 	return 0
-	
+
 def clearParam(field):
 	db = getDB()
 
 	cur = db.execute("DELETE FROM params where field=? AND tid=?", (field, app.config['TID']))
 	db.commit()
-	
+
 	g.params = loadParams()
-	return 0 
+	return 0
 
 
 # simple function for calculating the win/loss ration between two teams
@@ -159,14 +159,14 @@ def whoWon(team_a, team_b):
 
 	if team_a.pod != team_b.pod:
 		app.logger.debug("Comparing two teams that aren't in the same pod, that's ok")
-		
+
 	pod = team_a.pod
-	
+
 	if pod:
 		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
 						WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
 						OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.pod=? AND g.tid=?', \
-						(tid_a, tid_b, tid_b, tid_a, pod, app.config['TID']) )	
+						(tid_a, tid_b, tid_b, tid_a, pod, app.config['TID']) )
 	else:
 		cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_w, s.score_b FROM scores s, games g \
 						WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
@@ -289,8 +289,10 @@ def cmpRankSort(rank_b, rank_a):
 # along with the division, pod and place
 # Wherever place is displayed/used it would reference the place field, don't use the index for place
 def sortStandings(team_stats, pod=None):
-	if not pod:
-		app.logger.debug("sorting standings without pod")
+	#if not pod:
+	#	app.logger.debug("sorting standings without pod")
+	#else:
+	#	app.logger.debug("sorting for pod %s" % pod)
 
 	for team in team_stats.values():
 		#team = team_stats[place]
@@ -328,7 +330,7 @@ def sortStandings(team_stats, pod=None):
 		lastDiv = team.division
 		lastPod = team.pod
 		last = team
-	
+
 	divisions = getDivisions()
 	pods = getPodsActive()
 	is_pods = False
@@ -436,7 +438,7 @@ def addTie(tid_a, tid_b):
 	#cur = db.execute("SELECT DISTINCT g.pod FROM games g, scores s WHERE g.gid=s.gid AND \
 	#	((s.white_tid=? AND s.black_tid=?) OR (s.white_tid=? AND s.black_tid=?)) AND g.type='RR' \
 	#	AND g.tid=s.tid AND g.tid=?", (tid_a, tid_b, tid_b, tid_a, app.config['TID']))
-	
+
 	cur = db.execute("SELECT DISTINCT p.pod FROM pods p WHERE (team_id=? OR team_id=?) AND tid=?", (tid_a, tid_b, app.config['TID']))
 	rows = cur.fetchall()
 
@@ -447,10 +449,12 @@ def addTie(tid_a, tid_b):
 				return 1
 	else:
 		pod = None
+		if not endRoundRobin(div_a, None):
+			return 1
 		# code to add divisional check goes here
 
 	#flash("There is a tie in the standings between %s & %s!" %  (teams[0], teams[1]))
-	
+
 	if tid_a < tid_b:
 		if not hasattr(g, 'ties'):
 			g.ties = []
@@ -680,8 +684,10 @@ def endRoundRobin(division=None, pod=None):
 
 	# first check if all games have been played
 	if (games_played >= rr_games):
+		#app.logger.debug("endRoundRobin returing true")
 		return True
 	else:
+		#app.logger.debug("endRoundRobin returing false")
 		return False
 
 def checkForTies(standings):
@@ -1018,8 +1024,8 @@ def getGames(division= None, pod=None, offset=None ):
 		else:
 			cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, type, description FROM games \
 								WHERE pod like ? AND tid=? ORDER BY day, start_time",\
-								(pod, app.config['TID']))	 				
-		
+								(pod, app.config['TID']))
+
 
 	#if (division == None and pod==None and offset):
 	#	cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
@@ -1353,7 +1359,7 @@ def popSeededPods():
 			return 0
 	else:
 		return 0
-		
+
 	round1 = ("7P","1P","2P","3P","4P","5P")
 
 	pods_done =[]
@@ -1371,7 +1377,7 @@ def popSeededPods():
 		return 0
 
  	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
-	
+
 	db = getDB()
 
 	seededPods = ['A','B','C']
@@ -1402,9 +1408,9 @@ def popSeededPods():
 # 			cur = db.execute("INSERT INTO pods (tid, team_id, pod, pod_id) VALUES (?,?,?,?)",(app.config['TID'], team_id, pod, pod_id))
 # 			db.commit()
 # 			pod_offset +=1
-# 
+#
 # 		pod_id +=1
-	
+
 		rules = seeding[pod]
 		offset = 0
 		for rank in podStandings:
@@ -1445,17 +1451,17 @@ def getDisableMessage():
 		return row['val']
 	else:
 		return False
-		
+
 def updateSiteMessage(message):
 	db = getDB()
-	
+
 	if message:
 		clearParam("site_message")
 		addParam("site_message", message)
 	else:
 		clearParam("site_message")
-		
-	return 0 
+
+	return 0
 
 
 def updateConfig(form):
@@ -1495,7 +1501,7 @@ def updateConfig(form):
 
 @app.route('/')
 def renderMain():
-	
+
 	message = getDisableMessage()
 	if message:
 		return render_template('site_down.html', message=message)
@@ -1521,7 +1527,7 @@ def renderMain():
 		standings.append(team.__dict__)
 
 	genTieFlashes()
-	
+
 	return render_template('show_main.html', tournament=getTournamentDetails(),\
 		standings=standings, games=games, pods=pod_names, titleText=titleText, \
 		placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
@@ -1563,7 +1569,7 @@ def renderDivision(division):
 		titleText = "%s Div" % division.upper()
 
 	genTieFlashes()
-	
+
 	#return render_template('show_individual.html', tournament=getTournamentName(), standings=standings, games=games, titleText=titleText)
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings,\
 		 games=games, titleText=titleText, pods=pod_names, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
@@ -1702,15 +1708,15 @@ def renderPrint(offset=None):
 
 	#teams = []
 	#teams = getStandings()
-	
+
 	days_games = []
-	days = {} 
+	days = {}
 	days['Fri'] = []
 	days['Sat'] = []
 	days['Sun'] = []
 	for game in games:
 		days[game['day']].append( game )
-		
+
 	days_games.append({'name':'Friday', 'games':days['Fri']})
 	days_games.append({'name':'Saturday', 'games':days['Sat']})
 	days_games.append({'name':'Sunday', 'games':days['Sun']})
@@ -1719,7 +1725,7 @@ def renderPrint(offset=None):
 	titleText="Day "
 
 	return render_template('show_print_groups.html', group_games=days_games, titleText=titleText, tournament=getTournamentDetails())
-	
+
 @app.route('/print/pod')
 @app.route('/print/pod/<pod>')
 def renderPrintPods(pod=None):
@@ -1727,7 +1733,7 @@ def renderPrintPods(pod=None):
 	message = getDisableMessage()
 	if message:
 		return render_template('site_down.html', message=message)
-	
+
 	pods_games = []
 	if pod:
 		single = {}
@@ -1744,7 +1750,7 @@ def renderPrintPods(pod=None):
 			single['name'] = expandGroupAbbr(pod)
 			single['games'] = getGames(None,pod)
 			pods_games.append(single)
-	
+
 	titleText="Pods "
 
 	return render_template('show_print_groups.html', group_games=pods_games, titleText=titleText, tournament=getTournamentDetails())
