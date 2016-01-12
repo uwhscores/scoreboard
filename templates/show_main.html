@@ -18,7 +18,7 @@
 			<div class="alert alert-info" role="alert">
 				<strong>Announcement:</strong>
 				<p>{{ site_message }}</p>
-			</div>	
+			</div>
 		</div>
 		{%- endif %}
 	</div>
@@ -166,7 +166,11 @@
 					{%- endif %}
 					<tr>
 						<!-- <td>{{ team.division}}</td> -->
+						{% if team.pod != None -%}
 						<td>{{ team.pod }} </td>
+						{% else %}
+						<td></td>
+						{%- endif %}
 						<td>{{ rank.place }}</td>
 						<td>{{ team.name }}</td>
 						<td>{{ team.points }} </td>
@@ -190,7 +194,7 @@
 				<strong>Overall -</strong> Total tournament record including non-standings games and brackets
 				</p>
 				<p>
-				For more information on how standings are calculated and tie-breakers please see the <a href=/faq>FAQ</a>				
+				For more information on how standings are calculated and tie-breakers please see the <a href=/faq>FAQ</a>
 				</p>
 			</div>
 			</div>
