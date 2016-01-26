@@ -23,7 +23,7 @@ app.config.update(dict(
 	SECRET_KEY='testkey',
 	USERNAME='admin',
 	PASSWORD='default',
-	TID='7'
+	TID='8'
 ))
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
@@ -863,6 +863,15 @@ def parseGame(game):
 		team_id = match.group(1)
 		game = getTeam(team_id)
 
+	# Redraw IDs
+	match = re.search( '^R(\w)(\d+)$', game)
+	if match:
+		div = match.group(1)
+		num = match.group(2)
+
+		game = "Redraw " + div + num
+		style="soft"
+
 	# seeded pods RR games
 	match = re.search('^([begdz])(\d+)$', game)
 	if match:
@@ -1463,6 +1472,81 @@ def updateSiteMessage(message):
 
 	return 0
 
+# redraws team for a division with POST from /admin/redraw
+def redraw_teams(form):
+	if not "div" in form:
+		flash("Invalid form, no idea what you did")
+		return 0
+
+	div = form.get('div')
+	app.logger.debug(form)
+	check=[]
+	redraws=[]
+
+	# get list of ids that need a redraw
+	redraw_ids = getRedraw(div)
+
+	for e in form:
+		match = re.search('^T(\d+)$', e)
+		if match:
+			team_id = match.group(1)
+			redraw_id = form.get(e)
+			check.append(redraw_id)
+			if redraw_id == "":
+				flash("You missed a team ID")
+				return div
+			if redraw_id not in redraw_ids:
+				flash("Invalid ID, can't find in redraws")
+				return div
+			redraws.append({'team_id':team_id, 'redraw_id':redraw_id})
+
+	# check that each redraw ID is unique
+	if len(check) > len(set(check)):
+		flash("You put a team ID in twice!")
+		return div
+
+	# everything looks good, cross your fingers and go
+	for draw in redraws:
+		redraw_execute(div, draw['redraw_id'], draw['team_id'])
+
+	flash("Redraw Complete!")
+	return 0
+
+# return list of redraws needed
+def getRedraw(div):
+	db = getDB()
+	ids = []
+
+	cur = db.execute('SELECT white, black FROM games WHERE white LIKE "R%" or black LIKE "R%" AND division=? AND tid=?', (div,app.config['TID']))
+	for r in cur.fetchall():
+		match = re.search('^R(\w)(\d+)',r['white'])
+		if match:
+			if match.group(1) == div:
+				ids.append(match.group(2))
+		match = re.search('^R(\w)(\d+)',r['black'])
+		if match:
+			if match.group(1) == div:
+				ids.append(match.group(2))
+
+	return list(set(ids))
+
+def redraw_execute(div, redraw_id, team_id):
+	app.logger.debug("Execute redraw for division: %s - R%s is now T%s" % (div, redraw_id, team_id))
+
+	redraw_string = "R%s%s" % (div, redraw_id)
+	team_string = "T%s" % (team_id)
+
+	if not getTeam(team_id):
+		app.logger.debug("Team ID doesn't exist, somethings really broke")
+		return 1
+
+	db = getDB()
+	cur = db.execute("UPDATE games SET white=? WHERE white=? AND tid=?" , (team_string, redraw_string,app.config['TID'] ))
+	db.commit()
+	cur = db.execute("UPDATE games SET black=? WHERE black=? AND tid=?" , (team_string, redraw_string,app.config['TID'] ))
+	db.commit()
+
+	return 0
 
 def updateConfig(form):
 	if not "config_id" in form:
@@ -1799,13 +1883,20 @@ def renderAdmin():
 	else:
 		teams = getStandings()
 
-	ties     = getTies()
+	ties = getTies()
 	genTieFlashes()
+
+	divisions = getDivisions()
+	redraws= []
+	for div in divisions:
+		l = getRedraw(div)
+		if l:
+			redraws.append(div)
 
 	stats = getTournamentStats()
 
 	return render_template('admin/show_admin.html', tournament=getTournamentDetails(), stats=stats, \
-		ties=ties, disable_message=getDisableMessage(), site_message=getParam('site_message'))
+		ties=ties, disable_message=getDisableMessage(), site_message=getParam('site_message'), redraws=redraws)
 
 @app.route('/admin/update', methods=['POST','GET'])
 #@basic_auth.required
@@ -1838,6 +1929,34 @@ def updateConfigPost():
 		updateConfig(request.form)
 		return redirect("/admin")
 
+@app.route('/admin/redraw', methods=['POST'])
+@app.route('/admin/redraw/<div>', methods=['GET'])
+def redraw(div=None):
+	if request.method == 'GET':
+		if not isGroup(div):
+			flash("Invalid division")
+			return redirect("/admin")
+
+		team_list = getTeams(div, None)
+
+		div_name = expandGroupAbbr(div)
+		if div_name:
+			div_name = div_name
+		else:
+			div_name = "%s Division" % div.upper()
+
+		return render_template('/admin/redraw.html', div=div, div_name=div_name, teams=team_list, tournament=getTournamentDetails())
+	if request.method == 'POST':
+		res = redraw_teams(request.form)
+		if res == 0:
+			return redirect("/admin")
+		else:
+			return redirect("/admin/redraw/%s" % res)
+
+
+#######################################
+## Static pages
+#######################################
 @app.route('/faq')
 def renderFAQ():
 	divisions = getDivisionNames()

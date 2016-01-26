@@ -46,7 +46,7 @@
 					<div class="panel-heading">
 						<h3 class="panel-title"><i class="fa fa-fw fa-wrench"></i> Configs</h3>
 					</div>
-					
+
 					<div class="panel-body">
 						<h4>Message Banner</h4>
 						{% if site_message -%}
@@ -78,8 +78,8 @@
 							served at 7!"
 						</div>
 					</div>
-					
-					
+
+
 					<div class="panel-body">
 						<h4>Disable Webpage</h4>
 						{% if disable_message -%}
@@ -112,7 +112,21 @@
 						</div>
 					</div>
 				</div>
-
+				{% if redraws -%}
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title"><i class="fa fa-fw fa-refresh"></i> Redraws</h3>
+					</div>
+					<div class="panel-body">
+						<h4>The following divisions need redraws</h4>
+						<ul class="list-group">
+							{% for draw in redraws -%}
+							<li class="list-group-item"><a href="/admin/redraw/{{ draw}}">Redraw Division {{ draw }}</a></li>
+							{%- endfor %}
+						</ul>
+					</div>
+				</div>
+				{%- endif %}
 			{% if ties -%}
 			<div class="panel panel-default">
 				<div class="panel-heading">
