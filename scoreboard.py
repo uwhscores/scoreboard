@@ -1509,6 +1509,12 @@ def redraw_teams(form):
 	for draw in redraws:
 		redraw_execute(div, draw['redraw_id'], draw['team_id'])
 
+	# once the redraw is complete, we need to change the tyoe on the played
+	# head to head games to E so they aren't counted towards standings
+	#
+	### SHOULD ADD CHECK THAT THIS IS WHAT THE TOURNAMENTS WANTS ###
+	trimRoundRobin(div)
+
 	flash("Redraw Complete!")
 	return 0
 
@@ -1530,6 +1536,8 @@ def getRedraw(div):
 
 	return list(set(ids))
 
+# executes an individal redraw update
+# takes in division name, redraw number and team id
 def redraw_execute(div, redraw_id, team_id):
 	app.logger.debug("Execute redraw for division: %s - R%s is now T%s" % (div, redraw_id, team_id))
 
@@ -1545,6 +1553,33 @@ def redraw_execute(div, redraw_id, team_id):
 	db.commit()
 	cur = db.execute("UPDATE games SET black=? WHERE black=? AND tid=?" , (team_string, redraw_string,app.config['TID'] ))
 	db.commit()
+
+	return 0
+
+# function trims a round-robin down to only one head-to-head game per team_string
+# required for partial round-robin tournaments
+# team redraw must already be comleted
+def trimRoundRobin(div):
+	db = getDB()
+
+	team_list = getTeams(div)
+
+	while len(team_list) > 0:
+		cur_team = team_list.pop()
+		for opponent in team_list:
+			a="T%s" % cur_team['team_id']
+			b="T%s" % opponent['team_id']
+			cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) or (white=? and black=?))\
+				AND division=? AND type='RR' AND tid=? ORDER BY gid", (a,b,b,a,div,app.config['TID']))
+			games = cur.fetchall()
+
+			if len(games) > 2:
+				app.logger.debug("Found 3+ h2h between %s and %s, doing nothing" % (a,b))
+			if len(games) == 2:
+				gid = games[0]['gid']
+				app.logger.debug("Found 2 h2h games between %s and %s, trimming game %s" % (a,b, gid))
+				cur = db.execute("UPDATE games SET type='E' WHERE gid=? and tid=?", (gid, app.config['TID']))
+				db.commit()
 
 	return 0
 
