@@ -1778,7 +1778,7 @@ def renderTeam(team_id):
 	genTieFlashes()
 
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings, games=games,\
-		titleText=titleText, pods=pod_names, noteText=noteText, divisions=division, site_message=getParam('site_message'))
+		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions, site_message=getParam('site_message'))
 
 
 @app.route('/tv')
