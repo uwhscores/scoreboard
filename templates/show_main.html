@@ -133,8 +133,12 @@
 			<table id=standings_tbl class="table table-striped">
 				<thead>
 					<tr>
-						<!-- <th>Div</th> -->
+						{% if divisions -%}
+						<th>Div</th>
+						{%- endif %}
+						{% if pod_names -%}
 						<th>Pod</th>
+						{%- endif %}
 						<th>Rank</th>
 						<th>Team</th>
 						<th>Points</th>
@@ -147,12 +151,16 @@
 				<tbody>
 				{% for rank in standings -%}
 				{% set team = rank.team %}
-					{% if not loop.first and (team.div != lastDiv and team.pod != lastPod) -%}
-				</tbody>
+					{% if not loop.first and (team.division != lastDiv or team.pod != lastPod ) -%}
+ 				</tbody>
 				<thead>
 					<tr>
-						<!-- <th>Div</th> -->
+						{% if divisions -%}
+						<th>Div</th>
+						{%- endif %}
+						{% if pod_names -%}
 						<th>Pod</th>
+						{%- endif %}
 						<th>Rank</th>
 						<th>Team</th>
 						<th>Points</th>
@@ -165,11 +173,11 @@
 				<tbody>
 					{%- endif %}
 					<tr>
-						<!-- <td>{{ team.division}}</td> -->
+						{% if divisions -%}
+						<td>{{ team.division}}</td>
+						{%- endif %}
 						{% if team.pod != None -%}
 						<td>{{ team.pod }} </td>
-						{% else %}
-						<td></td>
 						{%- endif %}
 						<td>{{ rank.place }}</td>
 						<td>{{ team.name }}</td>
