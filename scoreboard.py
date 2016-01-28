@@ -1733,7 +1733,7 @@ def renderTeam(team_id):
 			standings.append(team.__dict__)
 
 
-	team_list = getTeams(division)
+	#team_list = getTeams(division)
 
 	#noteText="Only showing confirmed games. Subsequent games will be added as determined by seeding. Check back."
 	#noteText = "WARNING: The schedule above will be incomplete until all games are seeded (ie. bracket games, \
@@ -1743,7 +1743,7 @@ def renderTeam(team_id):
 	genTieFlashes()
 
 	return render_template('show_main.html', tournament=getTournamentDetails(), standings=standings, games=games,\
-		titleText=titleText, pods=pod_names, noteText=noteText, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
+		titleText=titleText, pods=pod_names, noteText=noteText, divisions=division, site_message=getParam('site_message'))
 
 
 @app.route('/tv')
