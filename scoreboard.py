@@ -1238,6 +1238,14 @@ def getTournamentDetails(short_name=None):
 
 	info['date_string'] = "%s-%s" % (start_date.strftime("%B %d"), end_date.strftime("%d, %Y" ))
 
+	days = []
+
+	cur = db.execute("SELECT DISTINCT day FROM games WHERE tid=?", tid)
+	for r in cur.fetchall():
+		days.append(r['day'])
+
+	info['days'] = days
+
 	return info
 
 

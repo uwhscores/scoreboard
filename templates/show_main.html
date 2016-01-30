@@ -65,10 +65,9 @@
 					<nav id="dayPagerNav2">
 						<ul id="dayPager" class="pagination pagination-sm">
 							<li class="active toggleDay" day="All"><span>All</span></li>
-							<li class="toggleDay" day="Fri"><span>Fri</span></li>
-							<li class="toggleDay" day="Sat"><span>Sat</span></li>
-							<li class="toggleDay" day="Sun"><span>Sun</span></li>
-
+							{% for day in tournament.days -%}
+							<li class="toggleDay" day="{{day}}"><span>{{day}}</span></li>
+							{%- endfor %}
 						</ul>
 					</nav>
 					<table id="games" class="table">
