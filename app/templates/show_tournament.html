@@ -7,7 +7,7 @@
 {% block main %}
 <div id="page_body" class="container">
 	<div class="row">
-		<div class="col-md-6">
+		<div class="col-md-8">
 			<div class="page-header tournament-header">
 				<h1 class="tournament-title">{{ tournament.name }}</h1>
 				<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
@@ -27,7 +27,7 @@
 	<div id="team_nav" class="col-md-4 listgroup">
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
-		<a class="list-group-item" href="/team/{{ team.team_id  }}">{{ team.name }}</a>
+		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
@@ -54,12 +54,12 @@
 		{% endif %}
 	{%- endwith %}
 		<ul id=tabNav class="nav nav-pills">
-			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
-			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
-			{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
+			<li role="presentation" class="active btn-lg" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
+			<li role="presentation" class="btn-lg"><a href="#standings" data-toggle="tab">Standings</a></li>
+			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
 		</ul>
 
-	<div id="tabContents" class="tab-content">
+		<div id="tabContents" class="tab-content">
 			<div id="schedule" class="tab-pane fade active in">
 					<h1>{{ titleText }} Schedule </h1>
 					<nav id="dayPagerNav2">

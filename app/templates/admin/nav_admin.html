@@ -1,6 +1,6 @@
 {% block nav %}
     <!-- Navigation -->
-    {% if request.host_url == "http://dev.uwhscores.com/" -%}
+    {% if request.host_url != "https://uwhscores.com/" -%}
     <nav class="navbar navbar-default navbar-inverse" role="navigation" style="background-color: #8A0808;">
     {% else %}
     <nav class="navbar navbar-default navbar-inverse" role="navigation">
@@ -19,17 +19,25 @@
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="navbar-collapse-1">
             	<ul class="nav navbar-nav navbar-right">
-					<li><a href="/admin"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
-          <li><a href="/admin/update"><i class="fa fa-fw fa-edit"></i> Update Scores</a></li>
+                    {% if tournament -%}
+					<li><a href="/admin/{{tournament.short_name}}"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
+                    {%- endif %}
+                    <li><a href="/admin"><i class="fa fa-fw fa-list"></i> Main</a></li>
+                    <!--
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-fw fa-wrench"></i> Admin Functions<b class="caret"></b></a>
 						<ul class="dropdown-menu">
-              <li><a href="#"><i class="fa fa-fw fa-table"></i> Edit Schedule</a></li>
+                            <li><a href="#"><i class="fa fa-fw fa-table"></i> Edit Schedule</a></li>
 							<li><a href="#"><i class="fa fa-fw fa-wrench"></i> Edit Params</a></li>
 						</ul>
 					</li>
+                    -->
 					<li>
-						<a href="/"><i class="fa fa-fw fa-sign-out"></i> Exit</a>
+                        {% if tournament -%}
+						<a href="/t/{{tournament.short_name}}"><i class="fa fa-fw fa-sign-out"></i> Exit</a>
+                        {% else %}
+                        <a href="/"><i class="fa fa-fw fa-sign-out"></i> Exit</a>
+                        {%- endif %}
 					</li
 				</ul>
 	       </div>

@@ -1,7 +1,9 @@
 venv/*
 *.bk
+*.sql
 *~
 *.tgz
 old/*
 tournaments/*
 *.db
+*.pyc

@@ -47,7 +47,7 @@
                         <h3 class="panel-title"><i class="fa fa-fw fa-pencil"></i> Redraw for {{ div_name }}</h3>
                     </div>
                     <div class="panel-body">
-                    	<form action='/admin/redraw' method=post name='redraw'>
+                    	<form action='/admin/{{tournament.short_name}}/redraw' method=post name='redraw'>
                             <input type=hidden name=div value={{ div }}>
                             <table id=teams class="table table-striped">
                                 <thead>

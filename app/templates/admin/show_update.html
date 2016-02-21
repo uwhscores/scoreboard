@@ -37,7 +37,7 @@ jQuery(document).ready(function($) {
 <div id="page-wrapper">
 	<div class="container-fluid">
 		<div class="page-header tournament-header">
-			<h1 class="tournament-title">Update scores for {{ tournament }}</h1>
+			<h1 class="tournament-title">Update scores for {{ tournament.name }}</h1>
 		</div>
 		{% with messages = get_flashed_messages() -%}
 			{% if messages %}
@@ -80,9 +80,9 @@ jQuery(document).ready(function($) {
 				<tr class="unplayed">
 				{% else %}
 					{% if game.score_b != "--" -%}
-					<tr class='clickableRow played' href='{{request.base_url}}?gid={{game.gid}}'>
+					<tr class='clickableRow played' href="{{request.base_url}}?gid={{game.gid}}&tid={{tournament.tid}}">
 					{% else %}
-					<tr class='clickableRow unplayed' href='{{request.base_url}}?gid={{game.gid}}'>
+					<tr class='clickableRow unplayed' href="{{request.base_url}}?gid={{game.gid}}&tid={{tournament.tid}}">
 					{%- endif %}
 				{%- endif %}
 					<td>{{ game.gid }}</td>

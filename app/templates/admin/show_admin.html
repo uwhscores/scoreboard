@@ -1,0 +1,37 @@
+{% extends "/admin/admin_layout.html" %}
+
+{% block nav %}
+	{% include "admin/nav_admin.html" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+	<div id="page-wrapper">
+
+	<div class="container-fluid">
+
+		<!-- Page Heading -->
+		<div class="row">
+			<div class="col-lg-12">
+				<div class="page-header tournament-header">
+				<h1 class="tournament-title">Admin Panel Home</h1>
+				</div>
+			</div>
+		</div>
+		<!-- /.row -->
+
+		<div class="row">
+			<div class="col-lg-12">
+				<ul class="list-group">
+					{% for t in tournaments -%}
+						<h3>{{ t.name }}</h3> <p>{{ t.location }} {{ t.date_string}}</p>
+						<a class="btn btn-primary btn-md" href="/admin/update?tid={{t.tid}}" role="button">Update Scores</a>
+						<a class="btn btn-primary btn-md" href="/admin/{{t.short_name}}" role="button">Manage Tournament</a>
+					{% endfor %}
+				</ul>
+			</div>
+		</div>
+		<!-- /.row -->
+	</div>
+</div>
+{% endblock main %}
