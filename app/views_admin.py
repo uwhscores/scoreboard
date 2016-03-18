@@ -1,19 +1,32 @@
 from app import app
 from flask import request
+from flask.ext.login import LoginManager, UserMixin, login_required, login_user, \
+    logout_user, current_user
 from functions import *
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "/login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return getUserByID(user_id)
+
 @app.route("/admin")
+@login_required
 def renderAdmin():
     ts = getTournamets()
     tournaments = []
     for t in ts:
-        tournaments.append(ts[t])
+        if ts[t].is_active:
+            tournaments.append(ts[t])
 
     tournaments = sorted(tournaments)
-    
+
     return render_template('/admin/show_admin.html', tournaments=tournaments)
 
 @app.route("/admin/<short_name>")
+@login_required
 def renderTAdmin(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
@@ -21,6 +34,10 @@ def renderTAdmin(short_name):
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
 
 	# pods = getPodsActive()
     #
@@ -61,6 +78,7 @@ def renderTAdmin(short_name):
 
 @app.route('/admin/<short_name>/redraw', methods=['POST'])
 @app.route('/admin/<short_name>/redraw/<div>', methods=['GET'])
+@login_required
 def redraw(short_name, div=None):
     if request.method == 'GET':
         tid = getTournamentID(short_name)
@@ -69,6 +87,10 @@ def redraw(short_name, div=None):
             return redirect("/admin")
 
         t = getTournamentByID(tid)
+
+        if not t.isAuthorized(current_user):
+            flash("You are not authorized for this tournament")
+            return redirect("/admin")
 
         if not t.isGroup(div):
             flash("Invalid division on Redraw path")
@@ -90,6 +112,10 @@ def redraw(short_name, div=None):
             return redirect(request.url_root)
 
         t = getTournamentByID(tid)
+
+        if not t.isAuthorized(current_user):
+            flash("You are not authorized for this tournament")
+            return redirect("/admin")
 
         div = request.form.get('div')
         # check div is valid
@@ -125,7 +151,7 @@ def redraw(short_name, div=None):
             return redirect("/admin/%s/redraw/%s" % (short_name, res))
 
 @app.route('/admin/update', methods=['POST','GET'])
-#@basic_auth.required
+@login_required
 def renderUpdate():
     if request.method =='GET':
         if request.args.get('gid'):
@@ -136,6 +162,10 @@ def renderUpdate():
                     return redirect('/admin')
             else:
                 return redirect('/admin')
+
+            if not t.isAuthorized(current_user):
+                flash("You are not authorized for this tournament")
+                return redirect("/admin")
 
             game = t.getGame( request.args.get('gid') )
             if ( game.score_b == "--"):
@@ -152,6 +182,10 @@ def renderUpdate():
         elif request.args.get('tid'):
             t = getTournamentByID(request.args.get('tid'))
 
+            if not t.isAuthorized(current_user):
+                flash("You are not authorized for this tournament")
+                return redirect("/admin")
+
             games = t.getGames()
             return render_template('/admin/show_update.html', games=games, tournament=t)
         else:
@@ -167,6 +201,9 @@ def renderUpdate():
         else:
             return redirect('/admin')
 
+        if not t.isAuthorized(current_user):
+            flash("You are not authorized for this tournament")
+            return redirect("/admin")
 
         form = request.form
         game = {}
@@ -185,6 +222,7 @@ def renderUpdate():
         return redirect( "/admin/update?tid=%s" % tid )
 
 @app.route('/admin/update_config', methods=['POST','GET'])
+@login_required
 def updateConfigPost():
     if request.method == 'GET':
         flash("You're not supposed to do that")
@@ -200,6 +238,40 @@ def updateConfigPost():
     else:
         return redirect('/admin')
 
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
     t.updateConfig(request.form)
 
     return redirect("/admin/%s" % t.short_name)
+
+@app.route('/login', methods=['GET', 'POST'])
+def show_login():
+    if request.method == 'POST':
+        email = None
+
+        form = request.form
+        if form.get('email'):
+            email = form.get('email')
+        if form.get('password'):
+            password = form.get('password')
+
+        if email:
+            user_id = authenticate_user(email, password)
+            if user_id > 0:
+                login_user(getUserByID(user_id))
+                return redirect("/admin")
+        else:
+            return render_template('show_error.html', error_message="You are not a person")
+
+        return redirect("/login")
+
+    else:
+        return render_template('admin/show_login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')

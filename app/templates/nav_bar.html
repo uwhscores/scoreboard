@@ -67,7 +67,7 @@
                         <ul class="dropdown-menu">
                             <li><a href="/">Home</a></li>
                             <li><a href="/faq">FAQ</a></li>
-                            {% if tournament -%}
+                            {% if tournament and tournament.is_active -%}
                             <li><a href="/admin/{{ tournament.short_name }}">Admin</a></li>
                             {% else %}
                             <li><a href="/admin">Admin</a></li>

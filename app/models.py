@@ -229,3 +229,30 @@ class Params(object):
 
 		#g.params = self.loadParams()
 		return 0
+
+
+class User(object):
+    def __init__(self, user_id, db):
+		self.user_id = user_id
+
+		cur = db.execute("SELECT short_name, email, date_created, last_login, site_admin, admin FROM users WHERE user_id=?", (user_id,))
+		row = cur.fetchone()
+
+		self.short_name = row['short_name']
+		self.email = row['email']
+		self.date_created = row['date_created']
+		self.last_login = row['last_login']
+		self.site_admin = row['site_admin']
+		self.admin = row['admin']
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return unicode(self.user_id)

@@ -34,11 +34,14 @@
                     -->
 					<li>
                         {% if tournament -%}
-						<a href="/t/{{tournament.short_name}}"><i class="fa fa-fw fa-sign-out"></i> Exit</a>
+						<a href="/t/{{tournament.short_name}}"><i class="fa fa-fw fa-home"></i> User View</a>
                         {% else %}
-                        <a href="/"><i class="fa fa-fw fa-sign-out"></i> Exit</a>
+                        <a href="/"><i class="fa fa-fw fa-home"></i> User View</a>
                         {%- endif %}
-					</li
+					</li>
+                    <li>
+                        <a href="/logout"><i class="fa fa-fw fa-sign-out"></i> Logout</a>
+                    </li>
 				</ul>
 	       </div>
             <!-- /.navbar-collapse -->

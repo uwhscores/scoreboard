@@ -11,13 +11,14 @@ from app import app
 
 class Tournament(object):
 
-    def __init__(self, tid, name, short_name, start_date, end_date, location, db):
+    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db):
         self.tid = tid
         self.name = name
         self.short_name = short_name
         # self.start_date = start_date
         self.end_date = end_date
         self.location = location
+        self.is_active = active
         self.db = db
 
         self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -927,6 +928,35 @@ class Tournament(object):
     ##########################################################################
     # Admin functions
     ##########################################################################
+
+    # Takes in user object and returns true if the user is authorized to manage
+    # the tournament
+    def isAuthorized(self, user):
+        # first check if the tournament is active, just a little safety mech
+        if not self.is_active:
+            return False
+
+        # first check if they are a site_admin or admin, if yes, just return true
+        if user.site_admin or user.admin:
+            return True
+
+        authorized_ids = []
+
+        db = self.db
+        cur = db.execute("SELECT admin_ids FROM tournaments WHERE tid=?", (self.tid,))
+        row = cur.fetchone()
+        if row['admin_ids']:
+            id_string = row['admin_ids']
+        else:
+            return False
+
+        authorized_ids = id_string.split(",")
+
+        if user.get_id() in authorized_ids:
+            return True
+        else:
+            return False
+
 
     # takes in dictionary from POST and updates/creates score for single game
     # does not provide authorization check, that needs to be done pre-call
