@@ -10,10 +10,10 @@ def renderAdmin():
         tournaments.append(ts[t])
 
     tournaments = sorted(tournaments)
-    
+
     return render_template('/admin/show_admin.html', tournaments=tournaments)
 
-@app.route("/admin/<short_name>")
+@app.route("/admin/t/<short_name>")
 def renderTAdmin(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
@@ -59,8 +59,8 @@ def renderTAdmin(short_name):
         redraws=redraws)
 
 
-@app.route('/admin/<short_name>/redraw', methods=['POST'])
-@app.route('/admin/<short_name>/redraw/<div>', methods=['GET'])
+@app.route('/admin/t/<short_name>/redraw', methods=['POST'])
+@app.route('/admin/t/<short_name>/redraw/<div>', methods=['GET'])
 def redraw(short_name, div=None):
     if request.method == 'GET':
         tid = getTournamentID(short_name)
@@ -72,7 +72,7 @@ def redraw(short_name, div=None):
 
         if not t.isGroup(div):
             flash("Invalid division on Redraw path")
-            return redirect("/admin/%s" % short_name)
+            return redirect("/admin/t/%s" % short_name)
 
         team_list = t.getTeams(div, None)
 
@@ -107,22 +107,22 @@ def redraw(short_name, div=None):
                 check.append(redraw_id)
                 if redraw_id == "":
                     flash("You missed a team ID")
-                    return redirect("/admin/%s/redraw/%s" % (short_name, div))
+                    return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
                 if redraw_id not in redraw_ids:
                     flash("Invalid ID, can't find in redraws")
-                    return redirect("/admin/%s/redraw/%s" % (short_name, div))
+                    return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
                 redraws.append({'team_id':team_id, 'redraw_id':redraw_id})
 
     	# check that each redraw ID is unique
     	if len(check) > len(set(check)):
     		flash("You put a team ID in twice!")
-    		return redirect("/admin/%s/redraw/%s" % (short_name, div))
+    		return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
 
         res = t.redraw_teams(div, redraws)
         if res == 0:
-            return redirect("/admin/%s" % short_name)
+            return redirect("/admin/t/%s" % short_name)
         else:
-            return redirect("/admin/%s/redraw/%s" % (short_name, res))
+            return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
 
 @app.route('/admin/update', methods=['POST','GET'])
 #@basic_auth.required
@@ -145,7 +145,7 @@ def renderUpdate():
 
             if ( game.black_tid < 0 or game.white_tid < 0):
                 flash('Team(s) not determined yet. Cannot set score')
-                return redirect("/admin/%s" % t.short_name)
+                return redirect("/admin/t/%s" % t.short_name)
 
             return render_template('/admin/update_single.html', tournament=t, game=game)
 
@@ -202,4 +202,4 @@ def updateConfigPost():
 
     t.updateConfig(request.form)
 
-    return redirect("/admin/%s" % t.short_name)
+    return redirect("/admin/t/%s" % t.short_name)

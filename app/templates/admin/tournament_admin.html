@@ -134,7 +134,7 @@
 						<h4>The following divisions need redraws</h4>
 						<ul class="list-group">
 							{% for draw in redraws -%}
-							<li class="list-group-item"><a href="/admin/{{tournament.short_name}}/redraw/{{draw}}">Redraw Division {{ draw }}</a></li>
+							<li class="list-group-item"><a href="/admin/t/{{tournament.short_name}}/redraw/{{draw}}">Redraw Division {{ draw }}</a></li>
 							{%- endfor %}
 						</ul>
 					</div>

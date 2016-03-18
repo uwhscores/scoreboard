@@ -68,7 +68,7 @@
                             <li><a href="/">Home</a></li>
                             <li><a href="/faq">FAQ</a></li>
                             {% if tournament -%}
-                            <li><a href="/admin/{{ tournament.short_name }}">Admin</a></li>
+                            <li><a href="/admin/t/{{ tournament.short_name }}">Admin</a></li>
                             {% else %}
                             <li><a href="/admin">Admin</a></li>
                             {%- endif %}

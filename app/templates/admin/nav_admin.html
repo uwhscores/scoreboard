@@ -20,7 +20,7 @@
             <div class="collapse navbar-collapse" id="navbar-collapse-1">
             	<ul class="nav navbar-nav navbar-right">
                     {% if tournament -%}
-					<li><a href="/admin/{{tournament.short_name}}"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
+					<li><a href="/admin/t/{{tournament.short_name}}"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
                     {%- endif %}
                     <li><a href="/admin"><i class="fa fa-fw fa-list"></i> Main</a></li>
                     <!--
