@@ -44,7 +44,7 @@
 				{% for t in tournaments -%}
 					<h3>{{ t.name }}</h3> <p>{{ t.location }} {{ t.date_string}}</p>
 					<a class="btn btn-primary btn-md" href="/admin/update?tid={{t.tid}}" role="button">Update Scores</a>
-					<a class="btn btn-primary btn-md" href="/admin/{{t.short_name}}" role="button">Manage Tournament</a>
+					<a class="btn btn-primary btn-md" href="/admin/t/{{t.short_name}}" role="button">Manage Tournament</a>
 				{% endfor %}
 			</ul>
 		</div>
