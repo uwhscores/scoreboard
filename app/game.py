@@ -7,6 +7,7 @@ class Game(object):
         self.tournament = tournament
         self.gid = gid
         self.day = day
+        self.start_time_iso = start_time
         self.start_time = datetime.strptime(start_time, '%H:%M').strftime('%I:%M %p')
         self.pool = pool
         self.game_type = game_type
@@ -50,6 +51,21 @@ class Game(object):
 
     def __repr__(self):
         return "{}: {} {} - {} vs {}".format(self.gid, self.day, self.start_time, self.black, self.white)
+
+    def serialize(self):
+	return {
+        'tid':self.tournament.tid,
+		'gid':self.gid,
+		'day':self.day,
+        'pool':self.pool,
+		'start_time':self.start_time_iso,
+		'black':self.black,
+        'black_id':self.black_tid,
+        'note_b':self.note_b,
+		'white':self.white,
+        'white_id':self.white_tid,
+        'note_w':self.note_w
+	}
 
     # loops through all games and creates expanded dictionary of games
     # expands database short hand into human readable form

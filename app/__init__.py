@@ -17,5 +17,5 @@ app.config.update(dict(
 
 app.config.from_envvar('SCOREBOARD_SETTINGS', silent=True)
 
-from app import functions, tournament, models, views_main, views_admin
+from app import functions, tournament, models, views_main, views_admin, views_api_v1
 	#views_admin, views_static
