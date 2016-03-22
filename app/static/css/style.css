@@ -74,7 +74,18 @@ tr.odd {
 	font-size: 1.25em;
 }
 
+.feature-item {
+	text-align: center;
+}
 
+.feature-circle {
+	color: #eee;
+}
+
+.login-btn {
+	margin-top: 1em;
+	margin-bottom: 2em;
+}
 
 @media screen and (max-width: 1000px) {
 	#team_nav{
@@ -91,7 +102,7 @@ tr.odd {
 	body{
 		font-size: 12px;
 	}
-	
+
 	/*.row {
 		page-break-before: always;
 	}*/

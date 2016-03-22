@@ -1,0 +1,182 @@
+{% extends "/admin/admin_layout.html" %}
+
+{% block nav %}
+	{% include "admin/nav_admin.html" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<div id="page_body" class="container">
+
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="page-header tournament-header">
+			<h1 class="tournament-title">{{ tournament.name }}</h1>
+			<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-lg-12">
+		{% with messages = get_flashed_messages() -%}
+			{% if messages %}
+				{% set last="" -%}
+				<div class="alert alert-danger" role="alert">
+				{% for message in messages %}
+					{% if message != last -%}
+						{{ message }}</br>
+					{%- endif %}
+					{% set last=message %}
+				{% endfor %}
+				</div>
+			{% endif %}
+		{%- endwith %}
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-lg-8">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-fw fa-edit"></i>Update Scores</h3>
+				</div>
+				<div class="panel-body">
+						<p><a class="btn btn-primary btn-lg" href="/admin/update?tid={{tournament.tid}}" role="button">Update Scores</a></p>
+				</div>
+			</div>
+
+
+
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-fw fa-wrench"></i> Configs</h3>
+				</div>
+
+				<div class="panel-body">
+					<h4>Message Banner</h4>
+					{% if site_message -%}
+					<div class="alert alert-info" role="alert">
+						<p>{{ site_message }}</p>
+					</div>
+					{%- endif %}
+					<form name="site_message" action="/admin/update_config" method="POST">
+					<div class="input-group">
+						<input type="hidden" name="config_id" value="site_message"/>
+						<input type="hidden" name="tid" value="{{ tournament.tid }}"/>
+						{% if site_message -%}
+						<span class="input-group-addon">
+						<input type="checkbox" aria-label="enabled" checked=checked name="active_toggle">
+						</span>
+						<input type="text" class="form-control" aria-label="site message" name="message" value="{{ site_message }}">
+						{% else %}
+						<span class="input-group-addon">
+						<input type="checkbox" aria-label="disabled" name="active_toggle">
+						</span>
+						<input type="text" class="form-control" aria-label="..." name="message">
+						{%- endif %}
+						<span class="input-group-btn">
+						<button class="btn btn-default" type="submit">Update</button>
+						</span>
+					</div><!-- /input-group -->
+					</form>
+					<div class="well well-sm">
+						Use this to display an announcement at the top of the pages for the users. Such as "Beer will be
+						served at 7!"
+					</div>
+				</div>
+
+
+				<div class="panel-body">
+					<h4>Disable Webpage</h4>
+					{% if disable_message -%}
+					<div class="alert alert-danger" role="alert">
+						<p>Site is currently disabled!</p>
+					</div>
+					{%- endif %}
+					<form name="site-active" action="/admin/update_config" method="POST">
+					<div class="input-group">
+						<input type="hidden" name="config_id" value="site_active"/>
+						<input type="hidden" name="tid" value="{{ tournament.tid }}"/>
+						{% if disable_message -%}
+						<span class="input-group-addon">
+						<input type="checkbox" aria-label="enabled" checked=checked name="active_toggle">
+						</span>
+						<input type="text" class="form-control" aria-label="..." name="message" value="{{ disable_message }}">
+						{% else %}
+						<span class="input-group-addon">
+						<input type="checkbox" aria-label="disabled" name="active_toggle">
+						</span>
+						<input type="text" class="form-control" aria-label="..." name="message">
+						{%- endif %}
+						<span class="input-group-btn">
+						<button class="btn btn-default" type="submit">Update</button>
+						</span>
+					</div><!-- /input-group -->
+					</form>
+					<div class="well well-sm">
+						Use this to disable the page if there is an issue. Users will be presented with the
+						above message until the issue can be resolved.
+					</div>
+				</div>
+			</div>
+			{% if redraws -%}
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-fw fa-refresh"></i> Redraws</h3>
+				</div>
+				<div class="panel-body">
+					<h4>The following divisions need redraws</h4>
+					<ul class="list-group">
+						{% for draw in redraws -%}
+						<li class="list-group-item"><a href="/admin/{{tournament.short_name}}/redraw/{{draw}}">Redraw Division {{ draw }}</a></li>
+						{%- endfor %}
+					</ul>
+				</div>
+			</div>
+			{%- endif %}
+		{% if ties -%}
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-fw fa-random"></i> Coin Flips</h3>
+			</div>
+			<div class="panel-body">
+				<h4>Resolve Ties</h4>
+				<div class="well well-sm">
+					Check the box next to the team that won the coinflip, enter them one at a time.
+				</div>
+					{% for tie in ties -%}
+					<form name="site-active" action="/admin/update_config" method="POST" class="coin-flip">
+						<input type="hidden" name="tid" value="{{tournament.tid}}"/>
+						<input type="hidden" name="config_id" value="coin_flip"/>
+						<input type="hidden" name="id_a" value="{{tie.id_a}}"/>
+						<input type="hidden" name="id_b" value="{{tie.id_b}}"/>
+
+						<div class="coin-flip">
+							<span>
+							<input type="radio" name="winner" value={{ tie.id_a }}>
+							{{ tie.team_a }}
+							</span>
+							vs.
+							<span>
+							{{ tie.team_b}}
+							<input type="radio" name="winner" value={{ tie.id_b }}>
+							</span>
+							<button class="btn btn-default" type="submit">Enter</button>
+						</div><!-- /input-group -->
+					</form>
+					{%- endfor %}
+			</div>
+		</div>
+		{%- endif %}
+	</div> <!-- row -->
+
+	<div class="col-lg-4">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-long-arrow-right fa-fw"></i> Tournament Stats</h3>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock main %}
