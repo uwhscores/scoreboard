@@ -3,12 +3,12 @@ import re
 
 class Game(object):
 
-    def __init__(self, tournament, gid, day, start_time, pool, black, white, game_type, division, pod, description):
+    def __init__(self, tournament, gid, day, start_datetime, pool, black, white, game_type, division, pod, description):
         self.tournament = tournament
         self.gid = gid
         self.day = day
-        self.start_time_iso = start_time
-        self.start_time = datetime.strptime(start_time, '%H:%M').strftime('%I:%M %p')
+        self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
+        self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
         self.pool = pool
         self.game_type = game_type
         self.division = division
@@ -58,7 +58,7 @@ class Game(object):
 		'gid':self.gid,
 		'day':self.day,
         'pool':self.pool,
-		'start_time':self.start_time_iso,
+		'start_time':self.start_datetime.isoformat(),
 		'black':self.black,
         'black_id':self.black_tid,
         'note_b':self.note_b,

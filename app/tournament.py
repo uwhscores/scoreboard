@@ -78,17 +78,18 @@ class Tournament(object):
     def getGames(self, division=None, pod=None, offset=None):
         db = self.db
 
+        #strftime(\"%H:%M\", start_time) as
         if (offset != None):
-            cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, division, pod, type, description FROM games \
+            cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
     						WHERE tid=? ORDER BY day, start_time LIMIT ?,45",
                              (self.tid, offset))
         # whole schedule
         elif (division == None and pod == None):
-            cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, division, type, description FROM games \
+            cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
     							WHERE tid=? ORDER BY day, start_time", (self.tid,))
         # division schedule
         elif (pod == None):
-            cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod, division, type, description FROM games \
+            cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
     							WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY day, start_time",
                              (division, self.tid))
         # pod schedule
@@ -96,11 +97,11 @@ class Tournament(object):
             # trickery to see if it is a division pod and get crossover games
             # or not
             if pod in getDivisions():
-                cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, division, pod, type, description FROM games \
+                cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
     								WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",
                                  (pod, self.tid))
             else:
-                cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, division, pod, type, description FROM games \
+                cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
     								WHERE pod like ? AND tid=? ORDER BY day, start_time",
                                  (pod, self.tid))
 
@@ -124,7 +125,7 @@ class Tournament(object):
     def getTeamGames(self, team_id):
         db = self.db
 
-        cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, division, pod, type, description \
+        cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
                         FROM games WHERE tid=? ORDER BY day, start_time', (self.tid,))
         # allGames = self.expandGames(cur.fetchall())
         team_games = cur.fetchall()
@@ -148,7 +149,7 @@ class Tournament(object):
     # gets single game by ID, returns single dictionary
     def getGame(self, gid):
         db = self.db
-        cur = db.execute('SELECT gid, day, strftime("%H:%M", start_time) as start_time, pool, black, white, division, pod, type, description \
+        cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
                 FROM games WHERE gid=? AND tid=? ', (gid, self.tid))
         g = cur.fetchone()
 
