@@ -1,0 +1,178 @@
+FORMAT: 1A
+HOST: https://ushscores.com
+
+# UWHScores.com API
+
+Resource group for querying tournament level information such as schedule, teams and standings
+
+# Group Tournament
+
+## Games [/api/v1/tournament/games?tid={tid}&div={div}&gid={gid}]
+
+### Get Games [GET]
+Returns list of games on the schedule. Allows for filtering.
+
++ Parameters
+    + tid (required, number) - ID of the tournament
+    + div (optional, character) - Letter of division to filter by
+    + gid (optional, number) - ID of individual game, still returns as list
+
+
++ Response 200 (application/json)
+
+        {
+          "games": [
+            {
+              "black": "Loons",
+              "black_id": 16,
+              "day": "Sat",
+              "gid": 1,
+              "note_b": "",
+              "note_w": "",
+              "pool": "1",
+              "start_time": "10:10 AM",
+              "tid": 8,
+              "white": "Chicago",
+              "white_id": 11
+            },
+            {
+              "black": "Rocky Mountain Oysters",
+              "black_id": 15,
+              "day": "Sat",
+              "gid": 2,
+              "note_b": "",
+              "note_w": "",
+              "pool": "2",
+              "start_time": "10:10 AM",
+              "tid": 8,
+              "white": "Swordfish",
+              "white_id": 17
+            }]
+        }
+
++ Response 400 (application/json)
+
+        {
+            "message": "Missing tid"
+        }
+
+## Teams [/api/v1/tournament/teams?tid={tid}&div={div}]
+
+### Get Teams [GET]
++ Parameters
+    + tid (required, number) - Id of tournament
+    + div (optional, character) - Letter for division
+
+
++ Response 201 (application/json)
+
+        {
+          "teams": [
+            {
+              "division": "O",
+              "name": "Air is Rare",
+              "team_id": 6
+            },
+            {
+              "division": "O",
+              "name": "Loons",
+              "team_id": 2
+            }
+            ]
+        }
+
++ Response 400 (application/json)
+
+        {
+            "message": "Missing tid"
+        }
+
+## Standings [/api/vi/tournament/standings?tid={tid}]
+
+### Get Standings [GET]
+
+
+
++ Response 201 (application/json)
+
+        {
+            "standings": [
+                {
+                  "div": "O",
+                  "place": 5,
+                  "pod": null,
+                  "stats": {
+                    "games_played": 10,
+                    "goals_allowed": 18,
+                    "losses": 6,
+                    "losses_total": 6,
+                    "points": 8,
+                    "ties": 0,
+                    "ties_total": 0,
+                    "wins": 4,
+                    "wins_total": 4
+                  },
+                  "team": "Loons",
+                  "team_id": 2
+                }
+            ]
+        }
+
++ Response 400 (application/json)
+
+        {
+            "message": "Missing tid"
+        }
+
+
+
+# Group Game
+
+## Update [/api/v1/game/update]
+
+### Update Game [POST]
+
++ Request (application/json)
+
+        {
+            "tid":8,
+            "gid":1,
+            "score_w":2,
+            "score_b":1,
+            "black_id":16,
+            "white_id":11
+        }
+
++ Response 201 (application/json)
+
+        {
+          "message": "success"
+        }
+
+# Group Authentication
+
+## Login [/api/v1/login]
+
+### Retrieve Token [GET]
+
++ Response 201 (application/json)
+
+        {
+          "token": "CxYiCBtIf6SqgD7jdFSpyJS58N5K7MIFMRpcB0lBA9o=",
+          "ttl": 1440,
+          "user_id": "vvNTiuKqoXAo"
+        }
+
+
+
+## Logout [/api/v1/logout?{all}]
+
+### Logout User [GET]
++ Parameters
+    + all (empty) - If present, delete all tokens for user
+
++ Response 201 (application/json)
+
+        {
+            'message'='goodbye'
+        }

@@ -85,7 +85,7 @@ def getUserByID(user_id):
     else:
         return None
 
-def authenticate_user(email, password_try):
+def authenticate_user(email, password_try, silent=False):
     db = getDB()
 
     cur = db.execute("SELECT user_id, password FROM users WHERE email=? AND active=1", (email,))
@@ -100,9 +100,11 @@ def authenticate_user(email, password_try):
         if bcrypt.hashpw(password_try, hashed) == hashed:
             return user_id
         else:
-            flash("Incorrect password")
+            if not silent:
+                flash("Incorrect password")
             return None
 
     else:
-        flash("Cannot find account")
+        if not silent:
+            flash("Cannot find account")
         return None

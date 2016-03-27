@@ -171,6 +171,25 @@ class Ranking(object):
 		else:
 			return True
 
+	def serialize(self):
+		return {
+			'div':self.div,
+			'pod':self.pod,
+			'place':self.place,
+			'team':self.team.name,
+			'team_id':self.team.team_id,
+			'stats':{
+				'points':self.team.points,
+				'wins':self.team.wins,
+				'losses': self.team.losses,
+				'ties': self.team.ties,
+				'goals_allowed': self.team.goals_allowed,
+				'games_played': self.team.games_played,
+				'wins_total': self.team.wins_t,
+				'losses_total': self.team.losses_t,
+				'ties_total': self.team.ties_t
+			}
+		}
 
 class Params(object):
 	# loads in all the rows from the config table for the tournament ID
@@ -235,7 +254,7 @@ class User(object):
     def __init__(self, user_id, db):
 		self.user_id = user_id
 
-		cur = db.execute("SELECT short_name, email, date_created, last_login, site_admin, admin FROM users WHERE user_id=?", (user_id,))
+		cur = db.execute("SELECT short_name, email, date_created, last_login, site_admin, admin, active FROM users WHERE user_id=?", (user_id,))
 		row = cur.fetchone()
 
 		self.short_name = row['short_name']
@@ -244,6 +263,7 @@ class User(object):
 		self.last_login = row['last_login']
 		self.site_admin = row['site_admin']
 		self.admin = row['admin']
+		self.is_active = row['active']
 
     def is_authenticated(self):
         return True

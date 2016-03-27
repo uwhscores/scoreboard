@@ -59,17 +59,17 @@ class Tournament(object):
         db = self.db
         if (div == None and pod == None):
             cur = db.execute(
-                "SELECT team_id, name FROM teams WHERE tid=? ORDER BY name", (self.tid,))
+                "SELECT team_id, name, division FROM teams WHERE tid=? ORDER BY name", (self.tid,))
         elif (pod == None):
-            cur = db.execute("SELECT team_id, name FROM teams WHERE division=? AND tid=? ORDER BY name",
+            cur = db.execute("SELECT team_id, name, division FROM teams WHERE division=? AND tid=? ORDER BY name",
                              (div, self.tid))
         elif (div == None):
-            cur = db.execute("SELECT t.team_id, t.name FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
+            cur = db.execute("SELECT t.team_id, t.name, t.division FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
                              (pod, self.tid))
 
         teams = []
         for team in cur.fetchall():
-            teams.append({'team_id': team['team_id'], 'name': team['name']})
+            teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division']})
 
         return teams
 
@@ -152,10 +152,12 @@ class Tournament(object):
                 FROM games WHERE gid=? AND tid=? ', (gid, self.tid))
         g = cur.fetchone()
 
-        game = Game(self, g['gid'], g['day'], g['start_time'], g['pool'], g['black'], g['white'],
+        if g:
+            game = Game(self, g['gid'], g['day'], g['start_time'], g['pool'], g['black'], g['white'],
                     g['type'], g['division'], g['pod'], g['description'])
-
-        return game
+            return game
+        else:
+            return None
 
     # returns winner team ID of game by ID
     def getWinner(self, game_id):
@@ -924,6 +926,21 @@ class Tournament(object):
     	flash("A coin flip is required, please see tournament director or head ref")
     	return 0
 
+    def getTieFlashes(self):
+        if not hasattr(g, 'ties'):
+            return None
+
+        ties = g.ties
+        seen = set()
+        t_list = [x for x in ties if x not in seen and not seen.add(x)]
+
+        messages = []
+        for tie in t_list:
+            name_a = self.getTeam(tie[0])
+            name_b = self.getTeam(tie[1])
+            messages.append("There is a tie in the standings between %s & %s" % (name_a, name_b))
+
+        return messages
 
     ##########################################################################
     # Admin functions
@@ -936,10 +953,12 @@ class Tournament(object):
         if not self.is_active:
             return False
 
+        app.logger.debug("checking on admin")
         # first check if they are a site_admin or admin, if yes, just return true
         if user.site_admin or user.admin:
             return True
 
+        app.logger.debug("guess user isn't a super admin")
         authorized_ids = []
 
         db = self.db
@@ -972,6 +991,8 @@ class Tournament(object):
         forfeit_w = game['forfeit_w']
         forfeit_b = game['forfeit_b']
 
+        if forfeit_b and forfeit_w:
+            return -2
         if forfeit_b:
             forfeit = "b"
         elif forfeit_w:
@@ -984,6 +1005,9 @@ class Tournament(object):
 
         if not isinstance(score_w, int):
             return -1
+
+        if not (white_tid > 0 and black_tid > 0):
+            return -3
 
         cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)",
                          (black_tid, white_tid, score_w, score_b, self.tid, gid, pod, forfeit))
