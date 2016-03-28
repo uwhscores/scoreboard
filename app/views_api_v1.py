@@ -31,7 +31,7 @@ def verify_pw(email, password_try):
         return True
 
     # it wasn't a token, so lets try it as a username/password pair
-    user_id = authenticate_user(email, password_try, True)
+    user_id = authenticate_user(email, password_try, silent=True)
 
     if user_id:
         g.user_id = user_id
@@ -96,13 +96,35 @@ def handle_invalid_usage(error):
 ################################################################################
 # Public APIs
 ################################################################################
-@app.route('/api/v1/tournament/games')
-def apiGetGames():
-    if request.args.get('tid'):
-        tid = request.args.get('tid')
-    else:
-        raise InvalidUsage('Missing tid', status_code=400)
+@app.route('/api/v1')
+def documentationPath():
+    return jsonify(documentation="http://docs.uwhscores.apiary.io/")
 
+@app.route('/api/v1/tournaments')
+def apiGetTournaments():
+    tournaments = getTournamets()
+
+    response = []
+
+    for t in tournaments.values():
+        response.append(t.serialize())
+    return jsonify(tournaments=response)
+
+@app.route('/api/v1/tournaments/<tid>')
+def apiGetTournament(tid):
+    t = getTournamentByID(tid)
+
+    if not t:
+        raise InvalidUsage('Unkown tid', status_code=404)
+
+    message = t.getDisableMessage()
+    if message:
+        raise InvalidUsage(message, status_code=503)
+
+    return jsonify(tournament=t.serialize(verbose=True))
+
+@app.route('/api/v1/tournaments/<tid>/games')
+def apiGetGames(tid):
     t = getTournamentByID(tid)
 
     if not t:
@@ -113,10 +135,8 @@ def apiGetGames():
         raise InvalidUsage(message, status_code=503)
 
     games = []
-    if request.args.get('gid'):
-        gid = request.args.get('gid')
-        games.append(t.getGame(gid))
-    elif request.args.get('div'):
+
+    if request.args.get('div'):
         div = request.args.get('div')
         if not t.isGroup(div):
             raise InvalidUsage('Uknown division', status_code=404)
@@ -130,13 +150,27 @@ def apiGetGames():
 
     return jsonify(games=response)
 
-@app.route('/api/v1/tournament/teams')
-def apiGetTeams():
-    if request.args.get('tid'):
-        tid = request.args.get('tid')
-    else:
-        raise InvalidUsage('Missing tid', status_code=400)
+@app.route('/api/v1/tournaments/<tid>/games/<gid>')
+def apiGetGame1(tid, gid):
+    t = getTournamentByID(tid)
 
+    if not t:
+        raise InvalidUsage('Unknown tid', status_code=404)
+
+    message = t.getDisableMessage()
+    if message:
+        raise InvalidUsage(message, status_code=503)
+
+    game = t.getGame(gid)
+
+    if not game:
+        raise InvalidUsage("Unknown gid", status_code=404)
+
+    return jsonify(game=game.serialize())
+
+
+@app.route('/api/v1/tournaments/<tid>/teams')
+def apiGetTeams(tid):
     t = getTournamentByID(tid)
 
     if not t:
@@ -151,13 +185,8 @@ def apiGetTeams():
     return jsonify(teams=teams)
 
 
-@app.route('/api/v1/tournament/standings')
-def apiGetStandings():
-    if request.args.get('tid'):
-        tid = request.args.get('tid')
-    else:
-        raise InvalidUsage('Missing tid', status_code=400)
-
+@app.route('/api/v1/tournaments/<tid>/standings')
+def apiGetStandings(tid):
     t = getTournamentByID(tid)
 
     if not t:
@@ -175,13 +204,8 @@ def apiGetStandings():
 
     return jsonify(standings=response)
 
-@app.route('/api/v1/tournament/messages')
-def apiGetMessages():
-    if request.args.get('tid'):
-        tid = request.args.get('tid')
-    else:
-        raise InvalidUsage('Missing tid', status_code=400)
-
+@app.route('/api/v1/tournaments/<tid>/messages')
+def apiGetMessages(tid):
     t = getTournamentByID(tid)
 
     if not t:
@@ -219,16 +243,9 @@ def logout_token():
     return jsonify(message='goodbye')
 
 
-@app.route('/api/v1/game/score', methods= ['POST'])
+@app.route('/api/v1/tournaments/<tid>/games/<gid>', methods= ['POST'])
 @auth.login_required
-def updateGame():
-    if not request.json:
-        raise InvalidUsage('not JSON', status_code=400)
-
-    if request.json.get('tid'):
-        tid = request.json.get('tid')
-    else:
-        raise InvalidUsage('Missing tid', status_code=400)
+def updateGame(tid, gid):
 
     t = getTournamentByID(tid)
 
@@ -246,7 +263,24 @@ def updateGame():
 
     j = request.json
 
-    gid = int(j.get('gid'))
+    # make sure tid in json matches URL
+    try:
+        tid = int(tid)
+    except (TypeError, ValueError):
+        raise InvalidUsage("Unknown tid", status_code=404)
+
+    if not tid == j.get('tid'):
+        raise InvalidUsage("tid mismatch", status_code=400)
+
+    # make sure gid in json matches URL
+    try:
+        gid = int(gid)
+    except (TypeError, ValueError):
+        raise InvalidUsage("bad gid", status_code=400)
+
+    if not gid == j.get('gid'):
+        raise InvalidUsage("gid mismatch", status_code=400)
+
     game = t.getGame(gid)
 
     if not game:
@@ -286,4 +320,5 @@ def updateGame():
     if not status == 1:
         return jsonify(answer="Something went wrong")
     else:
-        return jsonify(message="success")
+        res = t.getGame(gid)
+        return jsonify(res.serialize())

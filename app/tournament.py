@@ -42,6 +42,32 @@ class Tournament(object):
         delta = other.start_date - self.start_date
         return delta.days
 
+    def serialize(self, verbose=False):
+        if verbose:
+            divisions= self.getDivisions()
+            pools = self.getPools()
+            return {
+                'tid':self.tid,
+                'name':self.name,
+                'short_name':self.short_name,
+                'start_date':self.start_date.isoformat(),
+                'end_date':self.end_date.isoformat(),
+                'location':self.location,
+                'is_active':self.is_active,
+                'divisions':divisions,
+                'pools':pools
+            }
+        else:
+            return {
+                'tid':self.tid,
+                'name':self.name,
+                'short_name':self.short_name,
+                'start_date':self.start_date.isoformat(),
+                'end_date':self.end_date.isoformat(),
+                'location':self.location,
+                'is_active':self.is_active
+            }
+
     # simple function for converting team ID index to real name
     def getTeam(self, team_id):
         db = self.db
@@ -279,6 +305,18 @@ class Tournament(object):
             pod_names.append({'id': pod, 'name': name})
 
         return pod_names
+
+    def getPools(self):
+        db = self.db
+        cur = db.execute(
+            "SELECT DISTINCT pool FROM games WHERE tid=?", (self.tid,))
+
+        pools = []
+        for r in cur.fetchall():
+            if r['pool'] != "":
+                pools.append(r['pool'])
+
+        return pools
 
     # takes in short name for division or pod and returns full string for
     # display

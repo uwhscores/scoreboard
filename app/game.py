@@ -37,6 +37,7 @@ class Game(object):
 
             self.score_b = score['score_b']
             self.score_w = score['score_w']
+            self.forfeit = None
             if score['forfeit']:
                 self.forfeit = score['forfeit']
                 if score['forfeit'] == "b":
@@ -64,7 +65,10 @@ class Game(object):
         'note_b':self.note_b,
 		'white':self.white,
         'white_id':self.white_tid,
-        'note_w':self.note_w
+        'note_w':self.note_w,
+        'score_b': self.score_b,
+        'score_w': self.score_w,
+        'forfeit': self.forfeit
 	}
 
     # loops through all games and creates expanded dictionary of games
