@@ -87,6 +87,10 @@ tr.odd {
 	margin-bottom: 2em;
 }
 
+.bottom-buffer {
+	margin-bottom: 2em;
+}
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
