@@ -11,7 +11,7 @@ def renderHome():
         tournaments.append(ts[t])
 
     tournaments = sorted(tournaments)
-    
+
     return render_template('show_home.html', tournaments=tournaments)
 
 @app.route('/t/<short_name>')
@@ -49,8 +49,8 @@ def renderTourament(short_name):
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings,\
         placings=placings, divisions=division, team_list=team_list, pod_names = pod_names, site_message=site_message)
-# 		standings=standings, games=games, pods=pod_names, titleText=titleText, \
-# 		placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
+#         standings=standings, games=games, pods=pod_names, titleText=titleText, \
+#         placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
 
 @app.route('/t/<short_name>/div/<div>')
@@ -61,10 +61,11 @@ def renderTDiv(short_name, div):
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
-# 	#message = getDisableMessage(tournament)
-# 	#if message:
-# 	#	return render_template('site_down.html', message=message)
-#
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
 
     if not t.isGroup(div):
         flash("Invalid division")
@@ -76,8 +77,10 @@ def renderTDiv(short_name, div):
     standings = t.getStandings(div)
     team_list = t.getTeams(div)
 
+    site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division)
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
+        team_list=team_list, site_message=site_message)
 
 @app.route('/t/<short_name>/team/<team_id>')
 def renderTTeam(short_name, team_id):
@@ -87,10 +90,11 @@ def renderTTeam(short_name, team_id):
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
-# 	#message = getDisableMessage(tournament)
-# 	#if message:
-# 	#	return render_template('site_down.html', message=message)
-#
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
     if not team_id.isdigit():
         flash("Invalid team ID, must be integer")
         rdir_string = "/t/%s" % t.short_name
@@ -109,17 +113,19 @@ def renderTTeam(short_name, team_id):
     team_list = t.getTeams(div)
     #pod_names = getPodNamesActive(division)
 
-	#teams = []
+    #teams = []
 
     games = t.getTeamGames(team_id)
     standings = t.getStandings()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions, \
-        team_list=team_list)
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
+        team_list=team_list, site_message=site_message)
 
 #######################################
 ## Static pages
 #######################################
 @app.route('/faq')
 def renderFAQ():
-	return render_template('faq.html')
+    return render_template('faq.html')
