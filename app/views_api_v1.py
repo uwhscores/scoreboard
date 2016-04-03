@@ -1,10 +1,18 @@
 from functions import *
-from flask import json,jsonify, request
+from flask import json,jsonify, request, make_response
 from flask.ext.httpauth import HTTPBasicAuth
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from base64 import b64encode
 from os import urandom
 
 auth = HTTPBasicAuth()
+
+api_limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    global_limits=["1000 per day", "100 per hour"]
+)
 
 class InvalidUsage(Exception):
     status_code = 400
@@ -23,12 +31,18 @@ class InvalidUsage(Exception):
 
 @auth.verify_password
 def verify_pw(email, password_try):
+
     # first assume its a token for speed
-    user_id = authenticate_token(email)
+    token = email
+    user_id = authenticate_token(token)
 
     if user_id:
         g.user_id = user_id
         return True
+
+    # only accept username/password combos if its the login path
+    if request.path != "/api/v1/login":
+        return False
 
     # it wasn't a token, so lets try it as a username/password pair
     user_id = authenticate_user(email, password_try, silent=True)
@@ -92,6 +106,14 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
+# json response for rate limit exceeded
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return make_response(
+            jsonify(error="ratelimit exceeded %s" % e.description)
+            , 429
+    )
 
 ################################################################################
 # Public APIs
@@ -224,6 +246,7 @@ def apiGetMessages(tid):
 # Private APIs
 ################################################################################
 @app.route('/api/v1/login')
+@api_limiter.limit("5/minute;20/hour")
 @auth.login_required
 def login_token():
     user_name = request.authorization.username

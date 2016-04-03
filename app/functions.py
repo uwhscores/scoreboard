@@ -2,8 +2,7 @@ from app import app
 import sqlite3
 import re
 import bcrypt
-from flask import Flask, request, session, g, redirect, url_for, abort, \
-        render_template, flash, jsonify, json
+from flask import g, flash
 
 from tournament import Tournament
 from models import User
@@ -85,10 +84,10 @@ def getUserByID(user_id):
     else:
         return None
 
-def authenticate_user(email, password_try, silent=False):
+def authenticate_user(email, password_try, silent=False, ip_addr=None):
     db = getDB()
 
-    cur = db.execute("SELECT user_id, password FROM users WHERE email=? AND active=1", (email,))
+    cur = db.execute("SELECT user_id, password, failed_logins FROM users WHERE email=? AND active=1", (email,))
     row = cur.fetchone()
     cur.close()
 
@@ -96,12 +95,28 @@ def authenticate_user(email, password_try, silent=False):
         user_id = row['user_id']
         hashed = str(row['password'])
         password_try = str(password_try)
+        failed_logins = row['failed_logins']
+
+        # if too many failed passwords in a row, just block, will require manual intervention
+        if failed_logins > 10:
+            # should fire off password reset email here once I write that
+            if not silent:
+                flash("Account locked due to too many failed passwords")
+
+            return None
 
         if bcrypt.hashpw(password_try, hashed) == hashed:
+            cur = db.execute("UPDATE users SET last_login=CURRENT_TIMESTAMP, failed_logins=0 WHERE user_id=?", (user_id,))
+            db.commit()
             return user_id
         else:
+            failed_logins += 1
+            cur = db.execute("UPDATE users SET failed_logins=? WHERE user_id=?", (failed_logins, user_id))
+            db.commit()
+
             if not silent:
                 flash("Incorrect password")
+
             return None
 
     else:

@@ -1,12 +1,19 @@
 from app import app
-from flask import request
+from flask import request, redirect, render_template
 from flask.ext.login import LoginManager, UserMixin, login_required, login_user, \
     logout_user, current_user
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from functions import *
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "/login"
+
+admin_limiter = Limiter(
+    app,
+    key_func=get_remote_address
+)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -247,29 +254,31 @@ def updateConfigPost():
 
     return redirect("/admin/t/%s" % t.short_name)
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
 def show_login():
-    if request.method == 'POST':
-        email = None
+    return render_template('admin/show_login.html')
 
-        form = request.form
-        if form.get('email'):
-            email = form.get('email')
-        if form.get('password'):
-            password = form.get('password')
+@app.route('/login', methods=['POST'])
+@admin_limiter.limit("5/minute;20/hour")
+def do_login():
+    email = None
 
-        if email:
-            user_id = authenticate_user(email, password)
-            if user_id > 0:
-                login_user(getUserByID(user_id))
-                return redirect("/admin")
-        else:
-            return render_template('show_error.html', error_message="You are not a person")
+    form = request.form
+    if form.get('email'):
+        email = form.get('email')
+    if form.get('password'):
+        password = form.get('password')
 
-        return redirect("/login")
-
+    if email:
+        user_id = authenticate_user(email, password, ip_addr=request.remote_addr)
+        if user_id > 0:
+            login_user(getUserByID(user_id))
+            return redirect("/admin")
     else:
-        return render_template('admin/show_login.html')
+        return render_template('show_error.html', error_message="You are not a person")
+
+    return redirect("/login")
+
 
 @app.route('/logout')
 @login_required

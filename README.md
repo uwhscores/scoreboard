@@ -31,6 +31,7 @@ setup an instance and run it. These steps are likely not complete.
     Flask==0.10.1
     Flask-HTTPAuth==3.1.1
     Flask-Login==0.3.2
+    Flask-Limiter==0.9.3
     itsdangerous==0.24
     Jinja2==2.8
     MarkupSafe==0.23

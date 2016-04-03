@@ -1,76 +1,76 @@
 CREATE TABLE games(
-    tid INTEGER NOT NULL,
-    gid INTEGER NOT NULL,
-    day text,
-    start_time time,
-    pool text,
-    black text,
-    white text,
-    type text,
-    division text,
-    pod text,
-    description text,
-    PRIMARY KEY (tid, gid)
+	tid INTEGER NOT NULL,
+	gid INTEGER NOT NULL,
+	day text,
+	start_time time,
+	pool text,
+	black text,
+	white text,
+	type text,
+	division text,
+	pod text,
+	description text,
+	PRIMARY KEY (tid, gid)
 );
 CREATE INDEX time_index ON games (start_time);
 
 CREATE TABLE scores(
-    tid INTEGER NOT NULL,
-    gid INTEGER NOT NULL,
-    black_tid INTEGER,
-    white_tid INTEGER,
-    score_b INTEGER,
-    score_w INTEGER,
-    pod text,
-    forfeit TEXT,
-    PRIMARY KEY (tid,gid)
+	tid INTEGER NOT NULL,
+	gid INTEGER NOT NULL,
+	black_tid INTEGER,
+	white_tid INTEGER,
+	score_b INTEGER,
+	score_w INTEGER,
+	pod text,
+	forfeit TEXT,
+	PRIMARY KEY (tid,gid)
 );
 
 CREATE TABLE tournaments(
-    tid INTEGER PRIMARY KEY,
-    name TEXT,
-    short_name TEXT,
-    start_date datetime,
-    end_date datetime,
-    location TEXT,
-    active INTEGER
+	tid INTEGER PRIMARY KEY,
+	name TEXT,
+	short_name TEXT,
+	start_date datetime,
+	end_date datetime,
+	location TEXT,
+	active INTEGER
 );
 CREATE UNIQUE INDEX unique_name on tournaments(short_name);
 
 CREATE TABLE teams(
-    tid INTEGER,
-    team_id INTEGER,
-    name Text,
-    division text,
-    PRIMARY KEY(tid, team_id)
+	tid INTEGER,
+	team_id INTEGER,
+	name Text,
+	division text,
+	PRIMARY KEY(tid, team_id)
 );
 
 CREATE TABLE pods(
-    tid INTEGER,
-    team_id INTEGER,
-    pod Text,
-    pod_id INTEGER
+	tid INTEGER,
+	team_id INTEGER,
+	pod Text,
+	pod_id INTEGER
 );
 
 CREATE TABLE rankings(
-        tid INTEGER NOT NULL,
-        place text NOT NULL,
-        game text,
-        division text,
-        PRIMARY KEY(tid, place)
+		tid INTEGER NOT NULL,
+		place text NOT NULL,
+		game text,
+		division text,
+		PRIMARY KEY(tid, place)
 );
 
 
 CREATE TABLE params(
-    tid INTEGER NOT NULL,
-    field text NOT NULL,
-    val NOT NULL
+	tid INTEGER NOT NULL,
+	field text NOT NULL,
+	val NOT NULL
 );
 
 CREATE TABLE groups(
-    tid INTEGER NOT NULL,
-    group_id text NOT NULL,
-    name text NOT NULL,
+	tid INTEGER NOT NULL,
+	group_id text NOT NULL,
+	name text NOT NULL,
 	PRIMARY KEY(tid, group_id)
 );
 
@@ -81,10 +81,11 @@ CREATE TABLE users (
 	password TEXT NOT NULL,
 	date_created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	last_login timestamp NULL DEFAULT NULL,
-	active INTEGER NOT NULL DEFAULT '0',
-	site_admin INTEGER NOT NULL DEFAULT '0',
-	admin INTEGER NOT NULL DEFAULT '0',
-	passwd_reset INTEGER NOT NULL DEFAULT '1'
+	failed_logins INTEGER NOT NULL DEFAULT 0,
+	active INTEGER NOT NULL DEFAULT 0,
+	site_admin INTEGER NOT NULL DEFAULT 0,
+	admin INTEGER NOT NULL DEFAULT 0,
+	passwd_reset INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE tokens (

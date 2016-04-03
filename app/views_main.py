@@ -1,5 +1,5 @@
 from app import app
-#from models import tournaments
+from flask import request, redirect, render_template 
 from functions import *
 
 @app.route('/')
