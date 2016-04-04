@@ -27,6 +27,7 @@ class Game(object):
         self.style_w = ""
         self.note_b = ""
         self.note_w = ""
+        self.forfeit = None
 
         if score:
             self.black_tid = score['black_tid']
@@ -37,7 +38,6 @@ class Game(object):
 
             self.score_b = score['score_b']
             self.score_w = score['score_w']
-            self.forfeit = None
             if score['forfeit']:
                 self.forfeit = score['forfeit']
                 if score['forfeit'] == "b":
