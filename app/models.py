@@ -58,7 +58,7 @@ class Stats(object):
 			if (forfeit == "b" and white_tid == team_id):
 				if game_pod == pod:
 					self.wins += 1
-					self.points += 2
+					self.points += tournament.POINTS_WIN
 				self.wins_t += 1
 
 			if (forfeit == "w" and white_tid == team_id):
@@ -70,14 +70,14 @@ class Stats(object):
 			if forfeit == "b" and black_tid == team_id:
 				if game_pod == pod:
 					self.wins += 1
-					self.points += 2
+					self.points += tournament.POINTS_WIN
 				self.wins_t += 1
 
 			# black won
 			if score_b > score_w and black_tid == team_id:
 				if game_pod == pod:
 					self.wins += 1
-					self.points += 2
+					self.points += tournament.POINTS_WIN
 				self.wins_t += 1
 			elif score_b > score_w and white_tid == team_id:
 				if game_pod == pod:
@@ -88,7 +88,7 @@ class Stats(object):
 			if score_b < score_w and white_tid == team_id:
 				if game_pod == pod:
 					self.wins += 1
-					self.points += 2
+					self.points += tournament.POINTS_WIN
 				self.wins_t += 1
 			elif score_b < score_w and black_tid == team_id:
 				if game_pod == pod:

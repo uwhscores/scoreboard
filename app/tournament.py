@@ -34,6 +34,12 @@ class Tournament(object):
 
         self.days = days
 
+        params = self.getParams()
+        if params.getParam('points_win'):
+            self.POINTS_WIN = int(params.getParam('points_win'))
+        else:
+            self.POINTS_WIN = 2
+
     def __repr__(self):
         return "{} - {} - {}".format(self.name, self.start_date, self.location)
 
@@ -1056,7 +1062,68 @@ class Tournament(object):
                          (score_b, score_w, forfeit, self.tid, gid))
         db.commit()
 
-        # self.popSeededPods()
+        self.popSeededPods()
+
+        return 1
+
+    # Checks if first round of pods is all finished and populates seeded pods if necessary
+    # NOT DYNAMIC requires hard coding right now
+    def popSeededPods(self):
+        app.logger.debug("popping some pods")
+
+        params = self.getParams()
+
+        seeded_pods = params.getParam('seeded_pods')
+        if seeded_pods == 1:
+        	return 0
+        else:
+        	return 0
+
+        round1 = ("1P","2P","3P","4P")
+
+        pods_done =[]
+        for pod in round1:
+        	pods_done.append(endRoundRobin(None, pod))
+
+        if not all(done == True for done in pods_done):
+        	return 0
+
+        ties = []
+        for pod in round1:
+        		ties.append(checkForTies(getStandings(None,pod)))
+
+        if not all(tie == False for tie in ties):
+        	return 0
+
+        	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
+
+        db = getDB()
+
+        seededPods = ['A','B','C']
+        pod_id = 1
+        seeding = {}
+
+        seeding['1P'] = ['a','a','b','b','c']
+        seeding['2P'] = ['a','a','b','b','c']
+        seeding['3P'] = ['c','d','d','e','e']
+        seeding['4P'] = ['c','d','d','e','e']
+
+        for pod in round1:
+        	podStandings = getStandings(None,pod)
+
+        	rules = seeding[pod]
+        	offset = 0
+        	for rank in podStandings:
+        		team = rank.team
+        		team_id = team.team_id
+        		pod = rules[offset]
+        		cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)",(app.config['TID'], team_id, pod))
+                db.commit()
+                #cur = db.execute("UPDATE teams SET division=? WHERE team_id=? and tid=?",(pod, team_id, app.config['TID']))
+                #db.commit()
+                offset +=1
+
+        params.updateParam('seeded_pods',1)
 
         return 1
 
@@ -1123,7 +1190,7 @@ class Tournament(object):
     	else:
     		params.addParam("coin_flips", val)
 
-    	#popSeededPods()
+    	self.popSeededPods()
 
     	return 0
 
