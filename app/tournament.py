@@ -486,13 +486,13 @@ class Tournament(object):
 
     # creates flash for tie only if the round robin for the division is
     # finished
-    def addTie(self, tid_a, tid_b):
+    def addTie(self, tid_a, tid_b, tid_c=None):
         div_a = self.getDivision(tid_a)
         div_b = self.getDivision(tid_b)
 
         # not quite sure how this would happen, but protecting myself
-        if div_a != div_b:
-            return 0
+        #if div_a != div_b:
+        #    return 0
 
         db = self.db
 
@@ -511,8 +511,12 @@ class Tournament(object):
                 return 1
             # code to add divisional check goes here
 
-        # flash("There is a tie in the standings between %s & %s!" %  (teams[0],
-        # teams[1]))
+        if tid_c:
+            if not hasattr(g, 'ties'):
+                g.ties = []
+                g.ties.append((tid_a, tid_b, tid_c))
+            else:
+                g.ties.append((tid_a, tid_b, tid_c))
 
         if tid_a < tid_b:
             if not hasattr(g, 'ties'):
@@ -716,22 +720,22 @@ class Tournament(object):
 
     def checkForTies(self, standings):
         x = 0
-        while x < len(standings) - 1:
-            if self.cmpTeams(standings[x].team, standings[x + 1].team) == 0:
-                return True
-            x = x + 1
-
-        x = 0
         last = 0
         while x < len(standings) - 1:
             if self.cmpTeamsSort(standings[x].team, standings[x + 1].team) == 0:
                 if last == 1:
-                    flash("You need a three sided die, give up and go home")
+                    #flash("You need a three sided die, give up and go home")
                     return True
                 else:
                     last = 1
             else:
                 last = 0
+            x = x + 1
+
+        x = 0
+        while x < len(standings) - 1:
+            if self.cmpTeams(standings[x].team, standings[x + 1].team) == 0:
+                return True
             x = x + 1
 
         return False
@@ -799,8 +803,7 @@ class Tournament(object):
                 #app.logger.debug("-- working on pod %s" % div)
                 div_standings = [x for x in standings if x.team.pod == div]
             else:
-                div_standings = [
-                    x for x in standings if x.team.division == div]
+                div_standings = [x for x in standings if x.team.division == div]
 
             places = len(div_standings)
             place = 1
@@ -824,11 +827,7 @@ class Tournament(object):
                     elif self.cmpTeams(a, b, div) > 0:
                         place_teams[0].place += 1
                     else:
-                        # flip = getCoinFlip(a.team_id, b.team_id)
-                        # if flip == a.team_id:
-                        #	place_teams[1] += 1
-                        # if flip == b.team_id:
-                        #	place_Teams[0] += 1
+                        # Tied, no coin clip, and that's ok for now
                         continue
                 elif count == 3:
                     app.logger.debug("working a three-way in %s" % div)
@@ -851,7 +850,14 @@ class Tournament(object):
                     if place_teams[1:] == place_teams[:-1]:
                         app.logger.debug("three way tie all equal in %s" % div)
                         place += 1
-                        # continue
+                        if is_pods and self.endRoundRobin(None,div):
+                            app.logger.debug("end of round robin and three-way tie")
+                            self.addTie(place_teams[0].team.team_id,place_teams[1].team.team_id,place_teams[2].team.team_id)
+                        elif not is_pods and self.endRoundRobin(div):
+                            app.logger.debug("end of round robin and three-way tie")
+                            self.addTie(place_teams[0].team.team_id,place_teams[1].team.team_id,place_teams[2].team.team_id)
+
+                        continue
                     else:
                         # sort teams based on rules w/o head-to-head
                         place_teams = sorted(place_teams, cmp=self.cmpRankSort)
@@ -955,37 +961,27 @@ class Tournament(object):
     	return ties
 
     def genTieFlashes(self):
-    	if not hasattr(g, 'ties'):
-    		return 0
-
-    	ties = g.ties
-
-    	seen = set()
-    	list = [x for x in ties if x not in seen and not seen.add(x)]
-
-    	for tie in list:
-    		name_a = self.getTeam(tie[0])
-    		name_b = self.getTeam(tie[1])
-    		flash("There is a tie in the standings between %s & %s" % (name_a, name_b))
-
-    	flash("A coin flip is required, please see tournament director or head ref")
-    	return 0
-
-    def getTieFlashes(self):
         if not hasattr(g, 'ties'):
-            return None
+            return 0
 
         ties = g.ties
+
         seen = set()
-        t_list = [x for x in ties if x not in seen and not seen.add(x)]
+        list = [x for x in ties if x not in seen and not seen.add(x)]
 
-        messages = []
-        for tie in t_list:
-            name_a = self.getTeam(tie[0])
-            name_b = self.getTeam(tie[1])
-            messages.append("There is a tie in the standings between %s & %s" % (name_a, name_b))
+        for tie in list:
+            if len(tie) == 2:
+                name_a = self.getTeam(tie[0])
+                name_b = self.getTeam(tie[1])
+                flash("There is a tie in the standings between %s & %s" % (name_a, name_b))
+            elif len(tie) == 3:
+                name_a = self.getTeam(tie[0])
+                name_b = self.getTeam(tie[1])
+                name_c = self.getTeam(tie[2])
+                flash("There is a three-way tie with %s, %s and %s" % (name_a, name_b, name_c))
 
-        return messages
+        flash("A coin flip is required, please see tournament director or head ref")
+        return 0
 
     ##########################################################################
     # Admin functions
@@ -1090,7 +1086,7 @@ class Tournament(object):
 
         ties = []
         for pod in round1:
-        		ties.append(checkForTies(getStandings(None,pod)))
+            ties.append(checkForTies(getStandings(None,pod)))
 
         if not all(tie == False for tie in ties):
         	return 0
