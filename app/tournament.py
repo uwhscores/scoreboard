@@ -128,7 +128,7 @@ class Tournament(object):
         elif (division == None):
             # trickery to see if it is a division pod and get crossover games
             # or not
-            if pod in getDivisions():
+            if pod in self.getDivisions():
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
     								WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",
                                  (pod, self.tid))

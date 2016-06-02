@@ -1,5 +1,5 @@
 from app import app
-from flask import request, redirect, render_template 
+from flask import request, redirect, render_template
 from functions import *
 
 @app.route('/')
@@ -34,7 +34,6 @@ def renderTourament(short_name):
     pods = t.getPodsActive()
     pod_names = t.getPodNamesActive()
 
-
     standings = []
     if pods:
         for pod in pods:
@@ -48,7 +47,7 @@ def renderTourament(short_name):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings,\
-        placings=placings, divisions=division, team_list=team_list, pod_names = pod_names, site_message=site_message)
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
 #         standings=standings, games=games, pods=pod_names, titleText=titleText, \
 #         placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
@@ -81,6 +80,38 @@ def renderTDiv(short_name, div):
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
         team_list=team_list, site_message=site_message)
+
+@app.route('/t/<short_name>/pod/<pod>')
+def renderTPod(short_name, pod):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+
+    if not t.isGroup(pod):
+        flash("Invalid Pod")
+        rdir_string = "/t/%s" % t.short_name
+        return redirect(rdir_string)
+
+    games = t.getGames(pod=pod)
+    division = t.getDivisionNames()
+    standings = t.getStandings(pod=pod)
+    team_list = t.getTeams(pod=pod)
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
+        pods = pod_names, team_list=team_list, site_message=site_message)
 
 @app.route('/t/<short_name>/team/<team_id>')
 def renderTTeam(short_name, team_id):
