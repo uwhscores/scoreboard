@@ -1,19 +1,18 @@
 from app import app
+from app import global_limiter
 from flask import request, redirect, render_template
 from flask.ext.login import LoginManager, UserMixin, login_required, login_user, \
     logout_user, current_user
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from functions import *
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "/login"
 
-admin_limiter = Limiter(
-    app,
-    key_func=get_remote_address
-)
+
+@global_limiter.request_filter
+def ip_whitelist():
+    return request.remote_addr == "127.0.0.1"
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -259,7 +258,7 @@ def show_login():
     return render_template('admin/show_login.html')
 
 @app.route('/login', methods=['POST'])
-@admin_limiter.limit("5/minute;20/hour")
+@global_limiter.limit("5/minute;20/hour")
 def do_login():
     email = None
 

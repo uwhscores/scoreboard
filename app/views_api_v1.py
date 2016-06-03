@@ -1,18 +1,12 @@
 from functions import *
+from app import global_limiter
 from flask import json,jsonify, request, make_response
 from flask.ext.httpauth import HTTPBasicAuth
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from base64 import b64encode
 from os import urandom
 
 auth = HTTPBasicAuth()
 
-api_limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    global_limits=["1000 per day", "100 per hour"]
-)
 
 class InvalidUsage(Exception):
     status_code = 400
@@ -246,7 +240,7 @@ def apiGetMessages(tid):
 # Private APIs
 ################################################################################
 @app.route('/api/v1/login')
-@api_limiter.limit("5/minute;20/hour")
+@global_limiter.limit("5/minute;20/hour")
 @auth.login_required
 def login_token():
     user_name = request.authorization.username
