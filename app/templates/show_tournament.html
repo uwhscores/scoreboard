@@ -150,7 +150,7 @@
 				<tbody>
 				{% for rank in standings -%}
 				{% set team = rank.team %}
-					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}	
+					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
  				</tbody>
 				<thead>
 					<tr>
@@ -194,7 +194,7 @@
 
 			<div class="alert alert-info" role="alert">
 				<p>
-				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two points for each win, and one point for a tie.</br>
+				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two or three points (base on tournament rules) for each win, and one point for a tie.</br>
 				<strong>Record -</strong> Record in games played for points in standing </br>
 				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker </br>
 				<strong>GP -</strong> Games played for standings </br>
