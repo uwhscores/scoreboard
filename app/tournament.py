@@ -809,8 +809,7 @@ class Tournament(object):
             places = len(div_standings)
             place = 1
             while place <= places:
-                place_teams = [
-                    x for x in div_standings if x.place == place]
+                place_teams = [x for x in div_standings if x.place == place]
                 count = len(place_teams)
                 # app.logger.debug("place_teams =  %s" % place_teams)
                 # nobody is in this place, probably do to ties, move on
@@ -879,15 +878,21 @@ class Tournament(object):
 
                 # more than three teams in place
                 else:
-                    app.logger.debug("%s teams tied" % count)
+                    app.logger.debug("%s teams tied in pod %s" % (count, pod))
 
-                    least_goals = place_teams[0].team.goals_allowed
-                    rest = [x for x in place_teams if x.team.goals_allowed > least_goals]
-                    if len(rest) > 0:
-                        for r in rest:
-                            r.place += 1
-                    else:
+                    place_teams = sorted(place_teams, cmp=self.cmpRankSort)
+
+                    most_goals = place_teams[-1].team.goals_allowed
+                    tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
+                    #if pod=="4P":
+                    #    b
+                    if len(tied) == len(place_teams):
                         place += 1
+                    else:
+                        for r in tied:
+                            r.place += len(place_teams) - len(tied)
+
+
 
         # resort to make sure in order by place, pod and division
         tmp = sorted(standings, key=lambda x: x.place)
