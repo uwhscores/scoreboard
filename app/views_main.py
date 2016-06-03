@@ -73,13 +73,22 @@ def renderTDiv(short_name, div):
 
     games = t.getGames(div)
     division = t.getDivisionNames()
-    standings = t.getStandings(div)
     team_list = t.getTeams(div)
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings(div)
 
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
-        team_list=team_list, site_message=site_message)
+        pods=pod_names, team_list=team_list, site_message=site_message)
 
 @app.route('/t/<short_name>/pod/<pod>')
 def renderTPod(short_name, pod):
@@ -141,10 +150,9 @@ def renderTTeam(short_name, team_id):
 
     divisions = t.getDivisionNames()
     div = t.getDivision(team_id)
-    team_list = t.getTeams(div)
-    #pod_names = getPodNamesActive(division)
-
-    #teams = []
+    team_list = t.getTeams()
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
 
     games = t.getTeamGames(team_id)
     standings = t.getStandings()
@@ -152,7 +160,7 @@ def renderTTeam(short_name, team_id):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
-        team_list=team_list, site_message=site_message)
+        pods=pod_names, team_list=team_list, site_message=site_message)
 
 #######################################
 ## Static pages
