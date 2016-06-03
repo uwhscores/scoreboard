@@ -25,6 +25,7 @@
 	<div class="row">
 	{% if team_list -%}
 	<div id="team_nav" class="col-md-4 listgroup">
+		<a href="/t/{{tournament.short_name}}/print"><i class="fa fa-fw fa-print"></i>Printer Friendly Schedule</a>
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
 		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>

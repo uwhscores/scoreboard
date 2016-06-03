@@ -103,11 +103,17 @@ tr.odd {
 }
 
 @media print {
-	body{
-		font-size: 12px;
+	body {
+		font-size: 10px;
 	}
 
-	/*.row {
-		page-break-before: always;
-	}*/
+	.gamerow tr {
+		page-break-inside: avoid;
+	}
+
+	.table {
+		page-break-after: always;
+		padding: 0;
+		margin: 0;
+	}
 }

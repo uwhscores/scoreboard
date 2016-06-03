@@ -169,6 +169,80 @@ def renderTTeam(short_name, team_id):
         pods=pod_names, team_list=team_list, site_message=site_message)
 
 #######################################
+## Special pages
+#######################################
+@app.route('/t/<short_name>/tv')
+def renderTouramentTV(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+    games = t.getGames()
+    division = t.getDivisionNames()
+    team_list = t.getTeams()
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
+
+    t.genTieFlashes()
+    placings = t.getPlacings()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tv.html', tournament=t, games=games, standings=standings,\
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
+
+@app.route('/t/<short_name>/print')
+def renderTouramentPrint(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+    games = t.getGames()
+    division = t.getDivisionNames()
+    team_list = t.getTeams()
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
+
+    t.genTieFlashes()
+    placings = t.getPlacings()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_print.html', tournament=t, games=games, standings=standings,\
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
+
+
+#######################################
 ## Static pages
 #######################################
 @app.route('/faq')
