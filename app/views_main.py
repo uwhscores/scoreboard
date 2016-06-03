@@ -151,11 +151,17 @@ def renderTTeam(short_name, team_id):
     divisions = t.getDivisionNames()
     div = t.getDivision(team_id)
     team_list = t.getTeams()
-    pods = t.getPodsActive()
+    pods = t.getPodsActive(team=team_id)
     pod_names = t.getPodNamesActive()
 
     games = t.getTeamGames(team_id)
-    standings = t.getStandings()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
 
     site_message = t.getSiteMessage()
 

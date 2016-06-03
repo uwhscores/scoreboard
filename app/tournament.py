@@ -287,9 +287,11 @@ class Tournament(object):
         return pods
 
     # returns list of all pod abbreviations that have teams assigned
-    def getPodsActive(self, div=None):
+    def getPodsActive(self, div=None, team=None):
         db = self.db
-        if (div):
+        if team:
+            cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? AND p.team_id=? ORDER BY p.pod + 0 ASC', (self.tid, team))
+        elif div:
             cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
     			 AND t.division=? and p.tid=? ORDER BY p.pod + 0 ASC', (div, self.tid))
         else:
@@ -302,8 +304,8 @@ class Tournament(object):
 
         return pods
 
-    def getPodNamesActive(self, div=None):
-        pods = self.getPodsActive(div)
+    def getPodNamesActive(self, div=None, team=None):
+        pods = self.getPodsActive(div=div, team=team)
 
         pod_names = []
         for pod in pods:
