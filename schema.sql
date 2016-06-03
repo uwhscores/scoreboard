@@ -85,7 +85,8 @@ CREATE TABLE users (
 	active INTEGER NOT NULL DEFAULT 0,
 	site_admin INTEGER NOT NULL DEFAULT 0,
 	admin INTEGER NOT NULL DEFAULT 0,
-	passwd_reset INTEGER NOT NULL DEFAULT 0
+	passwd_reset INTEGER NOT NULL DEFAULT 0,
+    reset_token TEXT
 );
 
 CREATE TABLE tokens (
