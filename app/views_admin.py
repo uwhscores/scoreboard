@@ -1,9 +1,11 @@
 from app import app
 from app import global_limiter
+from app import audit_logger
 from flask import request, redirect, render_template
 from flask.ext.login import LoginManager, UserMixin, login_required, login_user, \
     logout_user, current_user
 from functions import *
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -212,6 +214,7 @@ def renderUpdate():
             flash("You are not authorized for this tournament")
             return redirect("/admin")
 
+
         form = request.form
         game = {}
     	game['gid'] = int(form.get('gid'))
@@ -224,6 +227,8 @@ def renderUpdate():
     	game['forfeit_w'] = form.get('forfeit_w')
     	game['forfeit_b'] = form.get('forfeit_b')
 
+        audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %\
+            (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
         t.updateGame(game)
 
         return redirect( "/admin/update?tid=%s" % tid )
@@ -249,6 +254,7 @@ def updateConfigPost():
         flash("You are not authorized for this tournament")
         return redirect("/admin")
 
+    audit_logger.info("Some sort of config update by %s(%s) - you should really log this better" % (current_user.short_name, current_user.user_id))
     t.updateConfig(request.form)
 
     return redirect("/admin/t/%s" % t.short_name)
@@ -272,35 +278,38 @@ def do_login():
         user_id = authenticate_user(email, password, ip_addr=request.remote_addr)
         if user_id > 0:
             login_user(getUserByID(user_id))
+            audit_logger.info("Successful login by %s(%s)" % (current_user.short_name, current_user.user_id))
             return redirect("/admin")
     else:
         return render_template('show_error.html', error_message="You are not a person")
 
+    audit_logger.info("Failed login attempt w/ email: %s" % email)
     return redirect("/login")
 
 
 @app.route('/logout')
 @login_required
 def logout():
+    audit_logger.info("Logout for %s(%s)" % (current_user.short_name, current_user.user_id))
     logout_user()
     return redirect('/')
 
 @app.route('/login/reset', methods=['GET'])
 def pw_reset():
-    
+
     token = None
 
     if request.args.get('token'):
         token = request.args.get('token')
         user_id = validateResetToken(token)
-        
+
     # token wasn't supplied or doesn't belong to a user
     if not token or not user_id:
         return render_template('show_error.html', error_message="Invalid or missing token")
 
 
-    return render_template('admin/login_reset.html', token=token)
-   
+    return render_template('admin/show_pwreset.html', token=token)
+
 @app.route('/login/reset', methods=['POST'])
 def set_password():
 
@@ -323,8 +332,8 @@ def set_password():
             flash ("Passwords do not match, try again")
             return redirect("/login/reset?token=%s" % token)
 
-        setUserPassword(user_id, password1)         
+        setUserPassword(user_id, password1)
+        audit_logger.info("User password reset for %s" % user_id)
         flash ("New password set, please login")
-        
+
         return redirect("/login")
- 

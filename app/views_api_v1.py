@@ -1,5 +1,6 @@
 from functions import *
 from app import global_limiter
+from app import audit_logger
 from flask import json,jsonify, request, make_response
 from flask.ext.httpauth import HTTPBasicAuth
 from base64 import b64encode
@@ -245,7 +246,7 @@ def apiGetMessages(tid):
 def login_token():
     user_name = request.authorization.username
     response = genToken(user_name)
-
+    audit_logger.info("API: Token generated for %s" % user_name)
     return jsonify(response)
 
 @app.route('/api/v1/logout')
@@ -257,6 +258,8 @@ def logout_token():
         r = deleteToken(request.authorization.username)
 
     message = "Goodbye %s" % g.user_id
+    current_user = getUserByID(g.user_id)
+    audit_logger.info("API: Logout for user %s(%s)" % (current_user.short_name, current_user.user_id))
     return jsonify(message='goodbye')
 
 
@@ -332,6 +335,8 @@ def updateGame(tid, gid):
     score['forfeit_w'] = j.get('forfeit_w')
     score['forfeit_b'] = j.get('forfeit_b')
 
+    audit_logger.info("API: Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %\
+        (t.short_name, score['gid'], current_user.short_name, current_user.user_id, score['score_b'], score['score_w']))
     status = t.updateGame(score)
 
     if not status == 1:
