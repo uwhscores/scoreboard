@@ -25,6 +25,7 @@
 	<div class="row">
 	{% if team_list -%}
 	<div id="team_nav" class="col-md-4 listgroup">
+		<a href="/t/{{tournament.short_name}}/print"><i class="fa fa-fw fa-print"></i>Printer Friendly Schedule</a>
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
 		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>
@@ -135,7 +136,7 @@
 						{% if divisions -%}
 						<th>Div</th>
 						{%- endif %}
-						{% if pod_names -%}
+						{% if pods -%}
 						<th>Pod</th>
 						{%- endif %}
 						<th>Rank</th>
@@ -150,14 +151,14 @@
 				<tbody>
 				{% for rank in standings -%}
 				{% set team = rank.team %}
-					{% if not loop.first and (team.division != lastDiv or team.pod != lastPod ) -%}
+					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
  				</tbody>
 				<thead>
 					<tr>
 						{% if divisions -%}
 						<th>Div</th>
 						{%- endif %}
-						{% if pod_names -%}
+						{% if pods -%}
 						<th>Pod</th>
 						{%- endif %}
 						<th>Rank</th>
@@ -194,7 +195,7 @@
 
 			<div class="alert alert-info" role="alert">
 				<p>
-				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two points for each win, and one point for a tie.</br>
+				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two or three points (base on tournament rules) for each win, and one point for a tie.</br>
 				<strong>Record -</strong> Record in games played for points in standing </br>
 				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker </br>
 				<strong>GP -</strong> Games played for standings </br>

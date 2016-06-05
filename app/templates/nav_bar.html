@@ -44,9 +44,9 @@
                         <ul class="dropdown-menu">
                             {% for pod in pods -%}
                                 {% if pod.name -%}
-                                <li><a href="/pod/{{ pod.id }}">{{ pod.name }}</a></li>
+                                <li><a href="/t/{{ tournament.short_name }}/pod/{{ pod.id }}">{{ pod.name }}</a></li>
                                 {% else %}
-                                <li><a href="/pod/{{ pod.id }}">{{ pod.id }} Pod</a></li>
+                                <li><a href="/t/{{ tournament.short_name }}/pod/{{ pod.id }}">{{ pod.id }} Pod</a></li>
                                 {%- endif %}
                             {%- endfor %}
                         </ul>

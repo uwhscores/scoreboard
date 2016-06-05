@@ -1,5 +1,5 @@
 from app import app
-from flask import request, redirect, render_template 
+from flask import request, redirect, render_template
 from functions import *
 
 @app.route('/')
@@ -34,7 +34,6 @@ def renderTourament(short_name):
     pods = t.getPodsActive()
     pod_names = t.getPodNamesActive()
 
-
     standings = []
     if pods:
         for pod in pods:
@@ -48,7 +47,7 @@ def renderTourament(short_name):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings,\
-        placings=placings, divisions=division, team_list=team_list, pod_names = pod_names, site_message=site_message)
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
 #         standings=standings, games=games, pods=pod_names, titleText=titleText, \
 #         placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
@@ -74,13 +73,54 @@ def renderTDiv(short_name, div):
 
     games = t.getGames(div)
     division = t.getDivisionNames()
-    standings = t.getStandings(div)
     team_list = t.getTeams(div)
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings(div)
 
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
-        team_list=team_list, site_message=site_message)
+        pods=pod_names, team_list=team_list, site_message=site_message)
+
+@app.route('/t/<short_name>/pod/<pod>')
+def renderTPod(short_name, pod):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+
+    if not t.isGroup(pod):
+        flash("Invalid Pod")
+        rdir_string = "/t/%s" % t.short_name
+        return redirect(rdir_string)
+
+    games = t.getGames(pod=pod)
+    division = t.getDivisionNames()
+    standings = t.getStandings(pod=pod)
+    team_list = t.getTeams(pod=pod)
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
+        pods = pod_names, team_list=team_list, site_message=site_message)
 
 @app.route('/t/<short_name>/team/<team_id>')
 def renderTTeam(short_name, team_id):
@@ -110,18 +150,111 @@ def renderTTeam(short_name, team_id):
 
     divisions = t.getDivisionNames()
     div = t.getDivision(team_id)
-    team_list = t.getTeams(div)
-    #pod_names = getPodNamesActive(division)
-
-    #teams = []
+    team_list = t.getTeams()
+    pods = t.getPodsActive(team=team_id)
+    pod_names = t.getPodNamesActive()
 
     games = t.getTeamGames(team_id)
-    standings = t.getStandings()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
 
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
-        team_list=team_list, site_message=site_message)
+        pods=pod_names, team_list=team_list, site_message=site_message)
+
+#######################################
+## Special pages
+#######################################
+@app.route('/t/<short_name>/tv')
+def renderTouramentTV(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+
+    next_page=None
+    if request.args.get('offset'):
+        offset = request.args.get('offset')
+        if offset.isdigit():
+            offset=int(offset)
+            games = t.getGames(offset=offset)
+            next_page = offset + 25
+            if next_page > 100:
+                next_page = "0"
+        else:
+            games = t.getGames()
+    else:
+        games = t.getGames()
+
+    division = t.getDivisionNames()
+    team_list = t.getTeams()
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
+
+    t.genTieFlashes()
+    placings = t.getPlacings()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tv.html', tournament=t, games=games, standings=standings,\
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message, next_page=next_page)
+
+@app.route('/t/<short_name>/print')
+def renderTouramentPrint(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+    games = t.getGames()
+    division = t.getDivisionNames()
+    team_list = t.getTeams()
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
+
+    t.genTieFlashes()
+    placings = t.getPlacings()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_print.html', tournament=t, games=games, standings=standings,\
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
+
 
 #######################################
 ## Static pages

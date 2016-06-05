@@ -128,7 +128,7 @@ class Tournament(object):
         elif (division == None):
             # trickery to see if it is a division pod and get crossover games
             # or not
-            if pod in getDivisions():
+            if pod in self.getDivisions():
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
     								WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",
                                  (pod, self.tid))
@@ -287,9 +287,11 @@ class Tournament(object):
         return pods
 
     # returns list of all pod abbreviations that have teams assigned
-    def getPodsActive(self, div=None):
+    def getPodsActive(self, div=None, team=None):
         db = self.db
-        if (div):
+        if team:
+            cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? AND p.team_id=? ORDER BY p.pod + 0 ASC', (self.tid, team))
+        elif div:
             cur = db.execute('SELECT DISTINCT p.pod FROM pods p, teams t WHERE p.team_id=t.team_id\
     			 AND t.division=? and p.tid=? ORDER BY p.pod + 0 ASC', (div, self.tid))
         else:
@@ -302,8 +304,8 @@ class Tournament(object):
 
         return pods
 
-    def getPodNamesActive(self, div=None):
-        pods = self.getPodsActive(div)
+    def getPodNamesActive(self, div=None, team=None):
+        pods = self.getPodsActive(div=div, team=team)
 
         pod_names = []
         for pod in pods:
@@ -668,25 +670,25 @@ class Tournament(object):
     #
     def cmpTeams(self, team_b, team_a, pod=None):
         #app.logger.debug("in cmpTeams between %s and %s for pod %s" % (team_a, team_b, pod))
-        if (team_a.division.lower() != team_b.division.lower()):
+        if team_a.pod != team_b.pod and team_a.division.lower() != team_b.division.lower():
             #app.logger.debug("not same division")
             return self.divToInt(team_a.division) - self.divToInt(team_b.division)
-        elif (team_a.pod != team_b.pod):
+        elif team_a.pod != team_b.pod:
             #app.logger.debug("not same pod")
             return self.podToInt(team_a.pod) - self.podToInt(team_b.pod)
-        elif (team_a.points != team_b.points):
+        elif team_a.points != team_b.points:
             #app.logger.debug("breaking on points")
             return team_a.points - team_b.points
-        elif (self.netWins(team_a, team_b, pod) != self.netWins(team_b, team_a, pod)):
+        elif self.netWins(team_a, team_b, pod) != self.netWins(team_b, team_a, pod):
             #app.logger.debug("breaking on netwins")
             return self.netWins(team_a, team_b, pod) - self.netWins(team_b, team_a, pod)
-        elif (team_a.wins != team_b.wins):
+        elif team_a.wins != team_b.wins:
             #app.logger.debug("breaking on wins")
             return team_a.wins - team_b.wins
-        elif (team_a.losses != team_b.losses):
+        elif team_a.losses != team_b.losses:
             #app.logger.debug("breaking on losses")
             return team_b.losses - team_a.losses
-        elif (team_a.goals_allowed != team_b.goals_allowed):
+        elif team_a.goals_allowed != team_b.goals_allowed:
             #app.logger.debug("breaking on gloas allowed")
             return team_b.goals_allowed - team_a.goals_allowed
         else:
@@ -703,13 +705,14 @@ class Tournament(object):
     # Compares teams w/o head-to-head, needed for sorting sets of three or
     # more teams
     def cmpTeamsSort(self, team_b, team_a):
-        if (team_a.division.lower() != team_b.division.lower()):
-            return self.divToInt(team_a.division) - self.divToInt(team_b.division)
-        elif (team_a.wins != team_b.wins):
+        if team_a.pod != team_b.pod:
+            if team_a.division.lower() != team_b.division.lower():
+                return self.divToInt(team_a.division) - self.divToInt(team_b.division)
+        elif team_a.wins != team_b.wins:
             return team_a.wins - team_b.wins
-        elif (team_a.losses != team_b.losses):
+        elif team_a.losses != team_b.losses:
             return team_b.losses - team_a.losses
-        elif (team_a.goals_allowed != team_b.goals_allowed):
+        elif team_a.goals_allowed != team_b.goals_allowed:
             return team_b.goals_allowed - team_a.goals_allowed
         else:
             return 0
@@ -746,10 +749,10 @@ class Tournament(object):
     # Wherever place is displayed/used it would reference the place field,
     # don't use the index for place
     def sortStandings(self, team_stats, pod=None):
-        if not pod:
-            app.logger.debug("sorting standings without pod")
-        else:
-            app.logger.debug("sorting for pod %s" % pod)
+        #if not pod:
+        #    app.logger.debug("sorting standings without pod")
+        #else:
+        #    app.logger.debug("sorting for pod %s" % pod)
 
         for team in team_stats:
             # team = team_stats[place]
@@ -770,7 +773,7 @@ class Tournament(object):
         skipped = 0
         for team in ordered:
             # reset rank number of its a new division or pod
-            if team.division != lastDiv or team.pod != lastPod:
+            if team.pod != lastPod or (team.division != lastDiv and lastPod == None):
                 i = 1
                 skipped = 0
             elif team != last and skipped > 0:
@@ -808,8 +811,7 @@ class Tournament(object):
             places = len(div_standings)
             place = 1
             while place <= places:
-                place_teams = [
-                    x for x in div_standings if x.place == place]
+                place_teams = [x for x in div_standings if x.place == place]
                 count = len(place_teams)
                 # app.logger.debug("place_teams =  %s" % place_teams)
                 # nobody is in this place, probably do to ties, move on
@@ -830,7 +832,7 @@ class Tournament(object):
                         # Tied, no coin clip, and that's ok for now
                         continue
                 elif count == 3:
-                    app.logger.debug("working a three-way in %s" % div)
+                    #app.logger.debug("working a three-way in %s" % div)
 
                     # unlikely, but if one team beat both others, then win
                     if self.netWins(place_teams[0].team, place_teams[1].team) > 0 and self.netWins(place_teams[0].team, place_teams[2].team) > 0:
@@ -878,19 +880,28 @@ class Tournament(object):
 
                 # more than three teams in place
                 else:
-                    app.logger.debug("%s teams tied" % count)
+                    app.logger.debug("%s teams tied in pod %s" % (count, pod))
 
-                    least_goals = place_teams[0].team.goals_allowed
-                    rest = [x for x in place_teams if x.team.goals_allowed > least_goals]
-                    if len(rest) > 0:
-                        for r in rest:
-                            r.place += 1
-                    else:
+                    place_teams = sorted(place_teams, cmp=self.cmpRankSort)
+
+                    most_goals = place_teams[-1].team.goals_allowed
+                    tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
+                    #if pod=="4P":
+                    #    b
+                    if len(tied) == len(place_teams):
                         place += 1
+                    else:
+                        for r in tied:
+                            r.place += len(place_teams) - len(tied)
 
-        # resort to make sure in order by place and division
+
+
+        # resort to make sure in order by place, pod and division
         tmp = sorted(standings, key=lambda x: x.place)
-        return sorted(tmp, key=lambda x: x.div)
+        if pod:
+            return sorted(tmp, key=lambda x: x.pod)
+        else:
+            return sorted(tmp, key=lambda x: x.div)
 
     # master function for calculating standings of all teams
     # shouldn't be called directly, use getStandings() to avoid
@@ -994,12 +1005,12 @@ class Tournament(object):
         if not self.is_active:
             return False
 
-        app.logger.debug("checking on admin")
+        #app.logger.debug("checking on admin")
         # first check if they are a site_admin or admin, if yes, just return true
         if user.site_admin or user.admin:
             return True
 
-        app.logger.debug("guess user isn't a super admin")
+        #app.logger.debug("guess user isn't a super admin")
         authorized_ids = []
 
         db = self.db
@@ -1065,61 +1076,60 @@ class Tournament(object):
     # Checks if first round of pods is all finished and populates seeded pods if necessary
     # NOT DYNAMIC requires hard coding right now
     def popSeededPods(self):
-        app.logger.debug("popping some pods")
 
         params = self.getParams()
 
         seeded_pods = params.getParam('seeded_pods')
         if seeded_pods == 1:
         	return 0
-        else:
-        	return 0
+
+        app.logger.debug("popSeededPods: checking if roundrobin is complete")
 
         round1 = ("1P","2P","3P","4P")
 
         pods_done =[]
         for pod in round1:
-        	pods_done.append(endRoundRobin(None, pod))
+        	pods_done.append(self.endRoundRobin(None, pod))
 
         if not all(done == True for done in pods_done):
         	return 0
 
+
         ties = []
         for pod in round1:
-            ties.append(checkForTies(getStandings(None,pod)))
+            ties.append(self.checkForTies(self.getStandings(None,pod)))
 
         if not all(tie == False for tie in ties):
         	return 0
 
-        	app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
+        app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
 
-        db = getDB()
+        db = self.db
 
-        seededPods = ['A','B','C']
-        pod_id = 1
         seeding = {}
-
         seeding['1P'] = ['a','a','b','b','c']
         seeding['2P'] = ['a','a','b','b','c']
         seeding['3P'] = ['c','d','d','e','e']
-        seeding['4P'] = ['c','d','d','e','e']
+        seeding['4P'] = ['c','d','d','e','e','e']
 
         for pod in round1:
-        	podStandings = getStandings(None,pod)
+            podStandings = self.getStandings(None,pod)
 
-        	rules = seeding[pod]
-        	offset = 0
-        	for rank in podStandings:
-        		team = rank.team
-        		team_id = team.team_id
-        		pod = rules[offset]
-        		cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)",(app.config['TID'], team_id, pod))
+            rules = seeding[pod]
+            offset = 0
+
+            for rank in podStandings:
+                app.logger.debug("Offset = %s" % offset)
+                team = rank.team
+                team_id = team.team_id
+                new_pod = rules[offset]
+                cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)",(self.tid, team_id, new_pod))
                 db.commit()
                 #cur = db.execute("UPDATE teams SET division=? WHERE team_id=? and tid=?",(pod, team_id, app.config['TID']))
                 #db.commit()
-                offset +=1
+                offset += 1
 
-        params.updateParam('seeded_pods',1)
+            params.updateParam('seeded_pods',1)
 
         return 1
 
