@@ -184,7 +184,21 @@ def renderTouramentTV(short_name):
     if message:
         return render_template('site_down.html', message=message)
 
-    games = t.getGames()
+
+    next_page=None
+    if request.args.get('offset'):
+        offset = request.args.get('offset')
+        if offset.isdigit():
+            offset=int(offset)
+            games = t.getGames(offset=offset)
+            next_page = offset + 25
+            if next_page > 100:
+                next_page = "0"
+        else:
+            games = t.getGames()
+    else:
+        games = t.getGames()
+
     division = t.getDivisionNames()
     team_list = t.getTeams()
 
@@ -204,7 +218,7 @@ def renderTouramentTV(short_name):
     site_message = t.getSiteMessage()
 
     return render_template('show_tv.html', tournament=t, games=games, standings=standings,\
-        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
+        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message, next_page=next_page)
 
 @app.route('/t/<short_name>/print')
 def renderTouramentPrint(short_name):
