@@ -284,3 +284,47 @@ def do_login():
 def logout():
     logout_user()
     return redirect('/')
+
+@app.route('/login/reset', methods=['GET'])
+def pw_reset():
+    
+    token = None
+
+    if request.args.get('token'):
+        token = request.args.get('token')
+        user_id = validateResetToken(token)
+        
+    # token wasn't supplied or doesn't belong to a user
+    if not token or not user_id:
+        return render_template('show_error.html', error_message="Invalid or missing token")
+
+
+    return render_template('admin/login_reset.html', token=token)
+   
+@app.route('/login/reset', methods=['POST'])
+def set_password():
+
+    form = request.form
+    if form.get('token'):
+        token = form.get('token')
+        user_id = validateResetToken(token)
+    else:
+        return render_template('show_error.html', error_message="You go away now")
+
+    if form.get('password1') and form.get('password2'):
+        password1 = form.get('password1')
+        password2 = form.get('password2')
+
+        if len(password1) < 6:
+            flash( "Password too short, must be at least 6 characters")
+            return redirect("/login/reset?token=%s" % token)
+
+        if password1 != password2:
+            flash ("Passwords do not match, try again")
+            return redirect("/login/reset?token=%s" % token)
+
+        setUserPassword(user_id, password1)         
+        flash ("New password set, please login")
+        
+        return redirect("/login")
+ 

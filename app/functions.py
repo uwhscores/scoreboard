@@ -123,3 +123,26 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
         if not silent:
             flash("Cannot find account")
         return None
+
+def validateResetToken(token):
+    db = getDB()
+
+    cur = db.execute("SELECT user_id FROM users where reset_token=? AND active=1", (token,))
+    row = cur.fetchone()
+    cur.close()
+
+    if row:
+        return row['user_id']
+    else:
+        return None
+
+def setUserPassword(user_id, password):
+    db = getDB()
+
+    password = password.encode('utf-8')
+    hashed = bcrypt.hashpw(password, bcrypt.gensalt())  
+    
+    cur = db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, user_id))
+    db.commit()
+
+    return 0
