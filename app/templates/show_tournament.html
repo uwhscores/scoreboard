@@ -128,6 +128,16 @@
 					{% endif %}
 					</div>
 
+					{% if team_warning -%}
+					<div class="alert alert-info" role="alert">
+						<h3> NOTICE </h3>
+						<p><strong> Team schedule view only shows confirmed games! </strong></p>
+						<p> Games for later pods or brackets that haven't been decided will not
+						show here until teams are assigned.</p>
+						<p> Check back regularly to confirm future games.</p>
+					</div>
+					{%- endif %}
+
 			<div id="standings" class="tab-pane fade">
 			<h1>{{ titleText }} Standings</h1>
 			<table id=standings_tbl class="table table-striped">

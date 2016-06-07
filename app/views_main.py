@@ -166,7 +166,7 @@ def renderTTeam(short_name, team_id):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
-        pods=pod_names, team_list=team_list, site_message=site_message)
+        pods=pod_names, team_list=team_list, site_message=site_message, team_warning=True)
 
 #######################################
 ## Special pages
