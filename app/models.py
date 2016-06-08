@@ -46,7 +46,8 @@ class Stats(object):
 			if game['pod']:
 				game_pod = game['pod']
 
-			self.games_played += 1
+			if game_pod == pod:
+				self.games_played += 1
 
 			# forfeit
 			if (forfeit == "b" and black_tid == team_id):
