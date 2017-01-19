@@ -352,6 +352,18 @@ class Tournament(object):
         else:
             return False
 
+    def isPod(self, pod):
+        db = self.db
+        cur = db.execute(
+            "SELECT count(*) FROM pods where pod_id=? AND tid=?", (pod, self.tid))
+
+        count = cur.fetchone()[0]
+
+        if count > 0:
+            return True
+        else:
+            return False
+
     # gets team ID back from seed ranking, returns -1 if seeding isn't final
     def getSeed(self, seed, division=None, pod=None):
         if (self.endRoundRobin(division, pod)):
@@ -552,10 +564,9 @@ class Tournament(object):
                              (division, self.tid))
         else:
             cur = db.execute(
-                'SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? POD=? AND tid=?', (division, pod, self.tid))
+                'SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND POD=? AND tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
-
         rr_games = row['games']
 
         if (division == None and pod == None):
@@ -569,14 +580,14 @@ class Tournament(object):
                              (division, self.tid))
         else:
             cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" \
-    			AND division LIKE ? and pod=? AND g.tid=s.tid AND s.tid=?', (division, pod, self.tid))
+    			AND division LIKE ? AND pod=? AND g.tid=s.tid AND s.tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
         games_played = row['count']
 
-        # app.logger.debug("%s-%s: RR Games = %s and we've played %s games" %
+        # app.logger.debug("%s-%s: RR Games = %s and we've played %s games" %\
         # (division, pod, rr_games, games_played))
-
+       
         # first check if all games have been played
         if (games_played >= rr_games):
             # app.logger.debug("endRoundRobin returing true")
@@ -612,9 +623,12 @@ class Tournament(object):
         tid_b = team_b.team_id
 
         if team_a.pod != team_b.pod:
-            app.logger.debug(
-                "Comparing two teams that aren't in the same pod, that's ok")
+            app.logger.debug("Comparing two teams that aren't in the same pod, that's ok")
 
+        if pod and not self.isPod(pod):
+            pod=None
+            #app.logger.debug("Comparing netWins with pod that isn't a pod, setting to None")
+        
         #app.logger.debug("Checking %s v %s in pod %s" % (team_a.name, team_b.name, pod))
 
         if pod:
