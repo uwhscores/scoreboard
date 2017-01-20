@@ -72,7 +72,7 @@ def renderTDiv(short_name, div):
         return redirect(rdir_string)
 
     games = t.getGames(div)
-    division = t.getDivisionNames()
+    divisions = t.getDivisionNames()
     team_list = t.getTeams(div)
 
     pods = t.getPodsActive()
@@ -85,10 +85,13 @@ def renderTDiv(short_name, div):
     else:
         standings = t.getStandings(div)
 
+    division_name = t.expandGroupAbbr(div)
+    if division_name == None:
+        division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
-        pods=pod_names, team_list=team_list, site_message=site_message)
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
+        pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name)
 
 @app.route('/t/<short_name>/pod/<pod>')
 def renderTPod(short_name, pod):
@@ -117,10 +120,14 @@ def renderTPod(short_name, pod):
     pods = t.getPodsActive()
     pod_names = t.getPodNamesActive()
 
+
+    pod_name = t.expandGroupAbbr(pod)
+    if pod_name == None:
+        pod_name = "%s Pod" % pod
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=division,\
-        pods = pod_names, team_list=team_list, site_message=site_message)
+        pods = pod_names, team_list=team_list, site_message=site_message, title_text=pod_name)
 
 @app.route('/t/<short_name>/team/<team_id>')
 def renderTTeam(short_name, team_id):
@@ -141,9 +148,8 @@ def renderTTeam(short_name, team_id):
         return redirect(rdir_string)
 
     team_id = int(team_id)
-    titleText = t.getTeam(team_id)
 
-    if titleText == None:
+    if t.getTeam(team_id) == None:
         flash("Team ID %s doesn't exist" % team_id)
         rdir_string = "/t/%s" % t.short_name
         return redirect(rdir_string)
@@ -163,10 +169,11 @@ def renderTTeam(short_name, team_id):
     else:
         standings = t.getStandings()
 
+    team = t.getTeam(team_id)
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
-        pods=pod_names, team_list=team_list, site_message=site_message, team_warning=True)
+        pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True)
 
 #######################################
 ## Special pages
