@@ -31,7 +31,7 @@ def renderAdmin():
 
     tournaments = sorted(tournaments)
 
-    return render_template('/admin/show_admin.html', tournaments=tournaments)
+    return render_template('/admin/show_admin.html', tournaments=tournaments, user=current_user)
 
 
 @app.route("/admin/t/<short_name>")
@@ -80,9 +80,24 @@ def renderTAdmin(short_name):
 
 	# stats = getTournamentStats()
 
+    authorized_users = []
+    unauthorized_users = []
+
+
+    authorized_ids = t.getAuthorizedUserIDs()
+    users = getUserList()
+    for u in users:
+        if authorized_ids and u.user_id in authorized_ids:
+            authorized_users.append(u)
+        else:
+            if u.admin or u.site_admin:
+                continue
+            unauthorized_users.append(u)
+
+
     return render_template('admin/tournament_admin.html', tournament=t, ties=ties,\
         disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),\
-        redraws=redraws)
+        redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 
 @app.route('/admin/t/<short_name>/redraw', methods=['POST'])
@@ -259,6 +274,47 @@ def updateConfigPost():
 
     return redirect("/admin/t/%s" % t.short_name)
 
+@app.route('/admin/t/<short_name>/update_admins')
+@login_required
+def doUdateTournamentLogins(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    if request.args.get("add"):
+        user_id = request.args.get("add")
+        user = getUserByID(user_id)
+        if user:
+            audit_logger.info("Added %s(%s) as admin for %s by %s(%s)" % (user.short_name, user.user_id, t.short_name, current_user.short_name, current_user.user_id))
+            t.addAuthorizedID(user_id)
+        else:
+            flash("Unknown user ID to add")
+    elif request.args.get("remove"):
+        user_id = request.args.get("remove")
+        user = getUserByID(user_id)
+        if user_id == current_user.user_id:
+            flash("You can't remove yourself")
+            return redirect(request.referrer)
+        if user:
+            audit_logger.info("Removed %s(%s) as admin for %s by %s(%s)" % (user.short_name, user.user_id, t.short_name, current_user.short_name, current_user.user_id))
+            t.removeAuthorizedID(user_id)
+        else:
+            flash("Unkown user ID to remove")
+    else:
+        flash("Invalid add/remove syntax, go away")
+
+    return redirect(request.referrer)
+
+#######################################
+## Login/Logout/passwd reset
+#######################################
 @app.route('/login', methods=['GET'])
 def show_login():
     return render_template('admin/show_login.html')
@@ -332,8 +388,164 @@ def set_password():
             flash ("Passwords do not match, try again")
             return redirect("/login/reset?token=%s" % token)
 
-        setUserPassword(user_id, password1)
+        user = getUserByID(user_id)
+        if user:
+            user.setPassword(password1)
+        else:
+            flash("Something went wrong")
+            return redirect("/login")
+
         audit_logger.info("User password reset for %s" % user_id)
         flash ("New password set, please login")
 
         return redirect("/login")
+
+#######################################
+## User Management
+#######################################
+@app.route('/admin/users')
+@login_required
+def renderShowUsers():
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    users = getUserList()
+    return render_template('admin/show_users.html', users=users)
+
+@app.route('/admin/user/add',  methods=['GET'])
+@login_required
+def renderAddUser():
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    return render_template('admin/user_add.html')
+
+@app.route('/admin/user/add',  methods=['POST'])
+@login_required
+def doAddUser():
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    form = request.form
+    new_user = {}
+
+    if form.get('short_name'):
+        new_user['short_name'] = form.get('short_name')
+    else:
+        flash("Issue with short name")
+        return redirect("/admin/user/add")
+
+    if form.get('email'):
+        new_user['email'] = form.get('email')
+    else:
+        flash("Issue with email")
+        return redirect("/admin/user/add")
+
+    # For now not allow users to be added as site-admin
+    # saftey measure cause I'm not there yet, plubming works though
+    # enable input on user_add.html and uncomment below
+    
+    #if form.get('site-admin'):
+    #    new_user['site-admin'] = True
+    #else:
+    #    new_user['site-admin'] = False
+    new_user['site-admin'] = False
+
+    if form.get('admin'):
+        new_user['admin'] = True
+    else:
+        new_user['admin'] = False
+
+    audit_logger.info("Created new user for %s by %s(%s)" % (new_user['email'], current_user.short_name, current_user.user_id))
+    res = addUser(new_user)
+
+    if not res['success']:
+        flash(res['message'])
+        return redirect("/admin/user/add")
+
+    # ideally here is where you would email out the reset token
+
+    return render_template("/admin/show_new_user.html", email=new_user['email'], token=res['token'], user_id=res['user_id'])
+
+@app.route("/admin/user/<user_id>")
+@login_required
+def renderUserManager(user_id):
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    user = getUserByID(user_id)
+    if not user:
+        flash("Unknown User")
+        return redirect("/admin/users")
+
+    ts = getTournamets()
+    tournaments = []
+    for t in ts:
+        if ts[t].is_active:
+            tournaments.append(ts[t])
+
+    tournaments = sorted(tournaments)
+
+    return render_template("/admin/show_user_admin.html", user=user, tournaments=tournaments)
+
+@app.route('/admin/user/<user_id>/reset')
+@login_required
+def renderResetUserPass(user_id):
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    token = None
+    user = getUserByID(user_id)
+    if user:
+        audit_logger.info("Password reset for %s(%s) by %s(%s)" % (user.short_name, user.user_id, current_user.short_name, current_user.user_id))
+        token = user.resetUserPass()
+    else:
+        flash("That's not a real user")
+        return redirect("/admin/users")
+
+    return render_template('admin/show_passwd_reset.html', user=user, token=token)
+
+
+@app.route('/admin/user/<user_id>/update')
+@login_required
+def doUpdateUser(user_id):
+    if not current_user.site_admin:
+        flash("You are not authorized for user management")
+        return redirect("/admin")
+
+    user = getUserByID(user_id)
+
+    if not user:
+        flash("User not found, stop messing around")
+        return redirect("/admin/users")
+
+    if request.args.get('admin'):
+        admin = request.args.get('admin')
+        audit_logger.info("Change admin status %s for %s(%s) by %s(%s)" % (admin, user.short_name, user.user_id, current_user.short_name, current_user.user_id))
+        if admin == "1":
+            user.setAdmin(True)
+        elif admin == "0":
+            user.setAdmin(False)
+        else:
+            flash("You're screwing with me")
+
+    if request.args.get('active'):
+        if current_user.user_id == user.user_id:
+            flash("You can't deactivate yourself!")
+            return redirect(request.referrer)
+
+        active = request.args.get('active')
+        audit_logger.info("Change active status %s for %s(%s) by %s(%s)" % (active, user.short_name, user.user_id, current_user.short_name, current_user.user_id))
+        if active == "1":
+            user.setActive(True)
+        elif active == "0":
+            user.setActive(False)
+        else:
+            flash("You're screwing with me")
+
+    return redirect(request.referrer)
