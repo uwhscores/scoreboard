@@ -45,6 +45,8 @@ class Stats(object):
 			game_pod = None
 			if game['pod']:
 				game_pod = game['pod']
+			elif game['type'] != "RR":
+				game_pod = "None"
 
 			if game_pod == pod:
 				self.games_played += 1
