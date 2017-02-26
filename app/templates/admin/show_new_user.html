@@ -1,0 +1,57 @@
+{% extends "/admin/admin_layout.html" %}
+
+{% block nav %}
+	{% include "admin/nav_admin.html" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<!-- Page Content -->
+<div class="container">
+
+  <div class="row">
+    <div class="col-md-4 col-md-offset-4">
+      <h1 class="page-header">New User Created!</h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-danger" role="alert">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+
+	  <h3> Email to: {{ email }} </h3>
+	  <div class="well well-lg">
+		  <h3>Welcome to UWH Scores!</h3>
+		  <p>
+			  To login, you will need to set your password using the link below.
+			  After you do that you'll be able to login using your email ({{ email }})
+			  and the newly set password.
+		  </p>
+		  <p>
+			  If you are having trouble with your account please email me at
+			 <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+		  </p>
+		  <p>
+			  <a href="/login/reset?token={{token}}">https://uwhscores.com/login/reset?token={{token}}</a>
+		  </p>
+		  <p>
+			  If you have questions about how the site works please read the <a href="/faq">general FAQ</a>
+			  and read the <a href="/admin/welcome">Admin Instructions</a>.
+		  </p>
+	  </div>
+
+	</div>
+  </div>
+
+</div>
+<!-- /.container -->
+
+{% endblock main %}

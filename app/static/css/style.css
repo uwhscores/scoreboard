@@ -74,7 +74,22 @@ tr.odd {
 	font-size: 1.25em;
 }
 
+.feature-item {
+	text-align: center;
+}
 
+.feature-circle {
+	color: #eee;
+}
+
+.login-btn {
+	margin-top: 1em;
+	margin-bottom: 2em;
+}
+
+.bottom-buffer {
+	margin-bottom: 2em;
+}
 
 @media screen and (max-width: 1000px) {
 	#team_nav{
@@ -85,14 +100,24 @@ tr.odd {
 	h1 {
 		font-size:24px;
 	}
+
+    .btn-lg {
+        padding: 0px;
+    }
 }
 
 @media print {
-	body{
-		font-size: 12px;
+	body {
+		font-size: 10px;
 	}
-	
-	/*.row {
-		page-break-before: always;
-	}*/
+
+	.gamerow tr {
+		page-break-inside: avoid;
+	}
+
+	.table {
+		page-break-after: always;
+		padding: 0;
+		margin: 0;
+	}
 }

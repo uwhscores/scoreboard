@@ -7,14 +7,14 @@
 {% block main %}
 <div id="page_body" class="container">
 	<div class="row">
-		<div class="col-md-6">
+		<div class="col-md-8">
 			<div class="page-header tournament-header">
 				<h1 class="tournament-title">{{ tournament.name }}</h1>
 				<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
 			</div>
 		</div>
 		{% if site_message -%}
-		<div class="col-md-6">
+		<div class="col-md-8">
 			<div class="alert alert-info" role="alert">
 				<strong>Announcement:</strong>
 				<p>{{ site_message }}</p>
@@ -25,9 +25,10 @@
 	<div class="row">
 	{% if team_list -%}
 	<div id="team_nav" class="col-md-4 listgroup">
+		<a href="/t/{{tournament.short_name}}/print"><i class="fa fa-fw fa-print"></i>Printer Friendly Schedule</a>
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
-		<a class="list-group-item" href="/team/{{ team.team_id  }}">{{ team.name }}</a>
+		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
@@ -54,14 +55,14 @@
 		{% endif %}
 	{%- endwith %}
 		<ul id=tabNav class="nav nav-pills">
-			<li role="presentation" class="active" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
-			<li role="presentation"><a href="#standings" data-toggle="tab">Standings</a></li>
-			{% if placings %}<li role="presentation"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
+			<li role="presentation" class="active btn-lg" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
+			<li role="presentation" class="btn-lg"><a href="#standings" data-toggle="tab">Standings</a></li>
+			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
 		</ul>
 
-	<div id="tabContents" class="tab-content">
+		<div id="tabContents" class="tab-content">
 			<div id="schedule" class="tab-pane fade active in">
-					<h1>{{ titleText }} Schedule </h1>
+					<h1>{{ title_text }} Schedule </h1>
 					<nav id="dayPagerNav2">
 						<ul id="dayPager" class="pagination pagination-sm">
 							<li class="active toggleDay" day="All"><span>All</span></li>
@@ -127,6 +128,16 @@
 					{% endif %}
 					</div>
 
+					{% if team_warning -%}
+					<div class="alert alert-info" role="alert">
+						<h3> NOTICE </h3>
+						<p><strong> Team schedule view only shows confirmed games! </strong></p>
+						<p> Games for later pods or brackets that haven't been decided will not
+						show here until teams are assigned.</p>
+						<p> Check back regularly to confirm future games.</p>
+					</div>
+					{%- endif %}
+
 			<div id="standings" class="tab-pane fade">
 			<h1>{{ titleText }} Standings</h1>
 			<table id=standings_tbl class="table table-striped">
@@ -135,7 +146,7 @@
 						{% if divisions -%}
 						<th>Div</th>
 						{%- endif %}
-						{% if pod_names -%}
+						{% if pods -%}
 						<th>Pod</th>
 						{%- endif %}
 						<th>Rank</th>
@@ -150,14 +161,14 @@
 				<tbody>
 				{% for rank in standings -%}
 				{% set team = rank.team %}
-					{% if not loop.first and (team.division != lastDiv or team.pod != lastPod ) -%}
+					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
  				</tbody>
 				<thead>
 					<tr>
 						{% if divisions -%}
 						<th>Div</th>
 						{%- endif %}
-						{% if pod_names -%}
+						{% if pods -%}
 						<th>Pod</th>
 						{%- endif %}
 						<th>Rank</th>
@@ -194,7 +205,7 @@
 
 			<div class="alert alert-info" role="alert">
 				<p>
-				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two points for each win, and one point for a tie.</br>
+				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two or three points (base on tournament rules) for each win, and one point for a tie.</br>
 				<strong>Record -</strong> Record in games played for points in standing </br>
 				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker </br>
 				<strong>GP -</strong> Games played for standings </br>

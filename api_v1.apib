@@ -1,0 +1,303 @@
+FORMAT: 1A
+HOST: https://ushscores.com
+
+# UWHScores.com API
+
+Resource group for querying tournament level information such as schedule, teams and standings
+
+# Group Tournaments
+## List Tournaments [/api/v1/tournaments]
+### All Tournaments [GET]
+Returns list of all tournaments
+
++ Response 200 (application/json)
+
+        {
+          "tournaments": [
+            {
+              "end_date": "2014-06-29T00:00:00",
+              "is_active": 0,
+              "location": "Minneapolis, MN",
+              "name": "USA UWH Nationals 2014",
+              "short_name": "nationals2014",
+              "start_date": "2014-06-27T00:00:00",
+              "tid": 2
+            },
+            {
+              "end_date": "2015-01-18T00:00:00",
+              "is_active": 0,
+              "location": "Denver, CO",
+              "name": "Battle@Altitude 2015",
+              "short_name": "baa2015",
+              "start_date": "2015-01-17T00:00:00",
+              "tid": 3
+            }
+          ]
+        }
+
+
+## Get Tournament [/api/v1/tournaments/{tid}]
++ Parameters
+    + tid (required, number) - ID of the tournament
+
+### Get Tournament [GET]
+Return individual tournament
+
++ Response 200 (application/json)
+
+        {
+          "tournament": {
+            "divisions": [
+              "E",
+              "O"
+            ],
+            "end_date": "2015-02-08T00:00:00",
+            "is_active": 0,
+            "location": "Browndeer, WI",
+            "name": "2015 CanAm Midwestern Championships",
+            "pools": [
+              "1",
+              "2"
+            ],
+            "short_name": "cmcs2015",
+            "start_date": "2015-02-06T00:00:00",
+            "tid": 4
+          }
+        }
+
+
+## Get Games [/api/v1/tournaments/{tid}/games?div={div}]
++ Parameters
+    + tid (required, number) - ID of the tournament
+    + div (optional, character) - Character identifier of division
+
+### Get Games [GET]
+Returns list of games on the schedule. Allows for filtering.
+
++ Response 200 (application/json)
+
+        {
+          "games": [
+            {
+              "black": "The Yo Team",
+              "black_id": 1,
+              "day": "Sat",
+              "gid": 1,
+              "note_b": "",
+              "note_w": "",
+              "pool": "1",
+              "score_b": 4,
+              "score_w": 3,
+              "start_time": "2016-01-16T11:45:00",
+              "tid": 7,
+              "white": "Loons",
+              "white_id": 2
+            },
+            {
+              "black": "Zebras",
+              "black_id": 3,
+              "day": "Sat",
+              "gid": 2,
+              "note_b": "",
+              "note_w": "",
+              "pool": "1",
+              "score_b": 9,
+              "score_w": 0,
+              "start_time": "2016-01-16T12:12:00",
+              "tid": 7,
+              "white": "Phoenix",
+              "white_id": 4
+              }
+            ]
+          }
+
+
+## Manage Game [/api/v1/tournaments/{tid}/games/{gid}]
++ Parameters
+    + tid (required, number) - ID of the tournament
+    + gid (required, number) - ID of the game
+
+### Get Game [GET]
++ Response 201 (application/json)
+
+        {
+          "game": {
+            "black": "Rocky Mountain Oysters",
+            "black_id": 5,
+            "day": "Sun",
+            "forfeit": "b",
+            "gid": 22,
+            "note_b": "Forfeit",
+            "note_w": "",
+            "pool": "1",
+            "score_b": 0,
+            "score_w": 0,
+            "start_time": "2016-01-17T08:15:00",
+            "tid": 7,
+            "white": "The Yo Team",
+            "white_id": 1
+          }
+        }
+
+
+### Update Score [POST]
++ Request (application/json)
+
+        {
+            "gid":3,
+            "score_w":6,
+            "score_b":2,
+            "black_id":5,
+            "white_id":6
+        }
+
+
++ Response 201 (application/json)
+
+        {
+          "game": {
+            "black": "Rocky Mountain Oysters",
+            "black_id": 5,
+            "day": "Sat",
+            "forfeit": null,
+            "gid": 3,
+            "note_b": "",
+            "note_w": "",
+            "pool": "1",
+            "score_b": 2,
+            "score_w": 6,
+            "start_time": "2016-01-30T10:35:00",
+            "tid": 7,
+            "white": "Air is Rare",
+            "white_id": 6
+          }
+        }
+
++ Request (application/json)
+
+        {
+            "gid":3,
+            "score_w":0,
+            "score_b":0,
+            "black_id":5,
+            "white_id":6,
+            "forfeit_b":1
+        }
+
++ Response 201 (application/json)
+
+        {
+          "black": "Rocky Mountain Oysters",
+          "black_id": 6,
+          "day": "Sat",
+          "forfeit": "b",
+          "gid": 3,
+          "note_b": "Forfeit",
+          "note_w": "",
+          "pool": "1",
+          "score_b": 6,
+          "score_w": 3,
+          "start_time": "2016-01-30T10:35:00",
+          "tid": 8,
+          "white": "Air is Rare",
+          "white_id": 6
+        }
+
+
+## Teams [/api/v1/tournaments/{tid}/teams]
+
+### Get Teams [GET]
++ Parameters
+    + tid (required, number) - Id of tournament
+
++ Response 201 (application/json)
+
+        {
+          "teams": [
+            {
+              "division": "O",
+              "name": "Air is Rare",
+              "team_id": 6
+            },
+            {
+              "division": "O",
+              "name": "Loons",
+              "team_id": 2
+            }
+          ]
+        }
+
+
++ Response 400 (application/json)
+
+        {
+            "message": "Missing tid"
+        }
+
+
+## Standings [/api/vi/tournaments/{tid}/standings]
++ Parameters
+    + tid (required) - ID of tournament
+
+### Get Standings [GET]
+
++ Response 201 (application/json)
+
+        {
+            "standings": [
+                {
+                  "div": "O",
+                  "place": 5,
+                  "pod": null,
+                  "stats": {
+                    "games_played": 10,
+                    "goals_allowed": 18,
+                    "losses": 6,
+                    "losses_total": 6,
+                    "points": 8,
+                    "ties": 0,
+                    "ties_total": 0,
+                    "wins": 4,
+                    "wins_total": 4
+                  },
+                  "team": "Loons",
+                  "team_id": 2
+                }
+            ]
+        }
+
+
++ Response 400 (application/json)
+
+        {
+            "message": "Missing tid"
+        }
+
+
+# Group Authentication
+
+## Login [/api/v1/login]
+
+### Retrieve Token [GET]
+
++ Response 201 (application/json)
+
+        {
+          "token": "CxYiCBtIf6SqgD7jdFSpyJS58N5K7MIFMRpcB0lBA9o=",
+          "ttl": 1440,
+          "user_id": "vvNTiuKqoXAo"
+        }
+
+
+
+## Logout [/api/v1/logout?{all}]
+
+### Logout User [GET]
++ Parameters
+    + all (empty) - If present, delete all tokens for user
+
++ Response 201 (application/json)
+
+        {
+            "message":"goodbye"
+        }

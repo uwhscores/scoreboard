@@ -1,13 +1,15 @@
 {% extends "tv_layout.html" %}
 
 {% block tabs %}
-<div id="page_body" style="margin-left:2em">
+<div id="page_body" class="container" style="margin-left:2em">
 {% endblock tabs %}
 
 {% block games %}
 <div class=row>
-	<div id="schedule" class="col-md-8">
+	<div id="schedule" class="col-md-12">
 		<h1>Schedule</h1>
+		{% for game in games %}
+		{% if loop.first or game.day != lastDay %}
 		<table id=games class="table table-striped">
 			<thead>
 				<tr>
@@ -20,11 +22,11 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for game in games %}
-				<tr>
+		{%endif %}
+				<tr class="gamerow">
 					<td>{{ game.gid }}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
-					<td>{{ game.pool }}</td> 
+					<td>{{ game.pool }}</td>
 					{% if game.pod_color %}
 						<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
 					{% else %}
@@ -33,9 +35,14 @@
 					<td class={{game.style_b}}>{{ game.black }}</td>
 					<td class={{game.style_w}}>{{ game.white }}</td>
 				</tr>
-			{% endfor %}
+			{% set lastDay = game.day %}
+			{% if loop.last%}
 			</tbody>
 		</table>
+		{% endif %}
+
+		{% endfor %}
+
 		<p class=note>{{ noteText }}</p>
 	</div>
 
