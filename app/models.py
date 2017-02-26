@@ -1,11 +1,15 @@
 from string import split
 from app import app
+from datetime import datetime
+from base64 import b64encode
+from os import urandom
+import bcrypt
+
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 
 
 class Stats(object):
-
 	def __init__(self, tournament, team_id, pod=None):
 
 		self.team_id = team_id
@@ -150,123 +154,127 @@ class Stats(object):
 		return self.goals_allowed
 
 class Ranking(object):
-	def __init__(self, div, pod, place, team):
-		self.div = div
-		self.pod = pod
-		self.place = place
-		self.team = team
+    def __init__(self, div, pod, place, team):
+        self.div = div
+        self.pod = pod
+        self.place = place
+        self.team = team
 
-	def __repr__(self):
-		return '{}-{}-{}: {}'.format(self.div, self.pod, self.place, self.team.name)
+    def __repr__(self):
+        return '{}-{}-{}: {}'.format(self.div, self.pod, self.place, self.team.name)
 
-	def __eq__(self, other):
-		team_a = self.team
-		team_b = other.team
+    def __eq__(self, other):
+        team_a = self.team
+        team_b = other.team
 
-		if (team_a.division.lower() != team_b.division.lower()):
-			return False
-		elif (team_a.wins != team_b.wins):
-			return False
-		elif (team_a.losses != team_b.losses):
-			return False
-		elif (team_a.goals_allowed != team_b.goals_allowed):
-			return False
-		else:
-			return True
+        if (team_a.division.lower() != team_b.division.lower()):
+            return False
+        elif (team_a.wins != team_b.wins):
+            return False
+        elif (team_a.losses != team_b.losses):
+            return False
+        elif (team_a.goals_allowed != team_b.goals_allowed):
+            return False
+        else:
+            return True
 
-	def serialize(self):
-		return {
-			'div':self.div,
-			'pod':self.pod,
-			'place':self.place,
-			'team':self.team.name,
-			'team_id':self.team.team_id,
-			'stats':{
-				'points':self.team.points,
-				'wins':self.team.wins,
-				'losses': self.team.losses,
-				'ties': self.team.ties,
-				'goals_allowed': self.team.goals_allowed,
-				'games_played': self.team.games_played,
-				'wins_total': self.team.wins_t,
-				'losses_total': self.team.losses_t,
-				'ties_total': self.team.ties_t
-			}
-		}
+    def serialize(self):
+        return {
+            'div':self.div,
+            'pod':self.pod,
+            'place':self.place,
+            'team':self.team.name,
+            'team_id':self.team.team_id,
+            'stats':{
+                'points':self.team.points,
+                'wins':self.team.wins,
+                'losses': self.team.losses,
+                'ties': self.team.ties,
+                'goals_allowed': self.team.goals_allowed,
+                'games_played': self.team.games_played,
+                'wins_total': self.team.wins_t,
+                'losses_total': self.team.losses_t,
+                'ties_total': self.team.ties_t
+            }
+        }
 
 class Params(object):
-	# loads in all the rows from the config table for the tournament ID
-	# config table is used to store parameters for various logic in the code
-	def __init__(self, tournament):
-		self.t = tournament
+    # loads in all the rows from the config table for the tournament ID
+    # config table is used to store parameters for various logic in the code
+    def __init__(self, tournament):
+        self.t = tournament
 
-	def getAll(self):
-		db = self.t.db
-		tid = self.t.tid
-		params = {}
+    def getAll(self):
+        db = self.t.db
+        tid = self.t.tid
+        params = {}
 
-		cur = db.execute('SELECT field, val FROM params where tid=?', (tid,))
+        cur = db.execute('SELECT field, val FROM params where tid=?', (tid,))
 
-		rows = cur.fetchall()
+        rows = cur.fetchall()
 
-		for config in rows:
-			params[config['field']] = config['val']
+        for config in rows:
+            params[config['field']] = config['val']
 
-		return params
+        return params
 
-	def getParam(self, field):
-		params = self.getAll()
-		if field in params:
-			return params[field]
-		else:
-			return None
+    def getParam(self, field):
+        params = self.getAll()
+        if field in params:
+            return params[field]
+        else:
+            return None
 
-	# add new value to params list
-	def addParam(self, field, val):
-		db = self.t.db
-		tid = self.t.tid
+    # add new value to params list
+    def addParam(self, field, val):
+        db = self.t.db
+        tid = self.t.tid
 
-		cur = db.execute('INSERT INTO params VALUES (?,?,?)', (tid, field, val))
-		db.commit()
+        cur = db.execute('INSERT INTO params VALUES (?,?,?)', (tid, field, val))
+        db.commit()
 
-		#g.params = self.loadParams()
-		return 0
+        #g.params = self.loadParams()
+        return 0
 
-	def updateParam(self,field, val):
-		db = self.t.db
-		tid= self.t.tid
+    def updateParam(self,field, val):
+        db = self.t.db
+        tid= self.t.tid
 
-		cur = db.execute('UPDATE params SET val=? WHERE field=? and tid=?', (val, field, tid))
-		db.commit()
+        cur = db.execute('UPDATE params SET val=? WHERE field=? and tid=?', (val, field, tid))
+        db.commit()
 
-		#g.params = self.loadParams()
-		return 0
+        #g.params = self.loadParams()
+        return 0
 
-	def clearParam(self, field):
-		db = self.t.db
-		tid = self.t.tid
+    def clearParam(self, field):
+        db = self.t.db
+        tid = self.t.tid
 
-		cur = db.execute("DELETE FROM params where field=? AND tid=?", (field, tid))
-		db.commit()
+        cur = db.execute("DELETE FROM params where field=? AND tid=?", (field, tid))
+        db.commit()
 
-		#g.params = self.loadParams()
-		return 0
+        #g.params = self.loadParams()
+        return 0
 
 
 class User(object):
     def __init__(self, user_id, db):
-		self.user_id = user_id
+        self.user_id = user_id
 
-		cur = db.execute("SELECT short_name, email, date_created, last_login, site_admin, admin, active FROM users WHERE user_id=?", (user_id,))
-		row = cur.fetchone()
+        self.db = db
+        cur = db.execute("SELECT short_name, email, date_created, last_login, site_admin, admin, active FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
 
-		self.short_name = row['short_name']
-		self.email = row['email']
-		self.date_created = row['date_created']
-		self.last_login = row['last_login']
-		self.site_admin = row['site_admin']
-		self.admin = row['admin']
-		self.is_active = row['active']
+        self.short_name = row['short_name']
+        self.email = row['email']
+        self.date_created= datetime.strptime(row['date_created'],"%Y-%m-%d %H:%M:%S")
+        if row['last_login']:
+            self.last_login = datetime.strptime(row['last_login'],"%Y-%m-%d %H:%M:%S")
+        else:
+            self.last_login = None
+        self.site_admin = row['site_admin']
+        self.admin = row['admin']
+        self.active = row['active']
 
     def is_authenticated(self):
         return True
@@ -279,3 +287,56 @@ class User(object):
 
     def get_id(self):
         return unicode(self.user_id)
+
+    def setPassword(self, password):
+        db = self.db
+
+        password = password.encode('utf-8')
+        hashed = bcrypt.hashpw(password, bcrypt.gensalt())
+
+        cur = db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, self.user_id))
+        db.commit()
+
+        return 0
+
+    def resetUserPass(self):
+        db = self.db
+
+        while True:
+            token = self.__genResetToken()
+            cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
+            if not cur.fetchone():
+                break
+
+        hashed = bcrypt.hashpw(token, bcrypt.gensalt())
+
+        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token, self.user_id))
+        db.commit()
+
+        return token
+
+    def setActive(self, active):
+        db = self.db
+
+        cur = db.execute("UPDATE users SET active=? WHERE user_id=?", (active, self.user_id,))
+        db.commit()
+
+        return 0
+
+    def setAdmin(self, admin_status):
+        db = self.db
+
+        if admin_status:
+            cur = db.execute("UPDATE users SET admin=1 WHERE user_id=?", (self.user_id,))
+            db.commit()
+        else:
+            cur = db.execute("UPDATE users SET admin=0 WHERE user_id=?", (self.user_id,))
+            db.commit()
+
+
+
+    def __genUserKey(self):
+        return b64encode(urandom(9),"Aa")
+
+    def __genResetToken(self):
+        return b64encode(urandom(30),"-_")

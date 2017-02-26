@@ -587,7 +587,7 @@ class Tournament(object):
 
         # app.logger.debug("%s-%s: RR Games = %s and we've played %s games" %\
         # (division, pod, rr_games, games_played))
-       
+
         # first check if all games have been played
         if (games_played >= rr_games):
             # app.logger.debug("endRoundRobin returing true")
@@ -628,7 +628,7 @@ class Tournament(object):
         if pod and not self.isPod(pod):
             pod=None
             #app.logger.debug("Comparing netWins with pod that isn't a pod, setting to None")
-        
+
         #app.logger.debug("Checking %s v %s in pod %s" % (team_a.name, team_b.name, pod))
 
         if pod:
@@ -1042,6 +1042,60 @@ class Tournament(object):
         else:
             return False
 
+    def getAuthorizedUserIDs(self):
+        authorized_ids = []
+
+        db = self.db
+        cur = db.execute("SELECT admin_ids FROM tournaments WHERE tid=?", (self.tid,))
+        row = cur.fetchone()
+        if row['admin_ids']:
+            id_string = row['admin_ids']
+        else:
+            return False
+
+        authorized_ids = id_string.split(",")
+
+        return authorized_ids
+
+    def addAuthorizedID(self, user_id):
+        #user = getUserByID(user_id)
+        #if not user:
+        #    app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
+        #    return 0
+
+        authorized_ids = self.getAuthorizedUserIDs()
+        if authorized_ids:
+            authorized_ids.append(user_id)
+        else:
+            authorized_ids=[user_id]
+
+        authorized_ids_string = ",".join(authorized_ids)
+
+        db = self.db
+        cur = db.execute("UPDATE tournaments SET admin_ids=? WHERE tid=?", (authorized_ids_string, self.tid))
+        db.commit()
+
+        return 0
+
+    def removeAuthorizedID(self, user_id):
+        #user = getUserByID(user_id)
+        #if not user:
+        #    app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
+        #    return 0
+
+        authorized_ids = self.getAuthorizedUserIDs()
+        if user_id in authorized_ids:
+            authorized_ids.remove(user_id)
+        else:
+            return 0
+
+        authorized_ids_string = ",".join(authorized_ids)
+
+        db = self.db
+        cur = db.execute("UPDATE tournaments SET admin_ids=? WHERE tid=?", (authorized_ids_string, self.tid))
+        db.commit()
+
+        return 0
 
     # takes in dictionary from POST and updates/creates score for single game
     # does not provide authorization check, that needs to be done pre-call

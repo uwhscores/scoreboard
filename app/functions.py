@@ -2,6 +2,8 @@ from app import app
 import sqlite3
 import re
 import bcrypt
+from base64 import b64encode
+from os import urandom
 from flask import g, flash
 
 from tournament import Tournament
@@ -84,6 +86,24 @@ def getUserByID(user_id):
     else:
         return None
 
+def getUserList():
+    db = getDB()
+
+    # cur = db.execute("SELECT user_id, short_name, email, date_created, last_login, active, site_admin, admin FROM users ORDER BY short_name COLLATE NOCASE")
+    # users = []
+    # for u in cur.fetchall():
+    #     #users[u['user_id']] = {'short_name':u['short_name'], 'email':u['email'], 'date_created':u['date_created'], 'last_login':u['last_login'],\
+    #     #                        'active':u['active'], 'site_admin':u['site_admin'], 'admin':u['admin']}
+    #     users.append({'user_id':u['user_id'],'short_name':u['short_name'], 'email':u['email'], 'date_created':u['date_created'], 'last_login':u['last_login'],\
+    #                             'active':u['active'], 'site_admin':u['site_admin'], 'admin':u['admin']})
+
+    cur = db.execute("SELECT user_id FROM users ORDER BY short_name")
+    users = []
+    for u in cur.fetchall():
+        users.append(getUserByID(u['user_id']))
+
+    return users;
+
 def authenticate_user(email, password_try, silent=False, ip_addr=None):
     db = getDB()
 
@@ -124,6 +144,55 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
             flash("Cannot find account")
         return None
 
+def addUser(new_user):
+    db = getDB()
+
+    result = {'success': False, 'message':""}
+    # check that email is unique
+    cur = db.execute("SELECT user_id FROM users WHERE email=?", (new_user['email'],))
+    if cur.fetchone():
+        result['message'] = "Email already exists, maybe try reseeting the password?"
+        return result
+
+    cur = db.execute("SELECT user_id FROM users WHERE short_name LIKE ?", (new_user['short_name'],))
+    if cur.fetchone():
+        result['message'] = "Short name already in use, sorry"
+        return result
+
+    while True:
+        user_id = b64encode(urandom(6),"Aa")
+        cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
+        if not cur.fetchone():
+            break
+
+    while True:
+        token = b64encode(urandom(30),"-_")
+        cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
+        if not cur.fetchone():
+            break
+
+    hashed = bcrypt.hashpw(token, bcrypt.gensalt())
+
+    cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active, reset_token) VALUES (?,?,?,?,1,?)",\
+            (user_id, new_user['short_name'], new_user['email'], hashed, token))
+
+    db.commit()
+
+    if new_user['site-admin']:
+        cur = db.execute("UPDATE users SET site_admin=1 WHERE user_id=?", (user_id,))
+        db.commit()
+
+    if new_user['admin']:
+        cur = db.execute("UPDATE users SET admin=1 WHERE user_id=?", (user_id,))
+        db.commit()
+
+    result['success'] = True
+    result['token'] = token
+    result['user_id'] = user_id
+    result['message'] = "User successfully created"
+
+    return result
+
 def validateResetToken(token):
     db = getDB()
 
@@ -135,14 +204,3 @@ def validateResetToken(token):
         return row['user_id']
     else:
         return None
-
-def setUserPassword(user_id, password):
-    db = getDB()
-
-    password = password.encode('utf-8')
-    hashed = bcrypt.hashpw(password, bcrypt.gensalt())  
-    
-    cur = db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, user_id))
-    db.commit()
-
-    return 0
