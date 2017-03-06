@@ -191,7 +191,10 @@ def renderUpdate():
                 flash("You are not authorized for this tournament")
                 return redirect("/admin")
 
-            game = t.getGame( request.args.get('gid') )
+            gid = request.args.get('gid')
+            game = t.getGame( gid )
+            if not game:
+                return render_template('show_error.html', error_message="404: Unknown Game ID"), 404
             if ( game.score_b == "--"):
                 game.score_b = "0"
             if ( game.score_w == "--"):
@@ -447,7 +450,7 @@ def doAddUser():
     # For now not allow users to be added as site-admin
     # saftey measure cause I'm not there yet, plubming works though
     # enable input on user_add.html and uncomment below
-    
+
     #if form.get('site-admin'):
     #    new_user['site-admin'] = True
     #else:
