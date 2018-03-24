@@ -16,11 +16,13 @@ from app import app, functions
 #
 #     return app
 
+
 def init_db(db):
     with open('schema.sql') as f:
         db.executescript(f.read())
 
     return db
+
 
 def test_db(tmpdir):
     db_file = tmpdir.join("test_db.db").strpath
