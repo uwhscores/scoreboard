@@ -11,7 +11,7 @@ os.environ["SCOREBOARD_DB"] = db_file
 from app import app, functions
 from app.tournament import Tournament
 
-from common_functions import create_db
+from common_functions import create_db, init_db
 
 # from flask import g
 # import pdb; pdb.set_trace()
@@ -27,6 +27,7 @@ def test_tournament_init(tmpdir):
     active = True
 
     db_file = tmpdir.join("test_db.db").strpath
+    os.environ["SCOREBOARD_DB"] = db_file
 
     db = create_db(db_file)
 
@@ -37,3 +38,26 @@ def test_tournament_init(tmpdir):
     assert test_t.date_string == "January 01-02, 2018"
     assert test_t.days == []
     assert test_t.getGames() == []
+
+    tournament_list = functions.getTournamets()
+
+    assert tournament_list == {}
+
+    test_t.commitToDB()
+
+    tournament_list = functions.getTournamets()
+    assert len(tournament_list) == 1
+
+    found_tournament = tournament_list[1]
+    assert found_tournament.name == "Test Tournament"
+    assert found_tournament.short_name == "test_tourn"
+
+    test_t.short_name = "new_name"
+    test_t.commitToDB()
+
+    tournament_list = functions.getTournamets()
+    assert len(tournament_list) == 1
+
+    found_tournament = tournament_list[1]
+    assert found_tournament.name == "Test Tournament"
+    assert found_tournament.short_name == "new_name"

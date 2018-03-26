@@ -20,6 +20,7 @@ from common_functions import init_db
 
 def test_db(tmpdir):
     db_file = tmpdir.join("test_db.db").strpath
+    os.environ["SCOREBOARD_DB"] = db_file
     app.config.update(dict(DATABASE=db_file))
 
     functions.connectDB()
@@ -32,6 +33,7 @@ def test_db(tmpdir):
 def test_db_setup(tmpdir):
     db_file = tmpdir.join("test_db.db").strpath
     app.config.update(dict(DATABASE=db_file))
+    os.environ["SCOREBOARD_DB"] = db_file
 
     functions.connectDB()
     db = functions.getDB()

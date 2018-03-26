@@ -76,6 +76,26 @@ class Tournament(object):
                 'is_active': self.is_active
             }
 
+    def commitToDB(self):
+        """ Commit tournament details to the databse either insert or update """
+        db = self.db
+
+        cur = db.execute("SELECT tid, name FROM TOURNAMENTS WHERE tid=?", (self.tid,))
+        row = cur.fetchone()
+
+        start_date_str = datetime.strftime(self.start_date, "%Y-%m-%d")
+        end_date_str = datetime.strftime(self.end_date, "%Y-%m-%d")
+
+        if row:
+            db.execute("UPDATE TOURNAMENTS SET name=?, short_name=?, start_date=?, end_date=?, location=?, active=? WHERE tid=?",
+                       (self.name, self.short_name, start_date_str, end_date_str, self.location, self.is_active, self.tid))
+        else:
+            db.execute("INSERT INTO TOURNAMENTS (tid, name, short_name, start_date, end_date, location, active) VALUES (?,?,?,?,?,?,?)",
+                       (self.tid, self.name, self.short_name, start_date_str, end_date_str, self.location, self.is_active))
+        db.commit()
+
+        return True
+
     def getTeam(self, team_id):
         """ return team name from ID """
         db = self.db

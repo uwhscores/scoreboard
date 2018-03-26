@@ -103,7 +103,7 @@ def getUserByID(user_id):
 
 
 def getUserList():
-    """ get list of all users """
+    """ get list of all users as user objects """
     db = getDB()
 
     # cur = db.execute("SELECT user_id, short_name, email, date_created, last_login, active, site_admin, admin FROM users ORDER BY short_name COLLATE NOCASE")
@@ -165,7 +165,9 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
 
 
 def addUser(new_user):
-    """ add a new user to the database """
+    """ add a new user to the database
+    returns dictionary with the results of the add including their password reset reset_token
+    always returns dictionary, must check 'success' field for True/False """
     db = getDB()
 
     result = {'success': False, 'message': ""}
@@ -216,7 +218,7 @@ def addUser(new_user):
 
 
 def validateResetToken(token):
-    """ validate reset token is active """
+    """ validate reset token, returns the user_id if the reset token is found and active """
     db = getDB()
 
     cur = db.execute("SELECT user_id FROM users where reset_token=? AND active=1", (token,))
