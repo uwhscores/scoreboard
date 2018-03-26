@@ -8,6 +8,7 @@ db_file = os.path.join("test.db")
 os.environ["SCOREBOARD_DB"] =  db_file
 
 from app import app, functions
+from common_functions import init_db
 
 # @pytest.fixture(scope='session')
 # def app():
@@ -15,13 +16,6 @@ from app import app, functions
 #     from app import app
 #
 #     return app
-
-
-def init_db(db):
-    with open('schema.sql') as f:
-        db.executescript(f.read())
-
-    return db
 
 
 def test_db(tmpdir):

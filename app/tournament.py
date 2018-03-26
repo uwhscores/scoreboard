@@ -463,9 +463,12 @@ class Tournament(object):
     def getParams(self):
         """ retrieve parameters for the tournament
         Keeps them stashed in the gloabl store for performance"""
-        if not hasattr(g, 'params'):
-            g.params = Params(self)
-        return g.params
+        if g:
+            if not hasattr(g, 'params'):
+                g.params = Params(self)
+            return g.params
+        else:
+            return Params(self)
 
     def getCoinFlip(self, tid_a, tid_b):
         """ Gets winner of coin flip, returns team ID for winner of -1 if no coin flip found """
