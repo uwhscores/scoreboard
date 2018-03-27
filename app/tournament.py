@@ -207,7 +207,7 @@ class Tournament(object):
         return games
 
     def getGame(self, gid):
-        """ Get single game by game ID, returns game dictionary """
+        """ Get single game by game ID, returns game object """
         db = self.db
         cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
                 FROM games WHERE gid=? AND tid=? ', (gid, self.tid))
@@ -1019,6 +1019,40 @@ class Tournament(object):
             standings = self.calcStandings()
 
         return standings
+
+    def getTimingRules(self, game_type):
+        """ Stub function to work out later """
+        # half_duration: seconds
+        # half_time_duration: seconds
+        # min_game_break: seconds
+        # overtime_allowed: boolean
+        # pre_overtime_break: seconds
+        # overtime_duration: seconds
+        # overtime_break_duration: seconds
+        # sudden_death_allowed: boolean
+        # max_sudden_death_duration: seconds
+        # pre_sudden_death_break: seconds
+        # team_timeouts_allowed: int
+        # team_timeout_duration: seconds
+        # overtime_timeouts_allowed: int
+        # overtime_timeout_duration: seconds
+        timing_rules = {}
+        timing_rules['half_duration'] = 900
+        timing_rules['half_time_duration'] = 300
+        timing_rules['min_game_break'] = 900
+        timing_rules['overtime_allowed'] = True
+        timing_rules['pre_overtime_break'] = 180
+        timing_rules['overtime_duration'] = 300
+        timing_rules['overtime_break_duration'] = 60
+        timing_rules['sudden_death_allowed'] = True
+        timing_rules['max_sudden_death_duration'] = None
+        timing_rules['pre_sudden_death_break'] = 180
+        timing_rules['team_timeouts_allowed'] = 1
+        timing_rules['team_timeout_duration'] = 60
+        timing_rules['overtime_timeouts_allowed'] = 1
+        timing_rules['overtime_timeout_duration'] = 30
+
+        return timing_rules
 
     ##########################################################################
     # Admin functions
