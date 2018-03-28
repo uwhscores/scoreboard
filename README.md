@@ -44,9 +44,9 @@ setup an instance and run it. These steps are likely not complete.
 
     `pip install -r requirements.txt`
 
-6. Build the database, ideally from a populate file, or from the schema.sql file:
+6. Build the database, ideally from a populate file, or from the schema.sql file, you may need to install sqlite3 first:
 
-    `sqlite app/scores.db < backup_file.sql`
+    `sqlite3 app/scores.db < backup_file.sql`
 
 7. Start the web service:
 
