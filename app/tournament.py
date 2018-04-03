@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+import json
 from game import Game
 from models import Stats, Ranking, Params
 from flask import g, flash
@@ -1020,39 +1021,37 @@ class Tournament(object):
 
         return standings
 
-    def getTimingRules(self, game_type):
-        """ Stub function to work out later """
-        # half_duration: seconds
-        # half_time_duration: seconds
-        # min_game_break: seconds
-        # overtime_allowed: boolean
-        # pre_overtime_break: seconds
-        # overtime_duration: seconds
-        # overtime_break_duration: seconds
-        # sudden_death_allowed: boolean
-        # max_sudden_death_duration: seconds
-        # pre_sudden_death_break: seconds
-        # team_timeouts_allowed: int
-        # team_timeout_duration: seconds
-        # overtime_timeouts_allowed: int
-        # overtime_timeout_duration: seconds
-        timing_rules = {}
-        timing_rules['half_duration'] = 900
-        timing_rules['half_time_duration'] = 300
-        timing_rules['min_game_break'] = 900
-        timing_rules['overtime_allowed'] = True
-        timing_rules['pre_overtime_break'] = 180
-        timing_rules['overtime_duration'] = 300
-        timing_rules['overtime_break_duration'] = 60
-        timing_rules['sudden_death_allowed'] = True
-        timing_rules['max_sudden_death_duration'] = None
-        timing_rules['pre_sudden_death_break'] = 180
-        timing_rules['team_timeouts_allowed'] = 1
-        timing_rules['team_timeout_duration'] = 60
-        timing_rules['overtime_timeouts_allowed'] = 1
-        timing_rules['overtime_timeout_duration'] = 30
+    def getTimingRules(self, game_type=None):
+        """ gets timing rules for a specific game type,
+        returns the default timing rules if game type not passed or game type cannot be found
+
+        returns dictionary of timing rules"""
+
+        timing_rules = None
+        params = self.getParams()
+        timing_rule_set = params.getParam("timing_rules")
+        if not timing_rule_set:
+            return None
+
+        timing_rule_set = json.loads(timing_rule_set)
+
+        # set default rules
+        timing_rules = timing_rule_set['default_rules']
+
+        # if game_type passed in and rule_set has list of game_types, see if there is a match
+        if game_type and 'game_types' in timing_rule_set:
+            for entry in timing_rule_set['game_types']:
+                if entry['game_type'] == game_type:
+                    timing_rules = entry['timing_rules']
 
         return timing_rules
+
+    def getTimingRuleSet(self):
+        """ get full timing rule set parameter, returns dictionary """
+        params = self.getParams()
+        timing_rule_set = params.getParam("timing_rules")
+
+        return json.loads(timing_rule_set)
 
     ##########################################################################
     # Admin functions
@@ -1192,6 +1191,40 @@ class Tournament(object):
         self.popSeededPods()
 
         return 1
+
+    def updateTimingRules(self, rule_set):
+        """ Set a timing rule for a specific game type and save it to the parameters table
+            game_type should match schedule game types of RR, BR or E
+            timing_rules should be full timing_rules JSON part from timing_rules schema
+        """
+
+        params = self.getParams()
+        current_rule_set = params.getParam("timing_rules")
+        # import pdb; pdb.set_trace()
+        # if not current_rule_set:
+        #     # first rule to set
+        #     new_rules = {"game_types": [{"game_type": game_type, "timing_rules": timing_rules}]}
+        #     value = json.dumps(new_rules)
+        #     params.addParam("timing_rules", value)
+        # else:
+        #     old_game_types = json.loads(current_rule_set)
+        #     new_game_types = []
+        #     for entry in old_game_types['game_types']:
+        #         if entry['game_type'] != game_type:
+        #             new_game_types.append(entry)
+        #
+        #     new_game_types.append({"game_type": game_type, "timing_rules": timing_rules})
+        #     new_rules = {"game_types": new_game_types}
+        #     value = json.dumps(new_rules)
+        #     params.updateParam("timing_rules", value)
+        # import pdb; pdb.set_trace()
+        rule_set = json.dumps(rule_set)
+        if not current_rule_set:
+            params.addParam("timing_rules", rule_set)
+        else:
+            params.updateParam("timing_rules", rule_set)
+
+        return True
 
     def popSeededPods(self):
         """ Checks if first round of pods is all finished and populates seeded pods

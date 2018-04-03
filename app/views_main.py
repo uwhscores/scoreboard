@@ -28,7 +28,7 @@ def renderTourament(short_name):
         return render_template('site_down.html', message=message)
 
     games = t.getGames()
-    division = t.getDivisionNames()
+    divisions = t.getDivisionNames()
     team_list = t.getTeams()
 
     pods = t.getPodsActive()
@@ -46,8 +46,9 @@ def renderTourament(short_name):
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings,\
-        placings=placings, divisions=division, team_list=team_list, pods = pod_names, site_message=site_message)
+    # b
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, placings=placings, divisions=divisions,
+                           team_list=team_list, pods=pod_names, site_message=site_message)
 #         standings=standings, games=games, pods=pod_names, titleText=titleText, \
 #         placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 

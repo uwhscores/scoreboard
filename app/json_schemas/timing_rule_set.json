@@ -1,0 +1,35 @@
+{
+    "title": "Timing Rules API Post",
+    "type": "object",
+    "properties": {
+        "timing_rule_set": {
+            "type": "object",
+            "properties": {
+                "tid": {"type": "integer"},
+                "default_rules": {
+                    "type": "object",
+                    "$ref": "file:app/json_schemas/timing_rules.json"
+                },
+                "game_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "game_type": {"type": "string"},
+                            "timing_rules": {
+                                "type": "object",
+                                "$ref": "file:app/json_schemas/timing_rules.json"
+                            }
+                        },
+                        "required": ["game_type", "timing_rules"],
+                         "additionalProperties": false
+                    }
+                }
+            },
+            "required": ["tid", "default_rules"],
+             "additionalProperties": false
+        }
+    },
+    "required": ["timing_rule_set"],
+     "additionalProperties": false
+}

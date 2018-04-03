@@ -1,7 +1,7 @@
-from functions import *
-from app import global_limiter
+from functions import getTournamets, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
+from app import app, global_limiter
 from app import audit_logger
-from flask import json,jsonify, request, make_response
+from flask import jsonify, request, make_response, g
 from flask.ext.httpauth import HTTPBasicAuth
 from base64 import b64encode
 from os import urandom
@@ -23,6 +23,7 @@ class InvalidUsage(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
 
 @auth.verify_password
 def verify_pw(email, password_try):
@@ -48,6 +49,7 @@ def verify_pw(email, password_try):
 
     # doesn't seem to be anybody we know
     return False
+
 
 def authenticate_token(token):
     db = getDB()
@@ -82,7 +84,8 @@ def genToken(user_name):
         # do something with the exception?
         return None
 
-    return {'token':token, 'user_id':user_id, 'ttl':1440}
+    return {'token': token, 'user_id': user_id, 'ttl': 1440}
+
 
 def deleteToken(token, user_id=None):
     db = getDB()
@@ -96,11 +99,13 @@ def deleteToken(token, user_id=None):
 
     return True
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
 
 # json response for rate limit exceeded
 @app.errorhandler(429)
@@ -110,12 +115,14 @@ def ratelimit_handler(e):
             , 429
     )
 
+
 ################################################################################
 # Public APIs
 ################################################################################
 @app.route('/api/v1')
 def documentationPath():
     return jsonify(documentation="http://docs.uwhscores.apiary.io/")
+
 
 @app.route('/api/v1/tournaments')
 def apiGetTournaments():
@@ -126,6 +133,7 @@ def apiGetTournaments():
     for t in tournaments.values():
         response.append(t.serialize())
     return jsonify(tournaments=response)
+
 
 @app.route('/api/v1/tournaments/<tid>')
 def apiGetTournament(tid):
@@ -139,6 +147,7 @@ def apiGetTournament(tid):
         raise InvalidUsage(message, status_code=503)
 
     return jsonify(tournament=t.serialize(verbose=True))
+
 
 @app.route('/api/v1/tournaments/<tid>/games')
 def apiGetGames(tid):
@@ -166,6 +175,7 @@ def apiGetGames(tid):
         response.append(g.serialize())
 
     return jsonify(games=response)
+
 
 @app.route('/api/v1/tournaments/<tid>/games/<gid>')
 def apiGetGame1(tid, gid):
@@ -221,6 +231,7 @@ def apiGetStandings(tid):
 
     return jsonify(standings=response)
 
+
 @app.route('/api/v1/tournaments/<tid>/messages')
 def apiGetMessages(tid):
     t = getTournamentByID(tid)
@@ -232,10 +243,24 @@ def apiGetMessages(tid):
     if message:
         raise InvalidUsage(message, status_code=503)
 
-    standings= t.getStandings()
+    standings = t.getStandings()
     ties = t.getTieFlashes()
 
     return jsonify(ties=ties)
+
+
+@app.route('/api/v1/tournaments/<tid>/timingruleset')
+def apiGetTimingRules(tid):
+    t = getTournamentByID(tid)
+
+    if not t:
+        raise InvalidUsage('Unknown tid', status_code=404)
+
+    rules = t.getTimingRuleSet()
+    # response = {'timing_rule_set': {'tid': tid}}
+    # response['timing_rule_set'].update(rules)
+    return jsonify(timingruleset=rules)
+
 
 ################################################################################
 # Private APIs
@@ -248,6 +273,7 @@ def login_token():
     response = genToken(user_name)
     audit_logger.info("API: Token generated for %s" % user_name)
     return jsonify(response)
+
 
 @app.route('/api/v1/logout')
 @auth.login_required
@@ -263,7 +289,7 @@ def logout_token():
     return jsonify(message='goodbye')
 
 
-@app.route('/api/v1/tournaments/<tid>/games/<gid>', methods= ['POST'])
+@app.route('/api/v1/tournaments/<tid>/games/<gid>', methods=['POST'])
 @auth.login_required
 def updateGame(tid, gid):
 
@@ -344,3 +370,63 @@ def updateGame(tid, gid):
     else:
         res = t.getGame(gid)
         return jsonify(res.serialize())
+
+
+@app.route('/api/v1/tournaments/<tid>/timingruleset', methods=['POST'])
+@auth.login_required
+def updateGameTiming(tid):
+    t = getTournamentByID(tid)
+
+    if not t:
+        raise InvalidUsage('Unkown tid', status_code=404)
+
+    message = t.getDisableMessage()
+    if message:
+        raise InvalidUsage(message, status_code=503)
+
+    current_user = getUserByID(g.user_id)
+    if not t.isAuthorized(current_user):
+        message = "user %s is not authorized" % g.user_id
+        raise InvalidUsage(message, status_code=404)
+
+    post_data = request.get_json()
+    if not isinstance(post_data, dict):
+        message = "POST data must be JSON format"
+        raise InvalidUsage(message, status_code=400)
+
+    # import pdb; pdb.set_trace()
+    audit_logger.info("API called with %s" % post_data)
+    (valid, message) = validateJSONSchema(post_data, "timing_rule_set")
+    if not valid:
+        raise InvalidUsage(message, status_code=400)
+
+    rule_set = post_data.get('timing_rule_set')
+    # make sure tid in json matches URL
+    try:
+        tid = int(tid)
+    except (TypeError, ValueError):
+        raise InvalidUsage("Unknown tid in URL", status_code=404)
+
+    if not tid == rule_set.get('tid'):
+        raise InvalidUsage("tid mismatch", status_code=400)
+
+    # for game_type_entry in rule_set.get('game_types'):
+    #     game_type = game_type_entry.get('game_type')
+    #     ## TODO: get game type list from schedule
+    #     if game_type not in ['RR', 'BR', 'E', 'CO']:
+    #         raise InvalidUsage("Unknown game type %s" % game_type, status_code=400)
+    #
+    #     audit_logger.info("API: Timing rules for tournament %s, game type %s updated by %s(%s)" %
+    #                       (t.short_name, game_type, current_user.short_name, current_user.user_id))
+    #
+    #     timing_rules = game_type_entry.get('timing_rules')
+    #     res = t.updateTimingRules(game_type, timing_rules)
+    res = t.updateTimingRules(rule_set)
+
+    if not res == 1:
+        raise InvalidUsage("Server side error updating game rules", status_code=500)
+    else:
+        rules = t.getTimingRules()
+        #response = {'timing_rule_set': {'tid': tid}}
+        #response['timing_rule_set'].update(rules)
+        return jsonify(rules)

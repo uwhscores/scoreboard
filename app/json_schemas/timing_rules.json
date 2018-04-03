@@ -1,0 +1,21 @@
+{
+    "title": "Timing Rules API Post",
+    "type": "object",
+    "properties": {
+        "half_duration": {"type": "integer"},
+        "half_time_duration": {"type": "integer"},
+        "max_sudden_death_duration": {"type": ["null","integer"]},
+        "min_game_break": {"type": "integer"},
+        "overtime_allowed": {"type": "boolean"},
+        "overtime_break_duration": {"type": "integer"},
+        "overtime_duration": {"type": "integer"},
+        "overtime_timeout_duration": {"type": "integer"},
+        "overtime_timeouts_allowed": {"type": "integer"},
+        "pre_overtime_break": {"type": "integer"},
+        "pre_sudden_death_break": {"type": "integer"},
+        "sudden_death_allowed": {"type": "boolean"},
+        "team_timeout_duration": {"type": "integer"},
+        "team_timeouts_allowed": {"type": "integer"}
+    },
+    "required": ["half_duration", "half_time_duration", "overtime_allowed", "sudden_death_allowed"]
+}

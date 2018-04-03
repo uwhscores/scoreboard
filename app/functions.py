@@ -2,9 +2,10 @@ from app import app
 import sqlite3
 import os
 import bcrypt
+import json
 from base64 import b64encode
-from os import urandom
 from flask import g, flash
+from jsonschema import validate, ValidationError
 
 from tournament import Tournament
 from models import User
@@ -119,7 +120,7 @@ def getUserList():
     for u in cur.fetchall():
         users.append(getUserByID(u['user_id']))
 
-    return users;
+    return users
 
 
 def authenticate_user(email, password_try, silent=False, ip_addr=None):
@@ -183,13 +184,13 @@ def addUser(new_user):
         return result
 
     while True:
-        user_id = b64encode(urandom(6), "Aa")
+        user_id = b64encode(os.urandom(6), "Aa")
         cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
         if not cur.fetchone():
             break
 
     while True:
-        token = b64encode(urandom(30), "-_")
+        token = b64encode(os.urandom(30), "-_")
         cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
         if not cur.fetchone():
             break
@@ -229,3 +230,41 @@ def validateResetToken(token):
         return row['user_id']
     else:
         return None
+
+
+def validateJSONSchema(source, schema_name):
+    """ validates a JSON against defined schema in json_schemas folder by name
+        function looks for a json file with the given name appending ".json" (eg, team becaomes team.json)
+        Returns duple of Pass/Fail boolean and message
+    """
+    schema_file = schema_name.lower() + ".json"
+    schema_file = os.path.join("app/json_schemas", schema_file)
+
+    if not os.path.isfile(schema_file):
+        return (False, "Unable to locate schema file for schema name %s" % schema_name)
+
+    with open(schema_file) as f:
+        schema = json.load(f)
+
+    if not schema:
+        return (False, "Schema file failed to load, unable to validate")
+
+    # import pdb; pdb.set_trace()
+    try:
+        validate(source, schema)
+    except ValidationError as e:
+        if e.validator == "required":
+            msg = "Validation error, %s" % e.message
+        elif e.validator == "type":
+            path = ""
+            for entry in e.path:
+                path = path + ":" + str(entry)
+            msg = "%s is not of type %s" % (path, e.schema['type'])
+        elif e.validator == "additionalProperties":
+            msg = "Invalid format: %s" % e.message
+        else:
+            msg = "Validataion failed %s" % e.message
+
+        return (False, msg)
+
+    return (True, "")

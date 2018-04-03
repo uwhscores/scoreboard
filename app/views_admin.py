@@ -1,10 +1,12 @@
+import re
 from app import app
 from app import global_limiter
 from app import audit_logger
-from flask import request, redirect, render_template
-from flask.ext.login import LoginManager, UserMixin, login_required, login_user, \
-    logout_user, current_user
-from functions import *
+from flask import request, redirect, render_template, flash
+from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
+# from flask.ext.login import UserMixin
+# from functions import *
+from functions import getTournamets, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken
 
 
 login_manager = LoginManager()
@@ -16,9 +18,11 @@ login_manager.login_view = "/login"
 def ip_whitelist():
     return request.remote_addr == "127.0.0.1"
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return getUserByID(user_id)
+
 
 @app.route("/admin")
 @login_required
@@ -48,14 +52,14 @@ def renderTAdmin(short_name):
         flash("You are not authorized for this tournament")
         return redirect("/admin")
 
-	# pods = getPodsActive()
+    # pods = getPodsActive()
     #
-	# teams = []
-	# if pods:
-	# 	for pod in pods:
-	# 		teams += getStandings(None, pod)
-	# else:
-	# 	teams = getStandings()
+    # teams = []
+    # if pods:
+    #     for pod in pods:
+    #         teams += getStandings(None, pod)
+    # else:
+    #     teams = getStandings()
 
     team_list = t.getTeams()
 
@@ -70,19 +74,17 @@ def renderTAdmin(short_name):
     t.genTieFlashes()
     ties = t.getTies()
 
-
     divisions = t.getDivisions()
-    redraws= []
+    redraws = []
     for div in divisions:
         l = t.getRedraw(div)
         if l:
             redraws.append(div)
 
-	# stats = getTournamentStats()
+    # stats = getTournamentStats()
 
     authorized_users = []
     unauthorized_users = []
-
 
     authorized_ids = t.getAuthorizedUserIDs()
     users = getUserList()
@@ -94,10 +96,8 @@ def renderTAdmin(short_name):
                 continue
             unauthorized_users.append(u)
 
-
-    return render_template('admin/tournament_admin.html', tournament=t, ties=ties,\
-        disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),\
-        redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
+    return render_template('admin/tournament_admin.html', tournament=t, ties=ties, disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),
+                           redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 
 @app.route('/admin/t/<short_name>/redraw', methods=['POST'])
@@ -124,11 +124,12 @@ def redraw(short_name, div=None):
 
         div_name = t.expandGroupAbbr(div)
         if div_name:
-        	div_name = div_name
+            div_name = div_name
         else:
-        	div_name = "%s Division" % div.upper()
+            div_name = "%s Division" % div.upper()
 
-        return render_template('/admin/redraw.html', tournament=t, div=div, div_name=div_name, teams=team_list )
+        return render_template('/admin/redraw.html', tournament=t, div=div, div_name=div_name, teams=team_list)
+
     if request.method == 'POST':
         tid = getTournamentID(short_name)
         if tid < 1:
@@ -147,9 +148,9 @@ def redraw(short_name, div=None):
         # get list of ids that need a redraw
         redraw_ids = t.getRedraw(div)
 
-    	check=[]
-    	redraws=[]
-    	for e in request.form:
+        check = []
+        redraws = []
+        for e in request.form:
             match = re.search('^T(\d+)$', e)
             if match:
                 team_id = match.group(1)
@@ -161,23 +162,24 @@ def redraw(short_name, div=None):
                 if redraw_id not in redraw_ids:
                     flash("Invalid ID, can't find in redraws")
                     return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
-                redraws.append({'team_id':team_id, 'redraw_id':redraw_id})
+                redraws.append({'team_id': team_id, 'redraw_id': redraw_id})
 
-    	# check that each redraw ID is unique
-    	if len(check) > len(set(check)):
-    		flash("You put a team ID in twice!")
-    		return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
+        # check that each redraw ID is unique
+        if len(check) > len(set(check)):
+            flash("You put a team ID in twice!")
+            return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
 
         res = t.redraw_teams(div, redraws)
         if res == 0:
             return redirect("/admin/t/%s" % short_name)
         else:
             return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
+            
 
-@app.route('/admin/update', methods=['POST','GET'])
+@app.route('/admin/update', methods=['POST', 'GET'])
 @login_required
 def renderUpdate():
-    if request.method =='GET':
+    if request.method == 'GET':
         if request.args.get('gid'):
             if request.args.get('tid'):
                 t = getTournamentByID(request.args.get('tid'))
@@ -192,15 +194,15 @@ def renderUpdate():
                 return redirect("/admin")
 
             gid = request.args.get('gid')
-            game = t.getGame( gid )
+            game = t.getGame(gid)
             if not game:
                 return render_template('show_error.html', error_message="404: Unknown Game ID"), 404
-            if ( game.score_b == "--"):
+            if (game.score_b == "--"):
                 game.score_b = "0"
-            if ( game.score_w == "--"):
+            if (game.score_w == "--"):
                 game.score_w = "0"
 
-            if ( game.black_tid < 0 or game.white_tid < 0):
+            if (game.black_tid < 0 or game.white_tid < 0):
                 flash('Team(s) not determined yet. Cannot set score')
                 return redirect("/admin/t/%s" % t.short_name)
 
@@ -232,26 +234,26 @@ def renderUpdate():
             flash("You are not authorized for this tournament")
             return redirect("/admin")
 
-
         form = request.form
         game = {}
-    	game['gid'] = int(form.get('gid'))
-    	game['score_b'] = int(form.get('score_b'))
-    	game['score_w'] = int(form.get('score_w'))
-    	game['black_tid'] = int(form.get('btid'))
-    	game['white_tid'] = int(form.get('wtid'))
-    	game['pod'] = form.get('pod')
+        game['gid'] = int(form.get('gid'))
+        game['score_b'] = int(form.get('score_b'))
+        game['score_w'] = int(form.get('score_w'))
+        game['black_tid'] = int(form.get('btid'))
+        game['white_tid'] = int(form.get('wtid'))
+        game['pod'] = form.get('pod')
 
-    	game['forfeit_w'] = form.get('forfeit_w')
-    	game['forfeit_b'] = form.get('forfeit_b')
+        game['forfeit_w'] = form.get('forfeit_w')
+        game['forfeit_b'] = form.get('forfeit_b')
 
-        audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %\
-            (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
+        audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
+                          (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
         t.updateGame(game)
 
-        return redirect( "/admin/update?tid=%s" % tid )
+        return redirect("/admin/update?tid=%s" % tid)
 
-@app.route('/admin/update_config', methods=['POST','GET'])
+
+@app.route('/admin/update_config', methods=['POST', 'GET'])
 @login_required
 def updateConfigPost():
     if request.method == 'GET':
@@ -276,6 +278,7 @@ def updateConfigPost():
     t.updateConfig(request.form)
 
     return redirect("/admin/t/%s" % t.short_name)
+
 
 @app.route('/admin/t/<short_name>/update_admins')
 @login_required
@@ -315,12 +318,14 @@ def doUdateTournamentLogins(short_name):
 
     return redirect(request.referrer)
 
+
 #######################################
-## Login/Logout/passwd reset
+# Login/Logout/passwd reset
 #######################################
 @app.route('/login', methods=['GET'])
 def show_login():
     return render_template('admin/show_login.html')
+
 
 @app.route('/login', methods=['POST'])
 @global_limiter.limit("5/minute;20/hour")
@@ -353,6 +358,7 @@ def logout():
     logout_user()
     return redirect('/')
 
+
 @app.route('/login/reset', methods=['GET'])
 def pw_reset():
 
@@ -366,8 +372,8 @@ def pw_reset():
     if not token or not user_id:
         return render_template('show_error.html', error_message="Invalid or missing token")
 
-
     return render_template('admin/show_pwreset.html', token=token)
+
 
 @app.route('/login/reset', methods=['POST'])
 def set_password():
@@ -384,11 +390,11 @@ def set_password():
         password2 = form.get('password2')
 
         if len(password1) < 6:
-            flash( "Password too short, must be at least 6 characters")
+            flash("Password too short, must be at least 6 characters")
             return redirect("/login/reset?token=%s" % token)
 
         if password1 != password2:
-            flash ("Passwords do not match, try again")
+            flash("Passwords do not match, try again")
             return redirect("/login/reset?token=%s" % token)
 
         user = getUserByID(user_id)
@@ -399,12 +405,13 @@ def set_password():
             return redirect("/login")
 
         audit_logger.info("User password reset for %s" % user_id)
-        flash ("New password set, please login")
+        flash("New password set, please login")
 
         return redirect("/login")
 
+
 #######################################
-## User Management
+# User Management
 #######################################
 @app.route('/admin/users')
 @login_required
@@ -416,6 +423,7 @@ def renderShowUsers():
     users = getUserList()
     return render_template('admin/show_users.html', users=users)
 
+
 @app.route('/admin/user/add',  methods=['GET'])
 @login_required
 def renderAddUser():
@@ -424,6 +432,7 @@ def renderAddUser():
         return redirect("/admin")
 
     return render_template('admin/user_add.html')
+
 
 @app.route('/admin/user/add',  methods=['POST'])
 @login_required
@@ -451,9 +460,9 @@ def doAddUser():
     # saftey measure cause I'm not there yet, plubming works though
     # enable input on user_add.html and uncomment below
 
-    #if form.get('site-admin'):
+    # if form.get('site-admin'):
     #    new_user['site-admin'] = True
-    #else:
+    # else:
     #    new_user['site-admin'] = False
     new_user['site-admin'] = False
 
@@ -472,6 +481,7 @@ def doAddUser():
     # ideally here is where you would email out the reset token
 
     return render_template("/admin/show_new_user.html", email=new_user['email'], token=res['token'], user_id=res['user_id'])
+
 
 @app.route("/admin/user/<user_id>")
 @login_required
@@ -494,6 +504,7 @@ def renderUserManager(user_id):
     tournaments = sorted(tournaments)
 
     return render_template("/admin/show_user_admin.html", user=user, tournaments=tournaments)
+
 
 @app.route('/admin/user/<user_id>/reset')
 @login_required
