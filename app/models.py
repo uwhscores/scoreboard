@@ -56,25 +56,25 @@ class Stats(object):
                 self.games_played += 1
 
             # forfeit
-            if (forfeit == "b" and black_tid == team_id):
+            if forfeit == "b" and black_tid == team_id:
                 if game_pod == pod:
                     self.losses += 1
                     self.points -= 2
                 self.losses_t += 1
 
-            if (forfeit == "b" and white_tid == team_id):
+            if forfeit == "b" and white_tid == team_id:
                 if game_pod == pod:
                     self.wins += 1
                     self.points += tournament.POINTS_WIN
                 self.wins_t += 1
 
-            if (forfeit == "w" and white_tid == team_id):
+            if forfeit == "w" and white_tid == team_id:
                 if game_pod == pod:
                     self.losses += 1
                     self.points -= 2
                 self.losses_t += 1
 
-            if forfeit == "b" and black_tid == team_id:
+            if forfeit == "w" and black_tid == team_id:
                 if game_pod == pod:
                     self.wins += 1
                     self.points += tournament.POINTS_WIN
