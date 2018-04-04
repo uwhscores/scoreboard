@@ -307,15 +307,20 @@ def updateGame(tid, gid):
         message = "user %s is not authorized" % g.user_id
         raise InvalidUsage(message, status_code=404)
 
-    j = request.json
+    # TODO: validate score post data and simplify updating scores
+    post_data = request.get_json()
+    if not isinstance(post_data, dict):
+        message = "POST data must be JSON format"
+        raise InvalidUsage(message, status_code=400)
 
+    score_post = post_data['game_score']
     # make sure tid in json matches URL
     try:
         tid = int(tid)
     except (TypeError, ValueError):
         raise InvalidUsage("Unknown tid", status_code=404)
 
-    if not tid == j.get('tid'):
+    if not tid == score_post.get('tid'):
         raise InvalidUsage("tid mismatch", status_code=400)
 
     # make sure gid in json matches URL
@@ -324,7 +329,7 @@ def updateGame(tid, gid):
     except (TypeError, ValueError):
         raise InvalidUsage("bad gid", status_code=400)
 
-    if not gid == j.get('gid'):
+    if not gid == score_post.get('gid'):
         raise InvalidUsage("gid mismatch", status_code=400)
 
     game = t.getGame(gid)
@@ -334,12 +339,12 @@ def updateGame(tid, gid):
 
     # check that team ids match
     try:
-        black_id = int(j.get('black_id'))
+        black_id = int(score_post.get('black_id'))
     except (TypeError, ValueError):
         black_id = None
 
     try:
-        white_id = int(j.get('white_id'))
+        white_id = int(score_post.get('white_id'))
     except (TypeError, ValueError):
         white_id = None
 
@@ -351,18 +356,18 @@ def updateGame(tid, gid):
         raise InvalidUsage("team id mismatch", status_code=400)
 
     score = {}
-    score['gid'] = int(j.get('gid'))
-    score['score_b'] = int(j.get('score_b'))
-    score['score_w'] = int(j.get('score_w'))
+    score['gid'] = int(score_post.get('gid'))
+    score['score_b'] = int(score_post.get('score_b'))
+    score['score_w'] = int(score_post.get('score_w'))
     score['black_tid'] = black_id
     score['white_tid'] = white_id
-    score['pod'] = j.get('pod')
+    score['pod'] = score_post.get('pod')
 
-    score['forfeit_w'] = j.get('forfeit_w')
-    score['forfeit_b'] = j.get('forfeit_b')
+    score['forfeit_w'] = score_post.get('forfeit_w')
+    score['forfeit_b'] = score_post.get('forfeit_b')
 
-    audit_logger.info("API: Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %\
-        (t.short_name, score['gid'], current_user.short_name, current_user.user_id, score['score_b'], score['score_w']))
+    audit_logger.info("API: Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
+                      (t.short_name, score['gid'], current_user.short_name, current_user.user_id, score['score_b'], score['score_w']))
     status = t.updateGame(score)
 
     if not status == 1:
