@@ -431,7 +431,7 @@ def updateGameTiming(tid):
     if not res == 1:
         raise InvalidUsage("Server side error updating game rules", status_code=500)
     else:
-        rules = t.getTimingRules()
+        rules = t.getTimingRuleSet()
         #response = {'timing_rule_set': {'tid': tid}}
         #response['timing_rule_set'].update(rules)
         return jsonify(rules)
