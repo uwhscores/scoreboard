@@ -5,7 +5,7 @@ import bcrypt
 import json
 from base64 import b64encode
 from flask import g, flash
-from jsonschema import validate, ValidationError
+from jsonschema import validate, ValidationError, RefResolutionError
 
 from tournament import Tournament
 from models import User
@@ -264,6 +264,10 @@ def validateJSONSchema(source, schema_name):
             msg = "Invalid format: %s" % e.message
         else:
             msg = "Validataion failed %s" % e.message
+
+        return (False, msg)
+    except RefResolutionError as e:
+        msg = "Unable to find schema refrenced %s" % e.message
 
         return (False, msg)
 

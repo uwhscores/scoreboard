@@ -1,6 +1,48 @@
 {
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Timing Rules API Post",
     "type": "object",
+    "definitions": {
+        "timing_rules": {
+            "type": "object",
+            "properties": {
+                "half_duration": {"type": "integer"},
+                "half_time_duration": {"type": "integer"},
+                "max_sudden_death_duration": {"type": ["null","integer"]},
+                "min_game_break": {"type": "integer"},
+                "game_timeouts": {
+                    "type": "object",
+                    "$ref": "#/definitions/timeout"
+                },
+                "overtime_allowed": {"type": "boolean"},
+                "overtime_break_duration": {"type": "integer"},
+                "overtime_duration": {"type": "integer"},
+                "pre_overtime_break": {"type": "integer"},
+                "overtime_tiemouts": {
+                    "type": "object",
+                    "$ref": "#/definitions/timeout"
+                },
+                "sudden_death_allowed": {"type": "boolean"},
+                "pre_sudden_death_break": {"type": "integer"},
+                "sudden_death_timeouts": {
+                    "type": "object",
+                    "$ref": "#/definitions/timeout"
+                }
+            },
+            "required": ["half_duration", "half_time_duration", "overtime_allowed", "sudden_death_allowed", "game_timeouts"],
+            "additionalProperties": false
+        },
+        "timeout": {
+            "type": "object",
+            "properties": {
+                "allowed": {"type": "integer"},
+                "per_half": {"type": "boolean"},
+                "duration": {"type": "integer"}
+            },
+            "required": ["allowed", "per_half", "duration"],
+            "additionalProperties": false
+        }
+    },
     "properties": {
         "timing_rule_set": {
             "type": "object",
@@ -8,7 +50,7 @@
                 "tid": {"type": "integer"},
                 "default_rules": {
                     "type": "object",
-                    "$ref": "file:app/json_schemas/timing_rules.json"
+                    "$ref": "#/definitions/timing_rules"
                 },
                 "game_types": {
                     "type": "array",
@@ -18,7 +60,7 @@
                             "game_type": {"type": "string"},
                             "timing_rules": {
                                 "type": "object",
-                                "$ref": "file:app/json_schemas/timing_rules.json"
+                                "$ref": "#/definitions/timing_rules"
                             }
                         },
                         "required": ["game_type", "timing_rules"],
