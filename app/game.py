@@ -154,7 +154,7 @@ class Game(object):
 
         # Seed notation - Division or Pod
         # match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
-        match = re.search('^S(\d\w|\w)(\d+)$', game)
+        match = re.search('^S(\d\w|\w+)(\d+)$', game)
         if match:
             group = match.group(1)
             seed = match.group(2)
