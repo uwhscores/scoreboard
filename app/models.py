@@ -59,7 +59,7 @@ class Stats(object):
             if forfeit == "b" and black_tid == team_id:
                 if game_pod == pod:
                     self.losses += 1
-                    self.points -= 2
+                    self.points -= tournament.POINTS_FORFEIT
                 self.losses_t += 1
 
             if forfeit == "b" and white_tid == team_id:
@@ -71,7 +71,7 @@ class Stats(object):
             if forfeit == "w" and white_tid == team_id:
                 if game_pod == pod:
                     self.losses += 1
-                    self.points -= 2
+                    self.points -= tournament.POINTS_FORFEIT
                 self.losses_t += 1
 
             if forfeit == "w" and black_tid == team_id:

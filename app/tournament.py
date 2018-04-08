@@ -42,6 +42,11 @@ class Tournament(object):
         else:
             self.POINTS_WIN = 2
 
+        if params.getParam('points_forfeit'):
+            self.POINTS_FORFEIT = int(params.getParam('points_forfeit'))
+        else:
+            self.POINTS_FORFEIT = 2
+
     def __repr__(self):
         """ String reper only really used for log and debug """
         return "{} - {} - {}".format(self.name, self.start_date, self.location)
