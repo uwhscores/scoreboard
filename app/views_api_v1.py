@@ -415,17 +415,6 @@ def updateGameTiming(tid):
     if not tid == rule_set.get('tid'):
         raise InvalidUsage("tid mismatch", status_code=400)
 
-    # for game_type_entry in rule_set.get('game_types'):
-    #     game_type = game_type_entry.get('game_type')
-    #     ## TODO: get game type list from schedule
-    #     if game_type not in ['RR', 'BR', 'E', 'CO']:
-    #         raise InvalidUsage("Unknown game type %s" % game_type, status_code=400)
-    #
-    #     audit_logger.info("API: Timing rules for tournament %s, game type %s updated by %s(%s)" %
-    #                       (t.short_name, game_type, current_user.short_name, current_user.user_id))
-    #
-    #     timing_rules = game_type_entry.get('timing_rules')
-    #     res = t.updateTimingRules(game_type, timing_rules)
     res = t.updateTimingRules(rule_set)
 
     if not res == 1:

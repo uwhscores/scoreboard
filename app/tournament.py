@@ -1201,24 +1201,7 @@ class Tournament(object):
 
         params = self.getParams()
         current_rule_set = params.getParam("timing_rules")
-        # import pdb; pdb.set_trace()
-        # if not current_rule_set:
-        #     # first rule to set
-        #     new_rules = {"game_types": [{"game_type": game_type, "timing_rules": timing_rules}]}
-        #     value = json.dumps(new_rules)
-        #     params.addParam("timing_rules", value)
-        # else:
-        #     old_game_types = json.loads(current_rule_set)
-        #     new_game_types = []
-        #     for entry in old_game_types['game_types']:
-        #         if entry['game_type'] != game_type:
-        #             new_game_types.append(entry)
-        #
-        #     new_game_types.append({"game_type": game_type, "timing_rules": timing_rules})
-        #     new_rules = {"game_types": new_game_types}
-        #     value = json.dumps(new_rules)
-        #     params.updateParam("timing_rules", value)
-        # import pdb; pdb.set_trace()
+
         rule_set = json.dumps(rule_set)
         if not current_rule_set:
             params.addParam("timing_rules", rule_set)
