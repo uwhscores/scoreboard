@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+from app import app
 
 
 def getPodID(a, b):
@@ -122,14 +123,18 @@ class Game(object):
         team_id = -1
         t = self.tournament
 
-        # Team notation
-        match = re.search('^T(\d+)$', game)
+        if not game:
+            app.logger.debug("Some how we got here with a None game")
+            return (None, None, None)
+
+        # team notation
+        match = re.search(r"^T(\d+)$", game)
         if match:
             team_id = match.group(1)
             game = self.tournament.getTeam(team_id)
 
         # Redraw IDs
-        match = re.search('^R(\w)(\d+)$', game)
+        match = re.search(r"^R(\w)(\d+)$", game)
         if match:
             div = match.group(1)
             num = match.group(2)
@@ -139,7 +144,7 @@ class Game(object):
 
         # seeded pods RR games
         # only for nationals 2014, what a mess
-        match = re.search('^([begdz])(\d+)$', game)
+        match = re.search(r"^([begdz])(\d+)$", game)
         if match:
             pod = match.group(1)
             pod_id = match.group(2)
@@ -154,7 +159,7 @@ class Game(object):
 
         # Seed notation - Division or Pod
         # match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
-        match = re.search('^S(\d\w|\w+)(\d+)$', game)
+        match = re.search(r"^S(\d\w|\w+)(\d+)$", game)
         if match:
             group = match.group(1)
             seed = match.group(2)
@@ -177,7 +182,7 @@ class Game(object):
                     game = "%s (%s-%s)" % (team, group, seed)
 
         # Winner of
-        match = re.search('^W(\d+)$', game)
+        match = re.search(r"^W(\d+)$", game)
         if match:
             gid = match.group(1)
             team_id = t.getWinner(gid)
@@ -191,7 +196,7 @@ class Game(object):
                 game = team + " (W" + gid + ")"
 
         # Loser of
-        match = re.search('^L(\d+)$', game)
+        match = re.search(r"^L(\d+)$", game)
         if match:
             gid = match.group(1)
             team_id = t.getLoser(gid)

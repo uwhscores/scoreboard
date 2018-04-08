@@ -1228,19 +1228,36 @@ class Tournament(object):
 
     def popSeededPods(self):
         """ Checks if first round of pods is all finished and populates seeded pods
-        HARD CODED TOTAL HACK, HAS TO BE FIXED BEFORE WE CAN SUPPORT MORE THAN ONE SEEDED POD TOURNAMENT
-        # TODO: FIX THIS
+        Uses seeded_mod_matrix param to fill in the seedings from the first round pods to the second round pods
+        example: seeded_pod_matrix={"1P":["A","B","C"], "2P":["A","B","C"], "3P":["A","B","C"], "4P":["A","B","C"], "5P":["A","B","C"]}
+        Takes the teams from pods "1P" - "5P" in the first round and seeds them into "A", "B" and "C" pods
+        Works sequentially through the rankings for the first pod.
         """
 
         params = self.getParams()
 
         seeded_pods = params.getParam('seeded_pods')
+        if seeded_pods is None:
+            return None
+
         if seeded_pods == 1:  # pods already seeded, nothing to do here
-            return 0
+            return True
+
+        pod_matrix = params.getParam('seeded_pod_matrix')
+        if not pod_matrix:
+            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matix param, that's an issue")
+            return None
+
+        try:
+            pod_matrix = json.loads(pod_matrix)
+        except ValueError as e:
+            app.logger.debug("Unable to parse seeded_mod_matrix JSON, probably bad json")
+            app.logger.debug(e)
+            return None
 
         app.logger.debug("popSeededPods: checking if roundrobin is complete")
 
-        round1 = ("1P", "2P", "3P", "4P")  # list tof pod IDs from round one
+        round1 = pod_matrix.keys()
 
         # test if all pods are done, list of endRoundRobin booleans
         pods_done = []
@@ -1263,17 +1280,10 @@ class Tournament(object):
 
         db = self.db
 
-        # matrix of how round one seeds go into round two pods
-        seeding = {}
-        seeding['1P'] = ['a', 'a', 'b', 'b', 'c']
-        seeding['2P'] = ['a', 'a', 'b', 'b', 'c']
-        seeding['3P'] = ['c', 'd', 'd', 'e', 'e']
-        seeding['4P'] = ['c', 'd', 'd', 'e', 'e', 'e']
-
         for pod in round1:
             podStandings = self.getStandings(None, pod)
 
-            rules = seeding[pod]
+            rules = pod_matrix[pod]
             offset = 0
 
             for rank in podStandings:
@@ -1290,7 +1300,7 @@ class Tournament(object):
             # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
             params.updateParam('seeded_pods', 1)
 
-        return 1
+        return True
 
     def updateConfig(self, form):
         """ update a given config ID to a new value in params, uses input from config form """
