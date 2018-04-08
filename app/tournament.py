@@ -610,28 +610,28 @@ class Tournament(object):
 
         db = self.db
         if (division is None and pod is None):
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', self.tid)
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND tid=?', self.tid)
         elif (division is None and pod):
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND pod=? AND tid=?', (pod, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND pod=? AND tid=?', (pod, self.tid))
         elif division:
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', (division, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND division LIKE ? AND tid=?', (division, self.tid))
         else:
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND POD=? AND tid=?', (division, pod, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND division LIKE ? AND POD=? AND tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
         rr_games = row['games']
 
         if (division is None and pod is None):
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.tid=s.tid AND s.tid=?',
                              self.tid)
         elif (division is None and pod):
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=s.tid AND g.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.pod=? AND g.tid=s.tid AND g.tid=?',
                              (pod, self.tid))
         elif division:
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND g.division=? AND s.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.tid=s.tid AND g.division=? AND s.tid=?',
                              (division, self.tid))
         else:
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" \
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" \
                               AND division LIKE ? AND pod=? AND g.tid=s.tid AND s.tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
@@ -691,12 +691,12 @@ class Tournament(object):
         if pod:
             cur = db.execute('SELECT s.gid, s.black_tid, s.white_tid, s.score_w, s.score_b, s.forfeit FROM scores s, games g \
                             WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
-                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.pod=? AND g.tid=?',
+                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type LIKE "RR%" AND g.pod=? AND g.tid=?',
                              (tid_a, tid_b, tid_b, tid_a, pod, self.tid))
         else:
             cur = db.execute('SELECT s.gid, s.black_tid, s.white_tid, s.score_w, s.score_b, s.forfeit FROM scores s, games g \
                             WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
-                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.tid=?',
+                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type LIKE "RR%" AND g.tid=?',
                              (tid_a, tid_b, tid_b, tid_a, self.tid))
 
         games = cur.fetchall()
@@ -1472,7 +1472,7 @@ class Tournament(object):
                 a = "T%s" % cur_team['team_id']
                 b = "T%s" % opponent['team_id']
                 cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) or (white=? and black=?))\
-                    AND division=? AND type='RR' AND tid=? ORDER BY gid", (a, b, b, a, div, self.tid))
+                    AND division=? AND type LIKE 'RR%' AND tid=? ORDER BY gid", (a, b, b, a, div, self.tid))
                 games = cur.fetchall()
 
                 if len(games) > 2:
