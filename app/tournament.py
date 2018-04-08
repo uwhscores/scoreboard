@@ -408,9 +408,9 @@ class Tournament(object):
         """
         db = self.db
         if (div):
-            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=?", (div, self.tid))
+            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
-            cur = db.execute("SELECT place, game FROM rankings WHERE tid=?", (self.tid,))
+            cur = db.execute("SELECT place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
 
         rankings = cur.fetchall()
 
@@ -450,6 +450,7 @@ class Tournament(object):
                     game = team
 
             # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
+            # TODO: this doesn't look right anymore, need to check this still works
             match = re.search('^S([\w])(\d+)$', game)
             if match:
                 group = match.group(1)
