@@ -27,8 +27,13 @@ class Import(object):
     def setSource(self, src_folder):
         self.src_folder = src_folder
 
-    def importAll(self, src_folder, clear=False):
+    def importAll(self, src_folder=None, clear=False):
+        if not src_folder:
+            src_folder = self.src_folder
+
         tid = self.__findTID(src_folder)
+        if not tid:
+            raise Exception("Unable to locate TID")
 
         if clear:
             self.__clearScores(tid)
@@ -45,6 +50,7 @@ class Import(object):
     def __findTID(self, src_folder):
         tid = None
         tid_file = os.path.join(src_folder, "tid")
+        tournament_cfg = os.path.join(src_folder, "tournament.cfg")
         if os.path.isfile(tid_file):
             with open(tid_file, 'r') as f:
                 line = f.readline()
@@ -54,6 +60,37 @@ class Import(object):
                     print "TID file has something other than an integer"
                     # sys.exit(1)
                     return None
+        elif os.path.isfile(tournament_cfg):
+            t_config = ConfigParser.RawConfigParser()
+            t_config.read(tournament_cfg)
+
+            name = t_config.get("tournament", "name")
+            short_name = t_config.get("tournament", "short_name")
+            start_date = t_config.get("tournament", "start_date")
+            end_date = t_config.get("tournament", "end_date")
+            location = t_config.get("tournament", "location")
+
+            if not name or not short_name or not start_date or not end_date or not location:
+                raise Exception("Tournaments cfg missing reuqired field")
+
+            cur = self.db.execute("SELECT tid FROM tournaments WHERE short_name=?", (short_name,))
+            row = cur.fetchone()
+
+            if row:
+                return row['tid']
+            else:
+                cur = self.db.execute("INSERT INTO tournaments(name, short_name, start_date, end_date, location, active) VALUES(?,?,?,?,?,?)",
+                                      (name, short_name, start_date, end_date, location, 1))
+
+                self.db.commit()
+                cur = self.db.execute("SELECT tid FROM tournaments WHERE short_name=?", (short_name,))
+                row = cur.fetchone()
+
+                if row:
+                    return row['tid']
+                else:
+                    raise Exception("Unknown error inserting tournament into DB")
+
         else:
             print "You need a tid file!"
             # sys.exit(1)
@@ -124,7 +161,7 @@ class Import(object):
 
     def __importRankings(self, tid, rankings_file=None):
         rankings_file = os.path.join(self.src_folder, "rankings.csv")
-        if os.path.isfile(rankings_file):
+        if not os.path.isfile(rankings_file):
             return None
 
         print "Found rankings file ...."
@@ -140,7 +177,7 @@ class Import(object):
 
     def __importGroups(self, tid, groups_file=None):
         groups_file = os.path.join(self.src_folder, "groups.csv")
-        if os.path.isfile(groups_file):
+        if not os.path.isfile(groups_file):
             return None
 
         print "Found groups file ...."
@@ -156,7 +193,7 @@ class Import(object):
 
     def __importPods(self, tid, pods_file=None):
         pods_file = os.path.join(self.src_folder, "pods.csv")
-        if os.path.isfile(pods_file):
+        if not os.path.isfile(pods_file):
             return None
 
         print "Found pods file ..."
@@ -173,7 +210,7 @@ class Import(object):
     def __importParams(self, tid, params_file=None):
         params_file = os.path.join(self.src_folder, "params.cfg")
 
-        if os.path.isfile(params_file):
+        if not os.path.isfile(params_file):
             return None
 
         print "Found params.cfg ..."
