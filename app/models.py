@@ -1,5 +1,6 @@
 from string import split
 from app import app
+import re
 from datetime import datetime
 from base64 import b64encode
 from os import urandom
@@ -35,7 +36,8 @@ class Stats(object):
         self.wins_t = 0
         self.losses_t = 0
         self.ties_t = 0
-        cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g WHERE g.gid=s.gid AND g.tid=s.tid AND (white_tid=? or black_tid=?) AND s.tid=?', (team_id, team_id, tid))
+        cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g\
+                          WHERE g.gid=s.gid AND g.tid=s.tid AND (white_tid=? or black_tid=?) AND s.tid=?', (team_id, team_id, tid))
 
         games = cur.fetchall()
 
@@ -49,8 +51,8 @@ class Stats(object):
             game_pod = None
             if game['pod']:
                 game_pod = game['pod']
-            elif game['type'] != "RR":
-                game_pod = "None"
+            elif game['type'] and not re.match(r"^RR.*", game['type']):
+                game_pod = None
 
             if game_pod == pod:
                 self.games_played += 1
@@ -102,18 +104,18 @@ class Stats(object):
                     self.losses += 1
                 self.losses_t += 1
 
-            if score_w == score_b and forfeit == None:
+            if score_w == score_b and forfeit is None:
                 if game_pod == pod:
                     self.ties += 1
                     self.points += 1
                 self.ties_t += 1
 
-            if game['type'] != "RR":
+            #if game['type'] != "RR":
+            if game['type'] and not re.match(r"^RR.*", game['type']):
                 continue
 
             if pod and game['pod'] != pod:
                 continue
-
 
             if white_tid == team_id:
                 self.goals_allowed += score_b
