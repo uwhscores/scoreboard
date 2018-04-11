@@ -1057,7 +1057,10 @@ class Tournament(object):
         params = self.getParams()
         timing_rule_set = params.getParam("timing_rules")
 
-        return json.loads(timing_rule_set)
+        if timing_rule_set:
+            return json.loads(timing_rule_set)
+        else:
+            return None
 
     ##########################################################################
     # Admin functions
