@@ -92,7 +92,7 @@ def renderTAdmin(short_name):
         if authorized_ids and u.user_id in authorized_ids:
             authorized_users.append(u)
         else:
-            if u.admin or u.site_admin:
+            if u.admin or u.site_admin or not u.active:
                 continue
             unauthorized_users.append(u)
 
