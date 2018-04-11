@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+import json
 from game import Game
 from models import Stats, Ranking, Params
 from flask import g, flash
@@ -40,6 +41,11 @@ class Tournament(object):
             self.POINTS_WIN = int(params.getParam('points_win'))
         else:
             self.POINTS_WIN = 2
+
+        if params.getParam('points_forfeit'):
+            self.POINTS_FORFEIT = int(params.getParam('points_forfeit'))
+        else:
+            self.POINTS_FORFEIT = 2
 
     def __repr__(self):
         """ String reper only really used for log and debug """
@@ -207,7 +213,7 @@ class Tournament(object):
         return games
 
     def getGame(self, gid):
-        """ Get single game by game ID, returns game dictionary """
+        """ Get single game by game ID, returns game object """
         db = self.db
         cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
                 FROM games WHERE gid=? AND tid=? ', (gid, self.tid))
@@ -407,9 +413,9 @@ class Tournament(object):
         """
         db = self.db
         if (div):
-            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=?", (div, self.tid))
+            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
-            cur = db.execute("SELECT place, game FROM rankings WHERE tid=?", (self.tid,))
+            cur = db.execute("SELECT place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
 
         rankings = cur.fetchall()
 
@@ -449,6 +455,7 @@ class Tournament(object):
                     game = team
 
             # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
+            # TODO: this doesn't look right anymore, need to check this still works
             match = re.search('^S([\w])(\d+)$', game)
             if match:
                 group = match.group(1)
@@ -608,28 +615,28 @@ class Tournament(object):
 
         db = self.db
         if (division is None and pod is None):
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND tid=?', self.tid)
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND tid=?', self.tid)
         elif (division is None and pod):
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND pod=? AND tid=?', (pod, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND pod=? AND tid=?', (pod, self.tid))
         elif division:
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND tid=?', (division, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND division LIKE ? AND tid=?', (division, self.tid))
         else:
-            cur = db.execute('SELECT count(*) as games FROM games WHERE type="RR" AND division LIKE ? AND POD=? AND tid=?', (division, pod, self.tid))
+            cur = db.execute('SELECT count(*) as games FROM games WHERE type LIKE "RR%" AND division LIKE ? AND POD=? AND tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
         rr_games = row['games']
 
         if (division is None and pod is None):
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND s.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.tid=s.tid AND s.tid=?',
                              self.tid)
         elif (division is None and pod):
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.pod=? AND g.tid=s.tid AND g.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.pod=? AND g.tid=s.tid AND g.tid=?',
                              (pod, self.tid))
         elif division:
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" AND g.tid=s.tid AND g.division=? AND s.tid=?',
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" AND g.tid=s.tid AND g.division=? AND s.tid=?',
                              (division, self.tid))
         else:
-            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type="RR" \
+            cur = db.execute('SELECT count(s.gid) as count FROM scores s, games g WHERE s.gid=g.gid AND g.type LIKE "RR%" \
                               AND division LIKE ? AND pod=? AND g.tid=s.tid AND s.tid=?', (division, pod, self.tid))
 
         row = cur.fetchone()
@@ -689,12 +696,12 @@ class Tournament(object):
         if pod:
             cur = db.execute('SELECT s.gid, s.black_tid, s.white_tid, s.score_w, s.score_b, s.forfeit FROM scores s, games g \
                             WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
-                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.pod=? AND g.tid=?',
+                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type LIKE "RR%" AND g.pod=? AND g.tid=?',
                              (tid_a, tid_b, tid_b, tid_a, pod, self.tid))
         else:
             cur = db.execute('SELECT s.gid, s.black_tid, s.white_tid, s.score_w, s.score_b, s.forfeit FROM scores s, games g \
                             WHERE s.gid = g.gid AND s.tid=g.tid AND ((s.black_tid=? AND s.white_tid=?)\
-                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type="RR" AND g.tid=?',
+                            OR (s.black_tid=? AND s.white_tid=?)) AND g.type LIKE "RR%" AND g.tid=?',
                              (tid_a, tid_b, tid_b, tid_a, self.tid))
 
         games = cur.fetchall()
@@ -1020,6 +1027,38 @@ class Tournament(object):
 
         return standings
 
+    def getTimingRules(self, game_type=None):
+        """ gets timing rules for a specific game type,
+        returns the default timing rules if game type not passed or game type cannot be found
+
+        returns dictionary of timing rules"""
+
+        timing_rules = None
+        params = self.getParams()
+        timing_rule_set = params.getParam("timing_rules")
+        if not timing_rule_set:
+            return None
+
+        timing_rule_set = json.loads(timing_rule_set)
+
+        # set default rules
+        timing_rules = timing_rule_set['default_rules']
+
+        # if game_type passed in and rule_set has list of game_types, see if there is a match
+        if game_type and 'game_types' in timing_rule_set:
+            for entry in timing_rule_set['game_types']:
+                if entry['game_type'] == game_type:
+                    timing_rules = entry['timing_rules']
+
+        return timing_rules
+
+    def getTimingRuleSet(self):
+        """ get full timing rule set parameter, returns dictionary """
+        params = self.getParams()
+        timing_rule_set = params.getParam("timing_rules")
+
+        return json.loads(timing_rule_set)
+
     ##########################################################################
     # Admin functions
     ##########################################################################
@@ -1159,21 +1198,55 @@ class Tournament(object):
 
         return 1
 
+    def updateTimingRules(self, rule_set):
+        """ Set a timing rule for a specific game type and save it to the parameters table
+            game_type should match schedule game types of RR, BR or E
+            timing_rules should be full timing_rules JSON part from timing_rules schema
+        """
+
+        params = self.getParams()
+        current_rule_set = params.getParam("timing_rules")
+
+        rule_set = json.dumps(rule_set)
+        if not current_rule_set:
+            params.addParam("timing_rules", rule_set)
+        else:
+            params.updateParam("timing_rules", rule_set)
+
+        return True
+
     def popSeededPods(self):
         """ Checks if first round of pods is all finished and populates seeded pods
-        HARD CODED TOTAL HACK, HAS TO BE FIXED BEFORE WE CAN SUPPORT MORE THAN ONE SEEDED POD TOURNAMENT
-        # TODO: FIX THIS
+        Uses seeded_mod_matrix param to fill in the seedings from the first round pods to the second round pods
+        example: seeded_pod_matrix={"1P":["A","B","C"], "2P":["A","B","C"], "3P":["A","B","C"], "4P":["A","B","C"], "5P":["A","B","C"]}
+        Takes the teams from pods "1P" - "5P" in the first round and seeds them into "A", "B" and "C" pods
+        Works sequentially through the rankings for the first pod.
         """
 
         params = self.getParams()
 
         seeded_pods = params.getParam('seeded_pods')
+        if seeded_pods is None:
+            return None
+
         if seeded_pods == 1:  # pods already seeded, nothing to do here
-            return 0
+            return True
+
+        pod_matrix = params.getParam('seeded_pod_matrix')
+        if not pod_matrix:
+            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matix param, that's an issue")
+            return None
+
+        try:
+            pod_matrix = json.loads(pod_matrix)
+        except ValueError as e:
+            app.logger.debug("Unable to parse seeded_mod_matrix JSON, probably bad json")
+            app.logger.debug(e)
+            return None
 
         app.logger.debug("popSeededPods: checking if roundrobin is complete")
 
-        round1 = ("1P", "2P", "3P", "4P")  # list tof pod IDs from round one
+        round1 = pod_matrix.keys()
 
         # test if all pods are done, list of endRoundRobin booleans
         pods_done = []
@@ -1196,17 +1269,10 @@ class Tournament(object):
 
         db = self.db
 
-        # matrix of how round one seeds go into round two pods
-        seeding = {}
-        seeding['1P'] = ['a', 'a', 'b', 'b', 'c']
-        seeding['2P'] = ['a', 'a', 'b', 'b', 'c']
-        seeding['3P'] = ['c', 'd', 'd', 'e', 'e']
-        seeding['4P'] = ['c', 'd', 'd', 'e', 'e', 'e']
-
         for pod in round1:
             podStandings = self.getStandings(None, pod)
 
-            rules = seeding[pod]
+            rules = pod_matrix[pod]
             offset = 0
 
             for rank in podStandings:
@@ -1223,7 +1289,7 @@ class Tournament(object):
             # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
             params.updateParam('seeded_pods', 1)
 
-        return 1
+        return True
 
     def updateConfig(self, form):
         """ update a given config ID to a new value in params, uses input from config form """
@@ -1394,7 +1460,7 @@ class Tournament(object):
                 a = "T%s" % cur_team['team_id']
                 b = "T%s" % opponent['team_id']
                 cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) or (white=? and black=?))\
-                    AND division=? AND type='RR' AND tid=? ORDER BY gid", (a, b, b, a, div, self.tid))
+                    AND division=? AND type LIKE 'RR%' AND tid=? ORDER BY gid", (a, b, b, a, div, self.tid))
                 games = cur.fetchall()
 
                 if len(games) > 2:

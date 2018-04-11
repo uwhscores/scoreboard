@@ -161,6 +161,10 @@
 				<tbody>
 				{% for rank in standings -%}
 				{% set team = rank.team %}
+					{% if loop.previtem %}
+						{% set lastDiv = loop.previtem.team.division %}
+						{% set lastPod = loop.previtem.team.pod %}
+					{% endif %}
 					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
  				</tbody>
 				<thead>
@@ -197,8 +201,6 @@
 						<td>{{ team.games_played }} </td>
 						<td>{{ team.wins_t }}-{{ team.losses_t }}-{{ team.ties_t }}</td>
 					</tr>
-					{% set lastDiv = team.division %}
-					{% set lastPod = team.pod %}
 				{%- endfor %}
 				<tbody>
 			</table>

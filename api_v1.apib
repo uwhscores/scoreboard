@@ -101,13 +101,28 @@ Returns list of games on the schedule. Allows for filtering.
               "note_b": "",
               "note_w": "",
               "pool": "1",
-              "score_b": 9,
-              "score_w": 0,
+              "score_b": null,
+              "score_w": null,
               "start_time": "2016-01-16T12:12:00",
               "tid": 7,
               "white": "Phoenix",
               "white_id": 4
-              }
+              },
+              {
+                "black": "Div A Seed 1",
+                "black_id": -1,
+                "day": "Sat",
+                "gid": 30,
+                "note_b": "",
+                "note_w": "",
+                "pool": "1",
+                "score_b": null,
+                "score_w": null,
+                "start_time": "2016-01-16T12:14:00",
+                "tid": 7,
+                "white": "Div A Seed 8",
+                "white_id": -1
+                }
             ]
           }
 
@@ -134,6 +149,16 @@ Returns list of games on the schedule. Allows for filtering.
             "score_w": 0,
             "start_time": "2016-01-17T08:15:00",
             "tid": 7,
+            "timing_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
             "white": "The Yo Team",
             "white_id": 1
           }
@@ -144,13 +169,14 @@ Returns list of games on the schedule. Allows for filtering.
 + Request (application/json)
 
         {
-            "gid":3,
-            "score_w":6,
-            "score_b":2,
-            "black_id":5,
-            "white_id":6
+            "game_score": {
+                "gid":3,
+                "score_w":6,
+                "score_b":2,
+                "black_id":5,
+                "white_id":6
+            }
         }
-
 
 + Response 201 (application/json)
 
@@ -168,6 +194,16 @@ Returns list of games on the schedule. Allows for filtering.
             "score_w": 6,
             "start_time": "2016-01-30T10:35:00",
             "tid": 7,
+            "timing_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
             "white": "Air is Rare",
             "white_id": 6
           }
@@ -176,33 +212,46 @@ Returns list of games on the schedule. Allows for filtering.
 + Request (application/json)
 
         {
-            "gid":3,
-            "score_w":0,
-            "score_b":0,
-            "black_id":5,
-            "white_id":6,
-            "forfeit_b":1
+            "game_score": {
+                "gid":3,
+                "score_w":0,
+                "score_b":0,
+                "black_id":5,
+                "white_id":6,
+                "forfeit_b":true
+            }
         }
 
 + Response 201 (application/json)
 
         {
-          "black": "Rocky Mountain Oysters",
-          "black_id": 6,
-          "day": "Sat",
-          "forfeit": "b",
-          "gid": 3,
-          "note_b": "Forfeit",
-          "note_w": "",
-          "pool": "1",
-          "score_b": 6,
-          "score_w": 3,
-          "start_time": "2016-01-30T10:35:00",
-          "tid": 8,
-          "white": "Air is Rare",
-          "white_id": 6
-        }
-
+         "game": {
+             "black": "Rocky Mountain Oysters",
+             "black_id": 6,
+            "day": "Sat",
+            "forfeit": "b",
+            "gid": 3,
+            "note_b": "Forfeit",
+            "note_w": "",
+            "pool": "1",
+            "score_b": 6,
+            "score_w": 3,
+            "start_time": "2016-01-30T10:35:00",
+             "tid": 8,
+            "timing_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
+             "white": "Air is Rare",
+             "white_id": 6
+            }
+         }
 
 ## Teams [/api/v1/tournaments/{tid}/teams]
 
@@ -235,7 +284,7 @@ Returns list of games on the schedule. Allows for filtering.
         }
 
 
-## Standings [/api/vi/tournaments/{tid}/standings]
+## Standings [/api/v1/tournaments/{tid}/standings]
 + Parameters
     + tid (required) - ID of tournament
 
@@ -300,4 +349,154 @@ Returns list of games on the schedule. Allows for filtering.
 
         {
             "message":"goodbye"
+        }
+
+# Group Timing Rules
+
+Timing rules are used to manage the on-deck timing and scoring systems that integrate with uwhscores.com when being used during the tournament.
+
+A tournament that is using an on-deck system must define at least the default timing rules. Additionally if not all games will folow the same
+timing rules, alternate rules can be defined by game type.
+
+## Tournament Timing Rules [/api/v1/tournaments/{tid}/timingruleset]
++ Parameters
+    + tid (required, number) - ID of the tournament
+
+### Retrieve Timing Rule Set [GET]
++ Response 201 (application/json)
+
+        {
+        "timingruleset": {
+            "default_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
+            "tid": 14
+            }
+        }
+
+
+
++ Response 201 (application/json)
+
+        {
+        "timingruleset": {
+            "default_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
+            "game_types": [
+                {
+                "game_type": "BR",
+                "timing_rules": {
+                    "half_duration": 900,
+                    "half_time_duration": 300,
+                    "max_sudden_death_duration": null,
+                    "min_game_break": 900,
+                    "overtime_allowed": true,
+                    "overtime_break_duration": 60,
+                    "overtime_duration": 300,
+                    "overtime_timeout_duration": 30,
+                    "overtime_timeouts_allowed": 1,
+                    "pre_overtime_break": 180,
+                    "pre_sudden_death_break": 180,
+                    "sudden_death_allowed": true,
+                    "team_timeout_duration": 60,
+                    "team_timeouts_allowed": 1
+                    }
+                }
+                ],
+            "tid": 14
+            }
+        }
+
+### Update Score [POST]
++ Request (application/json)
+
+        {
+         "timingruleset": {
+            "tid": 14,
+            "default_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
+            "game_types": [
+                {
+                "game_type": "BR",
+                "timing_rules": {
+                    "half_duration": 900,
+                    "half_time_duration": 300,
+                    "max_sudden_death_duration": null,
+                    "min_game_break": 900,
+                    "overtime_allowed": true,
+                    "overtime_break_duration": 60,
+                    "overtime_duration": 300,
+                    "overtime_timeout_duration": 30,
+                    "overtime_timeouts_allowed": 1,
+                    "pre_overtime_break": 180,
+                    "pre_sudden_death_break": 180,
+                    "sudden_death_allowed": true,
+                    "team_timeout_duration": 60,
+                    "team_timeouts_allowed": 1
+                    }
+                }
+                ]
+            }
+        }
+
++ Response 200 (application/json)
+
+        {
+         "timingruleset": {
+            "default_rules": {
+                "half_duration": 600,
+                "half_time_duration": 300,
+                "max_sudden_death_duration": null,
+                "min_game_break": 900,
+                "overtime_allowed": false,
+                "sudden_death_allowed": false,
+                "team_timeout_duration": 60,
+                "team_timeouts_allowed": 1
+            },
+            "game_types": [
+                {
+                "game_type": "BR",
+                "timing_rules": {
+                    "half_duration": 900,
+                    "half_time_duration": 300,
+                    "max_sudden_death_duration": null,
+                    "min_game_break": 900,
+                    "overtime_allowed": true,
+                    "overtime_break_duration": 60,
+                    "overtime_duration": 300,
+                    "overtime_timeout_duration": 30,
+                    "overtime_timeouts_allowed": 1,
+                    "pre_overtime_break": 180,
+                    "pre_sudden_death_break": 180,
+                    "sudden_death_allowed": true,
+                    "team_timeout_duration": 60,
+                    "team_timeouts_allowed": 1
+                    }
+                }
+                ],
+            "tid": 14
+            }
         }
