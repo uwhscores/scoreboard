@@ -181,15 +181,26 @@ class Ranking(object):
             return True
 
     def serialize(self):
+
+        if self.div:
+            div = self.div
+        else:
+            div = None
+
+        if self.pod:
+            pod = self.pod
+        else:
+            pod = None
+
         return {
-            'div':self.div,
-            'pod':self.pod,
-            'place':self.place,
-            'team':self.team.name,
-            'team_id':self.team.team_id,
-            'stats':{
-                'points':self.team.points,
-                'wins':self.team.wins,
+            'div': div,
+            'pod': pod,
+            'place': self.place,
+            'team': self.team.name,
+            'team_id': self.team.team_id,
+            'stats': {
+                'points': self.team.points,
+                'wins': self.team.wins,
                 'losses': self.team.losses,
                 'ties': self.team.ties,
                 'goals_allowed': self.team.goals_allowed,

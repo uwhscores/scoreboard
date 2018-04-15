@@ -223,13 +223,37 @@ def apiGetStandings(tid):
     if message:
         raise InvalidUsage(message, status_code=503)
 
-    standings = t.getStandings()
-    response = []
+    pods = t.getPodsActive()
+    standings = []
+
+    pod_ask = request.args.get('pod')
+    div_ask = request.args.get('div')
+
+    if pod_ask and div_ask:
+        raise InvalidUsage("Cannot filter by pod and div at same time", status_code=400)
+
+    if not t.isGroup(div_ask):
+        raise InvalidUsage("division not found", status_code=404)
+
+    if pod_ask:
+        if pod_ask in pods:
+            standings = t.getStandings(pod=pod_ask)
+        else:
+            raise InvalidUsage("Unknown pod", status_code=404)
+    elif pods:
+        for pod in pods:
+            standings += t.getStandings(pod=pod)
+    else:
+        standings = t.getStandings()
+
+    answer = []
     for s in standings:
-        response.append(s.serialize())
+        if div_ask and s.div == div_ask:
+            answer.append(s.serialize())
+        elif not div_ask:
+            answer.append(s.serialize())
 
-
-    return jsonify(standings=response)
+    return jsonify(standings=answer)
 
 
 @app.route('/api/v1/tournaments/<tid>/messages')

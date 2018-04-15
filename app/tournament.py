@@ -60,6 +60,7 @@ class Tournament(object):
         if verbose:
             divisions = self.getDivisions()
             pools = self.getPools()
+            pods = self.getPodsActive()
             return {
                 'tid': self.tid,
                 'name': self.name,
@@ -69,6 +70,7 @@ class Tournament(object):
                 'location': self.location,
                 'is_active': self.is_active,
                 'divisions': divisions,
+                'pods': pods,
                 'pools': pools
             }
         else:
