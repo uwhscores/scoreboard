@@ -118,12 +118,18 @@ class Tournament(object):
 
     def getTeamInfo(self, team_id):
         """ return dictionary of team info from ID """
+        try:
+            team_id = int(team_id)
+        except ValueError:
+            return None
+
         db = self.db
         cur = db.execute('SELECT name, short_name, division, flag_file FROM teams WHERE team_id=? and tid=?', (team_id, self.tid))
         team = cur.fetchone()
 
         if not team:
             return None
+
 
         team_info = {
                 "name": team['name'],
