@@ -116,6 +116,61 @@ class Tournament(object):
         else:
             return None
 
+    def getTeamInfo(self, team_id):
+        """ return dictionary of team info from ID """
+        db = self.db
+        cur = db.execute('SELECT name, short_name, division, flag_file FROM teams WHERE team_id=? and tid=?', (team_id, self.tid))
+        team = cur.fetchone()
+
+        if not team:
+            return None
+
+        team_info = {
+                "name": team['name'],
+                "team_id": team_id,
+                "short_name": team['short_name'],
+                "division": team['division'],
+                "flag_url": team['flag_file'],
+                "roster": self.getTeamRoster(team_id),
+                "coaches": self.getTeamCoaches(team_id)
+            }
+
+        return team_info
+
+    def getTeamRoster(self, team_id):
+        """ return a list of dictionaries of the players for the team """
+        roster = None
+
+        db = self.db
+        cur = db.execute("SELECT p.display_name, r.cap_number FROM players p, rosters r WHERE r.player_id = p.player_id AND r.is_coach=0 AND r.team_id = ? AND r.tid=?",
+                         (team_id, self.tid))
+
+        roster_table = cur.fetchall()
+
+        if len(roster_table) > 0:
+            roster = []
+            for row in roster_table:
+                roster.append({"name": row['display_name'], "number": row['cap_number']})
+
+        return roster
+
+    def getTeamCoaches(self, team_id):
+        """ return a list of dictionaries of the coaches for the team """
+        coaches = None
+
+        db = self.db
+        cur = db.execute("SELECT p.display_name, r.coach_title FROM players p, rosters r WHERE r.player_id=p.player_id AND r.is_coach=1\
+                         AND r.team_id=? AND r.tid=?", (team_id, self.tid))
+
+        coaches_table = cur.fetchall()
+
+        if len(coaches_table) > 0:
+            coaches = []
+            for row in coaches_table:
+                coaches.append({"name": row['display_name'], "title": row['coach_title']})
+
+        return coaches
+
     def getTeams(self, div=None, pod=None):
         """ return dictionary of all teams indexed by ID """
         db = self.db

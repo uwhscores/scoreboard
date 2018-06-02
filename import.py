@@ -10,7 +10,8 @@ import csv
 import re
 from datetime import datetime
 import ConfigParser
-
+from base64 import b64encode
+from os import urandom
 
 class Import(object):
 
@@ -46,6 +47,7 @@ class Import(object):
         self.__importGroups(tid)
         self.__importRankings(tid)
         self.__importParams(tid)
+        self.__importRosters(tid)
 
     def __findTID(self, src_folder):
         tid = None
@@ -155,8 +157,8 @@ class Import(object):
         with open(team_file, 'rb') as f:
             teams = csv.DictReader(f)
             for row in teams:
-                cur = self.db.execute("INSERT INTO teams(tid, team_id, name, division) VALUES(?,?,?,?)",
-                                      (tid, row['team_id'], row['name'], row['div']))
+                cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division) VALUES(?,?,?,?,?)",
+                                      (tid, row['team_id'], row['name'], row['short_name'], row['div']))
                 self.db.commit()
 
     def __importRankings(self, tid, rankings_file=None):
@@ -222,6 +224,37 @@ class Import(object):
                                   (tid, p[0], p[1]))
             self.db.commit()
 
+    def __importRosters(self, tid, roster_file=None):
+        if not roster_file:
+            roster_file = os.path.join(self.src_folder, "rosters.csv")
+        if not os.path.isfile(roster_file):
+            return None
+
+        print "Found rosters file ..."
+        cur = self.db.execute("DELETE FROM rosters WHERE tid=?", (tid,))
+        self.db.commit()
+
+        with open(roster_file, 'rb') as f:
+            rosters = csv.DictReader(f)
+            for row in rosters:
+                #import pdb; pdb.set_trace()
+                player_name = row['player_name'].strip()
+                player_name = ''.join([x for x in player_name if ord(x) < 128])
+                cur = self.db.execute("SELECT player_id FROM players WHERE display_name=?", (player_name,))
+                player = cur.fetchone()
+                player_id = None
+                if not player:
+                    player_id = self.__genID()
+                    self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (player_id, player_name))
+                    self.db.commit()
+                else:
+                    player_id = player['player_id']
+
+                cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], row['cap_number']))
+                self.db.commit()
+
+    def __genID(self):
+        return b64encode(urandom(9),"Aa")
 
 if __name__ == "__main__":
     """ Main function, uses sys.argv to pull in a directory, defaults to clear contents and full import

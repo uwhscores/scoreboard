@@ -5,6 +5,7 @@ from flask import jsonify, request, make_response, g
 from flask.ext.httpauth import HTTPBasicAuth
 from base64 import b64encode
 from os import urandom
+import urlparse
 
 auth = HTTPBasicAuth()
 
@@ -211,6 +212,27 @@ def apiGetTeams(tid):
 
     return jsonify(teams=teams)
 
+@app.route('/api/v1/tournaments/<tid>/teams/<team_id>')
+def apiGetTeamInfo(tid, team_id):
+    t = getTournamentByID(tid)
+
+    if not t:
+        raise InvalidUsage("Unknown tid", status_code=404)
+
+    message = t.getDisableMessage()
+    if message:
+        raise InvalidUsage(message, status_code=503)
+
+    team_info = t.getTeamInfo(team_id)
+
+    if not team_info:
+        raise InvalidUsage("Unknown team ID", status_code=404)
+
+    #request.url_root
+    if team_info['flag_url']:
+        team_info['flag_url'] = urlparse.urljoin(request.url_root, team_info['flag_url'])
+
+    return jsonify(team=team_info)
 
 @app.route('/api/v1/tournaments/<tid>/standings')
 def apiGetStandings(tid):
