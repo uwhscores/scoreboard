@@ -58,6 +58,7 @@
 			<li role="presentation" class="active btn-lg" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
 			<li role="presentation" class="btn-lg"><a href="#standings" data-toggle="tab">Standings</a></li>
 			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
+			{% if team_info and team_info.roster %}<li role="presentation" class="btn-lg"><a href="#roster" data-toggle="tab">Roster</a></li>{% endif %}
 		</ul>
 
 		<div id="tabContents" class="tab-content">
@@ -255,6 +256,27 @@
 			</div>
 			{% endif %}
 
+			{% if team_info and team_info.roster -%}
+			<div id="roster" class="tab-pane fade">
+				<h1>{{ titleText }} Roster</h1>
+				<table id=roster_tbl class="table table-striped">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Cap Number</th>
+						</tr>
+					</thead>
+					<tbody>
+						{%- for player in team_info.roster|sort %}
+						<tr>
+							<td>{{ player.name }}</td>
+							<td>{{ player.number if player.number != None else "" }}</td>
+						</tr>
+						{% endfor -%}
+					</tbody>
+				</table>
+			</div>
+			{%- endif %}
 	</div> <!-- tabContent -->
 
 	</div>
