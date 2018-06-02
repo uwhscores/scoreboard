@@ -157,8 +157,9 @@ class Import(object):
         with open(team_file, 'rb') as f:
             teams = csv.DictReader(f)
             for row in teams:
-                cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division) VALUES(?,?,?,?,?)",
-                                      (tid, row['team_id'], row['name'], row['short_name'], row['div']))
+                flag_file = "/static/flags/%s/%s.png" % (tid, row['team_id'])
+                cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
+                                      (tid, row['team_id'], row['name'], row['short_name'], row['div'], flag_file))
                 self.db.commit()
 
     def __importRankings(self, tid, rankings_file=None):
@@ -237,24 +238,38 @@ class Import(object):
         with open(roster_file, 'rb') as f:
             rosters = csv.DictReader(f)
             for row in rosters:
-                #import pdb; pdb.set_trace()
                 player_name = row['player_name'].strip()
-                player_name = ''.join([x for x in player_name if ord(x) < 128])
+                # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
+                # player_name = ''.join([x for x in player_name if ord(x) < 128])
+                name_parts = player_name.split(" ")
+                display_name = "%s, %s" % (name_parts[1], name_parts[0])
+                player_name = display_name
                 cur = self.db.execute("SELECT player_id FROM players WHERE display_name=?", (player_name,))
                 player = cur.fetchone()
                 player_id = None
                 if not player:
-                    player_id = self.__genID()
+                    while player_id is None:
+                        player_id = self.__genID()
+                        self.db.execute("SELECT player_id FROM players WHERE player_id=?", (player_id,))
+                        exists = cur.fetchone()
+                        if exists:
+                            player_id = None
+
                     self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (player_id, player_name))
                     self.db.commit()
+
                 else:
                     player_id = player['player_id']
 
-                cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], row['cap_number']))
-                self.db.commit()
+                try:
+                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], row['cap_number']))
+                    self.db.commit()
+                except sqlite3.IntegrityError as e:
+                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, row['team_id'], row['cap_number'])
+                    sys.exit(1)
 
     def __genID(self):
-        return b64encode(urandom(9),"Aa")
+        return b64encode(urandom(6), "Aa")
 
 if __name__ == "__main__":
     """ Main function, uses sys.argv to pull in a directory, defaults to clear contents and full import
