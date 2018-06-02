@@ -130,7 +130,6 @@ class Tournament(object):
         if not team:
             return None
 
-
         team_info = {
                 "name": team['name'],
                 "team_id": team_id,

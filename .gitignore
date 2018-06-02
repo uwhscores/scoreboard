@@ -9,3 +9,4 @@ tournaments/*
 *.pyc
 logs/*
 .pytest_cache/*
+app/static/flags/*
