@@ -92,7 +92,8 @@ class Game(object):
             'score_b': score_b,
             'score_w': score_w,
             'forfeit': self.forfeit,
-            'timing_rules': self.timing_rules
+            'timing_rules': self.timing_rules,
+            'game_type': self.game_type
         }
 
     # loops through all games and creates expanded dictionary of games
