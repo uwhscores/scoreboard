@@ -171,10 +171,11 @@ def renderTTeam(short_name, team_id):
         standings = t.getStandings()
 
     team = t.getTeam(team_id)
+    team_info = t.getTeamInfo(team_id)
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, divisions=divisions,\
-        pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True)
+        pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True, team_info=team_info)
 
 #######################################
 ## Special pages

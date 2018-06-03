@@ -1,5 +1,5 @@
 FORMAT: 1A
-HOST: https://ushscores.com
+HOST: https://uwhscores.com
 
 # UWHScores.com API
 
@@ -283,6 +283,43 @@ Returns list of games on the schedule. Allows for filtering.
             "message": "Missing tid"
         }
 
+        ## Team Info [/api/v1/tournaments/{tid}/teams/{team_id}]
+        ### Get Team Info [GET]
+        + Parameters
+            + tid (required, number) - ID of tournament
+            + team_id (required, number) - ID of team
+
+        + Response 201 (application/json)
+
+                {
+                    "team": {
+                        "coaches": null,
+                        "division": "E",
+                        "flag_url": "http://example.com/static/image.png",
+                        "name": "Full Team Name",
+                        "roster": null,
+                        "short_name": "ftn",
+                        "team_id": "1"
+                    }
+                }
+
+        + Response 201 (application/json)
+
+                {
+                    "team": {
+                        "coaches": [
+                            {"name": "Ditka, Mike", "title": "Head Coach"}
+                        ],
+                        "division": "E",
+                        "flag_url": "http://example.com/static/image.png",
+                        "name": "Full Team Name",
+                        "roster": [
+                            {"name": "Sample, Name", "number": 13}
+                        ],
+                        "short_name": "ftn",
+                        "team_id": "1"
+                    }
+                }
 
 ## Standings [/api/v1/tournaments/{tid}/standings]
 + Parameters

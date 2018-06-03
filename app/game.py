@@ -74,6 +74,26 @@ class Game(object):
         if not isinstance(score_w, int):
             score_w = None
 
+        description = self.description
+        if description == "":
+            description = None
+
+        white_tid = self.white_tid
+        if white_tid < 1:
+            white_tid = None
+
+        note_w = self.note_w
+        if note_w == "":
+            note_w = None
+
+        black_tid = self.black_tid
+        if black_tid < 1:
+            black_tid = None
+
+        note_b = self.note_b
+        if note_b == "":
+            note_b = None
+
         # refresh timing rules incase there were changes
         timing_rules = self.tournament.getTimingRules(self.game_type)
 
@@ -84,15 +104,17 @@ class Game(object):
             'pool': self.pool,
             'start_time': self.start_datetime.isoformat(),
             'black': self.black,
-            'black_id': self.black_tid,
-            'note_b': self.note_b,
+            'black_id': black_tid,
+            'note_b': note_b,
             'white': self.white,
-            'white_id': self.white_tid,
-            'note_w': self.note_w,
+            'white_id': white_tid,
+            'note_w': note_w,
             'score_b': score_b,
             'score_w': score_w,
             'forfeit': self.forfeit,
-            'timing_rules': self.timing_rules
+            'timing_rules': timing_rules,
+            'game_type': self.game_type,
+            'description': description
         }
 
     # loops through all games and creates expanded dictionary of games
