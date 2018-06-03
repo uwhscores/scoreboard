@@ -100,6 +100,26 @@ def renderTAdmin(short_name):
                            redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 
+@app.route('/admin/t/<short_name>/gametimes')
+@login_required
+def view_gametimerules(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+
+    timing_rules = t.getTimingRuleSet()
+
+    return render_template('/admin/timing_rules.html', tournament=t, timing_rules=timing_rules)
+
+
 @app.route('/admin/t/<short_name>/redraw', methods=['POST'])
 @app.route('/admin/t/<short_name>/redraw/<div>', methods=['GET'])
 @login_required
@@ -174,7 +194,7 @@ def redraw(short_name, div=None):
             return redirect("/admin/t/%s" % short_name)
         else:
             return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
-            
+
 
 @app.route('/admin/update', methods=['POST', 'GET'])
 @login_required

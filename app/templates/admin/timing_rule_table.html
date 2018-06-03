@@ -1,0 +1,53 @@
+<table class="table">
+    <tr>
+        <td>Half Duration</td> <td>{{ r.half_duration }} seconds</td>
+    </tr>
+    <tr>
+        <td>Half Time Duration</td> <td>{{ r.half_time_duration }} seconds</td>
+    </tr>
+    <tr>
+        <td>Minimum time between games</td><td>{{ r.min_game_break}} seconds</td>
+    </tr>
+    {% if r.game_timeouts %}
+    <tr>
+        <td>Timeouts Allowed</td><td>{% if r.game_timeouts.allowed %}Yes, {{r.game_timeouts.duration}} seconds {% else %} No {% endif %}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td>Overtime Allowed</td><td>{{ "Yes" if r.overtime_allowed else "No"}}</td>
+    </tr>
+    {% if r.overtime_allowed %}
+    <tr>
+        <td>Overtime Duration</td><td>{{ r.overtime_duration }}</td>
+    </tr>
+    <tr>
+        <td>Overtime Half Break Length</td><td>{{ r.overtime_break_duration }}</td>
+    </tr>
+    <tr>
+        <td>Pre-overtime Break</td><td>{{ r.pre_overtime_break}}</td>
+    </tr>
+    {% if r.overtime_tiemouts %}
+    <tr>
+        <td>Overtime Timeouts Allowed</td><td>{% if r.overtime_tiemouts.allowed %}Yes, {{r.overtime_tiemouts.duration}} seconds {% else %} No {% endif %}</td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    <tr>
+        <td>Sudden Death Allowed</td><td>{{ "Yes" if r.sudden_death_allowed else "No"}}</td>
+    </tr>
+    {% if r.sudden_death_allowed %}
+    <tr>
+        <td>Pre Sudden Death Break</td><td>{{ r.pre_sudden_death_break }}</td>
+    </tr>
+    {% if max_sudden_death_duration %}
+    <tr>
+        <td>Max suddend death durration</td><td>{{r.max_sudden_death_duration}}</td>
+    </tr>
+    {% endif %}
+    {% if r.sudden_death_timeouts %}
+    <tr>
+        <td>Sudden Timeouts Allowed</td><td>{% if r.sudden_death_timeouts.allowed %}Yes, {{r.sudden_death_timeouts.duration}} seconds {% else %} No {% endif %}</td>
+    </tr>
+    {% endif %}
+    {% endif %}
+</table>
