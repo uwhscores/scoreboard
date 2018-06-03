@@ -305,7 +305,7 @@ def apiGetTimingRules(tid):
     rules = t.getTimingRuleSet()
     # response = {'timing_rule_set': {'tid': tid}}
     # response['timing_rule_set'].update(rules)
-    return jsonify(timingruleset=rules)
+    return jsonify(timing_rule_set=rules)
 
 
 ################################################################################

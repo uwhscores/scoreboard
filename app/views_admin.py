@@ -1,4 +1,5 @@
 import re
+import json
 from app import app
 from app import global_limiter
 from app import audit_logger
@@ -6,8 +7,7 @@ from flask import request, redirect, render_template, flash
 from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
 # from flask.ext.login import UserMixin
 # from functions import *
-from functions import getTournamets, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken
-
+from functions import getTournamets, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -100,6 +100,79 @@ def renderTAdmin(short_name):
                            redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 
+@app.route('/admin/t/<short_name>/gametiming')
+@login_required
+def view_gametimerules(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    timing_rules = t.getTimingRuleSet()
+
+    return render_template('/admin/view_timing_rules.html', tournament=t, timing_rules=timing_rules)
+
+
+@app.route('/admin/t/<short_name>/editgametiming')
+@login_required
+def edit_gametimerules(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    timing_rules = t.getTimingRuleSet()
+
+    return render_template('/admin/edit_timing_json.html', tournament=t, timing_rules=timing_rules)
+
+
+@app.route('/admin/t/<short_name>/update/updategametiming', methods=['POST'])
+@login_required
+def update_gametimerules(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    raw_input = request.form.get('timing_json')
+    try:
+        timing_json = json.loads(raw_input)
+    except ValueError:
+        flash("Invalid JSON")
+        return redirect("/admin/t/%s/editgametiming" % t.short_name)
+
+    (valid, message) = validateJSONSchema(timing_json, "timing_rule_set")
+    if not valid:
+        flash("Your JSON didn't match the schema: %s" % message)
+        return redirect("/admin/t/%s/editgametiming" % t.short_name)
+
+    res = t.updateTimingRules(timing_json['timing_rule_set'])
+
+    if not res == 1:
+        flash("There was a server side error updating")
+        return redirect("/admin/t/%s/editgametiming" % t.short_name)
+    else:
+        return redirect("/admin/t/%s/gametiming" % t.short_name)
+
+
 @app.route('/admin/t/<short_name>/redraw', methods=['POST'])
 @app.route('/admin/t/<short_name>/redraw/<div>', methods=['GET'])
 @login_required
@@ -174,7 +247,7 @@ def redraw(short_name, div=None):
             return redirect("/admin/t/%s" % short_name)
         else:
             return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
-            
+
 
 @app.route('/admin/update', methods=['POST', 'GET'])
 @login_required
