@@ -131,7 +131,11 @@ tr.odd {
 }
 
 .team-flag {
-	padding: 1em;
+	padding: 0em 0em 1em 1em;
+}
+
+.team-fag:after {
+	clear: both;
 }
 
 #tabContents {

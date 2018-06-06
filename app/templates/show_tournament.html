@@ -65,9 +65,7 @@
 			<div id="schedule" class="tab-pane fade active in">
 				<div>
 					{%- if team_info and team_info.flag_url %}
-					<section class="hidden-sm hidden-xs">
-						<img class="team-flag pull-right" src="{{ team_info.flag_url }}" alt="Team Flag">
-					</section>
+					<img class="team-flag pull-right" src="{{ team_info.flag_url }}" alt="Team Flag">
 					{% endif -%}
 					<h1>{{ title_text }} Schedule </h1>
 				</div>
