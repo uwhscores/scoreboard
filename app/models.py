@@ -51,7 +51,8 @@ class Stats(object):
             game_pod = None
             if game['pod']:
                 game_pod = game['pod']
-            elif game['type'] and not re.match(r"^RR.*", game['type']):
+
+            if game['type'] and not re.match(r"^RR.*", game['type']):
                 game_pod = None
 
             if game_pod == pod:

@@ -448,7 +448,7 @@ class Tournament(object):
     def isPod(self, pod):
         """ boolean test if pod exists """
         db = self.db
-        cur = db.execute("SELECT count(*) FROM pods where pod_id=? AND tid=?", (pod, self.tid))
+        cur = db.execute("SELECT count(*) FROM pods where pod=? AND tid=?", (pod, self.tid))
 
         count = cur.fetchone()[0]
 
@@ -462,6 +462,8 @@ class Tournament(object):
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
         if (self.endRoundRobin(division, pod)):
             standings = self.getStandings(division, pod)
+            if len(standings) < 1:
+                return -1
             if self.checkForTies(standings):
                 return -1
             seed = int(seed) - 1
@@ -1452,51 +1454,57 @@ class Tournament(object):
     ###########################################################################
     # Functions for handling tournaments with replacement roundrobins
     ###########################################################################
-    def redraw_teams(self, div, redraws):
+    def redrawTeams(self, group, redraws):
         """redraws team for replacement round-robin with POST data from `/admin/redraw`
         # TODO: parse POST data first for redraw and make function generic
         """
-        app.logger.debug("Redrawing teams for div %s with %s", (div, redraws))
+        app.logger.debug("Redrawing teams for div %s with %s" % (group, redraws))
 
+        redraw_games = self.__getRedrawGameIDs(group)
         # everything looks good, cross your fingers and go
         for draw in redraws:
-            self.redraw_execute(div, draw['redraw_id'], draw['team_id'])
+            self.redrawExecute(group, draw['redraw_id'], draw['team_id'])
 
         # once the redraw is complete, we need to change the type on the played
         # head to head games to E so they aren't counted towards standings
         #
         # TODO:  SHOULD ADD CHECK THAT THIS IS WHAT THE TOURNAMENTS WANTS ###
-        self.__trimRoundRobin(div)
+        self.__trimRoundRobin(group)
 
         flash("Redraw Complete!")
         return 0
 
-    def getRedraw(self, div):
+    def getRedraw(self, div, pod=None):
         """ get list of redraws required """
         db = self.db
         ids = []
+        # app.logger.debug("Checking for redraws for div=%s, pod=%s" % (div, pod))
 
-        cur = db.execute('SELECT white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND division=? AND tid=?', (div, self.tid))
+        if pod:
+            cur = db.execute('SELECT white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND pod=? AND tid=?', (pod, self.tid))
+        else:
+            cur = db.execute('SELECT white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND division=? AND tid=?', (div, self.tid))
+
         for r in cur.fetchall():
             match = re.search('^R(\w)(\d+)', r['white'])
             if match:
-                if match.group(1) == div:
+                if match.group(1) == div or match.group(1) == pod:
                     ids.append(match.group(2))
             match = re.search('^R(\w)(\d+)', r['black'])
             if match:
-                if match.group(1) == div:
+                if match.group(1) == div or match.group(1) == pod:
                     ids.append(match.group(2))
 
         return list(set(ids))
 
-    def redraw_execute(self, div, redraw_id, team_id):
+    def redrawExecute(self, group, redraw_id, team_id):
         """ executes and individual redraw
         takes in division ID, redraw_id and team ID
         # TODO: document how redraws work better
         """
-        app.logger.debug("Execute redraw for division: %s - R%s is now T%s" % (div, redraw_id, team_id))
+        app.logger.debug("Execute redraw for division: %s - R%s is now T%s" % (group, redraw_id, team_id))
 
-        redraw_string = "R%s%s" % (div, redraw_id)
+        redraw_string = "R%s%s" % (group, redraw_id)
         team_string = "T%s" % (team_id)
 
         if not self.getTeam(team_id):
@@ -1511,30 +1519,74 @@ class Tournament(object):
 
         return 0
 
-    def __trimRoundRobin(self, div):
+    def __getRedrawGameIDs(self, group):
+        """ returns a list of game IDs that are the redraws, this is later used to figure out which games to replace """
+        db = self.db
+        game_list = []
+
+        if self.isPod(group):
+            cur = db.execute('SELECT gid, white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND pod=? AND tid=?', (group, self.tid))
+        else:
+            cur = db.execute('SELECT gid, white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND division=? AND tid=?', (group, self.tid))
+
+        for r in cur.fetchall():
+            match = re.search('^R(\w)(\d+)', r['white'])
+            if match:
+                if match.group(1) == group:
+                    game_list.append(r['gid'])
+            match = re.search('^R(\w)(\d+)', r['black'])
+            if match:
+                if match.group(1) == group:
+                    game_list.append(r['gid'])
+
+        return list(set(game_list))
+
+    def __trimRoundRobin(self, group):
         """ trims a round-robin down to only one head-to-head game per team ID
         run after redraws have been populated and will change first head-to-head game to type E (exhibition) so its not included in standings
         """
+        # TODO: logic for finding games to be cleaned up could be improved, currently looks in the scores because when finding teams from seeded roundrobins
+        # it got way to complicated
+
         db = self.db
 
-        team_list = self.getTeams(div)
+        app.logger.debug("Trimming round-robin for group %s" % group)
+        if self.isPod(group):
+            team_list = self.getTeams(None, pod=group)
+        else:
+            team_list = self.getTeams(group)
 
-        while len(team_list) > 0:
-            cur_team = team_list.pop()
-            for opponent in team_list:
-                a = "T%s" % cur_team['team_id']
-                b = "T%s" % opponent['team_id']
-                cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) or (white=? and black=?))\
-                    AND division=? AND type LIKE 'RR%' AND tid=? ORDER BY gid", (a, b, b, a, div, self.tid))
-                games = cur.fetchall()
+        app.logger.debug("Teams in group: %s" % team_list)
 
-                if len(games) > 2:
-                    # # TODO: solve this logic issue where there are more than two head-to-head games while doing replacement round-robin
-                    app.logger.debug("Found 3+ h2h between %s and %s, doing nothing" % (a, b))
-                if len(games) == 2:
-                    gid = games[0]['gid']
-                    app.logger.debug("Found 2 h2h games between %s and %s, trimming game %s" % (a, b, gid))
-                    cur = db.execute("UPDATE games SET type='E' WHERE gid=? and tid=?", (gid, self.tid))
-                    db.commit()
+        played_games = []
+        cur = db.execute("SELECT DISTINCT g.gid FROM games g, scores s WHERE g.gid=s.gid AND g.pod=s.pod AND s.pod=? AND g.tid=? ORDER BY g.gid",
+                         (group, self.tid))
+        for r in cur.fetchall():
+            played_games.append(r['gid'])
+
+        pod_games = []
+        cur = db.execute("SELECT gid FROM games where pod=? and tid=?", (group, self.tid))
+        for r in cur.fetchall():
+            pod_games.append(r['gid'])
+
+        for game in played_games:
+            """
+            1) Get the white id and black id from the scores table using the gid
+            2) convert ids int "T#" notation
+            3) select from schedule using that team notation (black and white)
+            4) if that game isn't in played either, then replace current game id with "E"
+            """
+            cur = db.execute("SELECT white_tid, black_tid FROM scores WHERE gid=? and tid=?", (game, self.tid))
+            this_game = cur.fetchone()
+            a = "T%s" % this_game['white_tid']
+            b = "T%s" % this_game['black_tid']
+
+            cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) OR (white=? AND black=?)) AND pod=? AND tid=?",
+                             (a, b, b, a, group, self.tid))
+            other_game = cur.fetchone()
+            if other_game and other_game['gid'] not in played_games:
+                app.logger.debug("Found h2h games between %s and %s, trimming game %s" % (a, b, game))
+                cur = db.execute("UPDATE games SET type='E' WHERE gid=? and tid=?", (game, self.tid))
+                db.commit()
 
         return 0

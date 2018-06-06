@@ -92,7 +92,6 @@ class Import(object):
                     return row['tid']
                 else:
                     raise Exception("Unknown error inserting tournament into DB")
-
         else:
             print "You need a tid file!"
             # sys.exit(1)
@@ -133,8 +132,14 @@ class Import(object):
                 # print "%s %s vs %s" % (row['gid'], row['black'],
                 # row['white'])
 
+                if not row['gid']:
+                    continue
+
                 if re.match('^\d\:\d\d', row['time']) is not None:
                     row['time'] = "0%s" % row['time']
+
+                white = self.__processGame(row['white'])
+                black = self.__processGame(row['black'])
 
                 date = datetime.strptime(row['date'], '%m/%d/%y')
                 time = datetime.strptime(row['time'], '%H:%M')
@@ -142,8 +147,26 @@ class Import(object):
                     datetime.date(date), datetime.time(time))
 
                 cur = self.db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                                      (tid, row['gid'], row['day'], start_time, row['pool'], row['black'], row['white'], row['div'], row['pod'], row['type'], row['desc']))
+                                      (tid, row['gid'], row['day'], start_time, row['pool'], black, white, row['div'], row['pod'], row['type'], row['desc']))
                 self.db.commit()
+
+    def __processGame(self, game_string):
+
+        orig_string = game_string
+
+        m = re.match("^[l|L].*?(\d+)", game_string)
+        if m:
+            game_string = "L%s" % m.group(1)
+
+        m = re.match("^[w|W].*?(\d+)", game_string)
+        if m:
+            game_string = "W%s" % m.group(1)
+
+        m = re.match("^(\w)\s*Seed\s*(\d+)", game_string)
+        if m:
+            game_string = "S%s%s" % (m.group(1), m.group(2))
+
+        return game_string
 
     def __importTeams(self, tid, teams_file=None):
         team_file = os.path.join(self.src_folder, "teams.csv")
