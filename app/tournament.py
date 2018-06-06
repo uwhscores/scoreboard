@@ -1460,7 +1460,6 @@ class Tournament(object):
         """
         app.logger.debug("Redrawing teams for div %s with %s" % (group, redraws))
 
-        redraw_games = self.__getRedrawGameIDs(group)
         # everything looks good, cross your fingers and go
         for draw in redraws:
             self.redrawExecute(group, draw['redraw_id'], draw['team_id'])
@@ -1520,7 +1519,7 @@ class Tournament(object):
         return 0
 
     def __getRedrawGameIDs(self, group):
-        """ returns a list of game IDs that are the redraws, this is later used to figure out which games to replace """
+        """ returns a list of game IDs that are the redraws, currently unused function """
         db = self.db
         game_list = []
 
