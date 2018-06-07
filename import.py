@@ -177,10 +177,19 @@ class Import(object):
         cur = self.db.execute('DELETE FROM teams WHERE tid=?', (tid,))
         self.db.commit()
 
+
+        cur = self.db.execute("SELECT short_name FROM tournaments WHERE tid=?", (tid,))
+        tournament = cur.fetchone()
+
+        if tournament:
+            short_name = tournament['short_name']
+        else:
+            short_name = tid
+
         with open(team_file, 'rb') as f:
             teams = csv.DictReader(f)
             for row in teams:
-                flag_file = "/static/flags/%s/%s.png" % (tid, row['team_id'])
+                flag_file = "/static/flags/%s/%s.png" % (short_name, row['team_id'])
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
                                       (tid, row['team_id'], row['name'], row['short_name'], row['div'], flag_file))
                 self.db.commit()
@@ -265,8 +274,10 @@ class Import(object):
                 # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
                 # player_name = ''.join([x for x in player_name if ord(x) < 128])
                 name_parts = player_name.split(" ")
-                display_name = "%s, %s" % (name_parts[1], name_parts[0])
-                player_name = display_name
+                last_name = name_parts[-1]
+                first_name = " ".join(name_parts[:-1])
+                player_name = "%s, %s" % (last_name, first_name)
+                # import pdb; pdb.set_trace()
                 cur = self.db.execute("SELECT player_id FROM players WHERE display_name=?", (player_name,))
                 player = cur.fetchone()
                 player_id = None
@@ -284,11 +295,15 @@ class Import(object):
                 else:
                     player_id = player['player_id']
 
+                cap_number = None
+                if re.match(r"\d+", row['cap_number']):
+                    cap_number = row['cap_number']
+
                 try:
-                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], row['cap_number']))
+                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], cap_number))
                     self.db.commit()
                 except sqlite3.IntegrityError as e:
-                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, row['team_id'], row['cap_number'])
+                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, row['team_id'], cap_number)
                     sys.exit(1)
 
     def __genID(self):
