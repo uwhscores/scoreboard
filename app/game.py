@@ -126,33 +126,39 @@ class Game(object):
 
     # Converts short hand notation for game schedule into human readable names
     # Team IDs, seeding games and "winner/loser of" games
-    def parseGame(self, game):
+    def parseGame(self, game_notation):
         style = ""
         team_id = -1
         t = self.tournament
 
-        if not game:
+        if not game_notation or game_notation == "":
             app.logger.debug("Some how we got here with a None game")
             return (None, None, None)
 
         # team notation
-        match = re.search(r"^T(\d+)$", game)
+        match = re.search(r"^T(\d+)$", game_notation)
         if match:
             team_id = match.group(1)
             game = self.tournament.getTeam(team_id)
+            if not game:
+                game = "Team %s" % team_id
+                style = "soft"
 
-        # Redraw IDs
-        match = re.search(r"^R(\w)(\d+)$", game)
-        if match:
-            div = match.group(1)
-            num = match.group(2)
+        # Redraw
+        try:
+            match = re.search(r"^R(\w)(\d+)$", game_notation)
+            if match:
+                div = match.group(1)
+                num = match.group(2)
 
-            game = "Redraw " + div + num
-            style = "soft"
+                game = "Redraw " + div + num
+                style = "soft"
+        except Exception:
+            app.logger.debug("Regex match on Replacement game %s" % game_notation)
 
         # seeded pods RR games
         # only for nationals 2014, what a mess
-        match = re.search(r"^([begdz])(\d+)$", game)
+        match = re.search(r"^([begdz])(\d+)$", game_notation)
         if match:
             pod = match.group(1)
             pod_id = match.group(2)
@@ -167,20 +173,22 @@ class Game(object):
 
         # Seed notation - Division or Pod
         # match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
-        match = re.search(r"^S(\d\w|\w+)(\d+)$", game)
+        match = re.search(r"^S(\d\w|\w+)(\d+)$", game_notation)
         if match:
-            group = match.group(1)
+            group_abriviation = match.group(1)
             seed = match.group(2)
             # app.logger.debug("Matching pod or division - %s" % group)
 
-            if group in t.getPods():
-                team_id = t.getSeed(seed, None, group)
-            elif group in t.getDivisions():
-                team_id = t.getSeed(seed, group, None)
+            if group_abriviation in t.getPods():
+                team_id = t.getSeed(seed, None, group_abriviation)
+            elif group_abriviation in t.getDivisions():
+                team_id = t.getSeed(seed, group_abriviation, None)
             else:
                 team_id = -1
 
-            group = t.expandGroupAbbr(group)
+            group = t.expandGroupAbbr(group_abriviation)
+            if not group:
+                group = group_abriviation
             if (team_id < 0):
                 game = "%s Seed %s" % (group, seed)
                 style = "soft"
@@ -190,7 +198,7 @@ class Game(object):
                     game = "%s (%s-%s)" % (team, group, seed)
 
         # Winner of
-        match = re.search(r"^W(\d+)$", game)
+        match = re.search(r"^W(\d+)$", game_notation)
         if match:
             gid = match.group(1)
             team_id = t.getWinner(gid)
@@ -204,7 +212,7 @@ class Game(object):
                 game = team + " (W" + gid + ")"
 
         # Loser of
-        match = re.search(r"^L(\d+)$", game)
+        match = re.search(r"^L(\d+)$", game_notation)
         if match:
             gid = match.group(1)
             team_id = t.getLoser(gid)
@@ -218,7 +226,7 @@ class Game(object):
                 game = team + " (L" + gid + ")"
 
         # TBD Place Holder
-        match = re.search('^TBD.*', game)
+        match = re.search('^TBD.*', game_notation)
         if match:
             style = "soft"
 

@@ -44,11 +44,11 @@
             <div class="col-lg-8">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-fw fa-pencil"></i> Redraw for {{ div_name }}</h3>
+                        <h3 class="panel-title"><i class="fa fa-fw fa-pencil"></i> Redraw for {{ group_name }}</h3>
                     </div>
                     <div class="panel-body">
-                    	<form action='/admin/{{tournament.short_name}}/redraw' method=post name='redraw'>
-                            <input type=hidden name=div value={{ div }}>
+                    	<form action='/admin/t/{{tournament.short_name}}/redraw' method=post name='redraw'>
+                            <input type=hidden name=group value={{ group }}>
                             <table id=teams class="table table-striped">
                                 <thead>
                                     <tr>

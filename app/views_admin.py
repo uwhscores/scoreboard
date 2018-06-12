@@ -80,6 +80,11 @@ def renderTAdmin(short_name):
         l = t.getRedraw(div)
         if l:
             redraws.append(div)
+    pods = t.getPodsActive()
+    for pod in pods:
+        l = t.getRedraw(None, pod=pod)
+        if l:
+            redraws.append(pod)
 
     # stats = getTournamentStats()
 
@@ -174,9 +179,9 @@ def update_gametimerules(short_name):
 
 
 @app.route('/admin/t/<short_name>/redraw', methods=['POST'])
-@app.route('/admin/t/<short_name>/redraw/<div>', methods=['GET'])
+@app.route('/admin/t/<short_name>/redraw/<group>', methods=['GET'])
 @login_required
-def redraw(short_name, div=None):
+def redraw(short_name, group=None):
     if request.method == 'GET':
         tid = getTournamentID(short_name)
         if tid < 1:
@@ -189,19 +194,21 @@ def redraw(short_name, div=None):
             flash("You are not authorized for this tournament")
             return redirect("/admin")
 
-        if not t.isGroup(div):
-            flash("Invalid division on Redraw path")
+        if not t.isGroup(group):
+            flash("Invalid division or pod on Redraw path")
             return redirect("/admin/t/%s" % short_name)
 
-        team_list = t.getTeams(div, None)
-
-        div_name = t.expandGroupAbbr(div)
-        if div_name:
-            div_name = div_name
+        if t.isPod(group):
+            team_list = t.getTeams(None, group)
         else:
-            div_name = "%s Division" % div.upper()
+            team_list = t.getTeams(group, None)
 
-        return render_template('/admin/redraw.html', tournament=t, div=div, div_name=div_name, teams=team_list)
+        group_name = t.expandGroupAbbr(group)
+
+        if not group_name:
+            group_name = "%s Group" % group
+
+        return render_template('/admin/redraw.html', tournament=t, group=group, group_name=group_name, teams=team_list)
 
     if request.method == 'POST':
         tid = getTournamentID(short_name)
@@ -215,11 +222,14 @@ def redraw(short_name, div=None):
             flash("You are not authorized for this tournament")
             return redirect("/admin")
 
-        div = request.form.get('div')
-        # check div is valid
+        group = request.form.get('group')
+        # check group is valid
 
         # get list of ids that need a redraw
-        redraw_ids = t.getRedraw(div)
+        if t.isPod(group):
+            redraw_ids = t.getRedraw(None, pod=group)
+        else:
+            redraw_ids = t.getRedraw(group)
 
         check = []
         redraws = []
@@ -231,18 +241,18 @@ def redraw(short_name, div=None):
                 check.append(redraw_id)
                 if redraw_id == "":
                     flash("You missed a team ID")
-                    return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
+                    return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
                 if redraw_id not in redraw_ids:
                     flash("Invalid ID, can't find in redraws")
-                    return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
+                    return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
                 redraws.append({'team_id': team_id, 'redraw_id': redraw_id})
 
         # check that each redraw ID is unique
         if len(check) > len(set(check)):
             flash("You put a team ID in twice!")
-            return redirect("/admin/t/%s/redraw/%s" % (short_name, div))
+            return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
 
-        res = t.redraw_teams(div, redraws)
+        res = t.redrawTeams(group, redraws)
         if res == 0:
             return redirect("/admin/t/%s" % short_name)
         else:
