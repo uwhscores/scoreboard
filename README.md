@@ -24,29 +24,13 @@ setup an instance and run it. These steps are likely not complete.
 
     `. venv/bin/activate`
 
-5. Install Flask and dependancies. Copy the below block into a text file, say requirements.txt:
-    ```
-    bcrypt==2.0.0
-    cffi==1.5.2
-    Flask==0.10.1
-    Flask-HTTPAuth==3.1.1
-    Flask-Login==0.3.2
-    Flask-Limiter==0.9.3
-    itsdangerous==0.24
-    Jinja2==2.8
-    MarkupSafe==0.23
-    mechanize==0.2.5
-    pycparser==2.14
-    six==1.10.0
-    Werkzeug==0.11.3
-    ```
-    Now install all the packages:
+5. Install Flask and dependancies. 
 
     `pip install -r requirements.txt`
 
-6. Build the database, ideally from a populate file, or from the schema.sql file:
+6. Build the database, ideally from a populate file, or from the schema.sql file, you may need to install sqlite3 first:
 
-    `sqlite app/scores.db < backup_file.sql`
+    `sqlite3 app/scores.db < backup_file.sql`
 
 7. Start the web service:
 

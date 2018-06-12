@@ -41,7 +41,9 @@ CREATE TABLE teams(
 	tid INTEGER,
 	team_id INTEGER,
 	name Text,
+	short_name Text,
 	division text,
+	flag_file text,
 	PRIMARY KEY(tid, team_id)
 );
 
@@ -93,4 +95,21 @@ CREATE TABLE tokens (
 	token TEXT PRIMARY KEY,
 	user_id TEXT NOT NULL,
 	valid_til timestampt NOT NULL
+);
+
+CREATE TABLE players (
+	player_id TEXT PRIMARY KEY,
+	surname TEXT,
+	first_name TEXT,
+	display_name TEXT
+);
+
+CREATE TABLE rosters (
+	tid INTEGER NOT NULL,
+	player_id TEXT NOT NULL,
+	team_id INTEGER NOT NULL,
+	cap_number INTEGER,
+	is_coach INTEGER DEFAULT 0,
+	coach_title TEXT,
+	PRIMARY KEY(tid, player_id)
 );

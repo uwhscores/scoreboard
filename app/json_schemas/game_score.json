@@ -1,0 +1,20 @@
+{
+    "title": "Game score",
+    "type": "object",
+    "properties": {
+        "game_score": {
+            "type": "object",
+            "properties": {
+                "tid": {"type": "integer"},
+                "gid": {"type": "integer"},
+                "score_w": {"type": "integer"},
+                "score_b": {"type": "integer"},
+                "black_id": {"type": "integer"},
+                "white_id": {"type": "integer"},
+                "forfeit_b": {"type": "integer"},
+                "forfiet_w": {"type": "integer"}
+            },
+            "required": ["tid", "gid", "score_w", "score_b", "black_id", "white_id"]
+        }
+    }
+}

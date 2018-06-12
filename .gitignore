@@ -8,3 +8,5 @@ tournaments/*
 *.db
 *.pyc
 logs/*
+.pytest_cache/*
+app/static/flags/*

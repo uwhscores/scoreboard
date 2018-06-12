@@ -9,6 +9,9 @@
 	<div id="schedule" class="col-md-12">
 		<h1>Schedule</h1>
 		{% for game in games %}
+		{% if loop.previtem %}
+			{% set lastDay = loop.previtem.day %}
+		{% endif %}
 		{% if loop.first or game.day != lastDay %}
 		<table id=games class="table table-striped">
 			<thead>
@@ -35,7 +38,6 @@
 					<td class={{game.style_b}}>{{ game.black }}</td>
 					<td class={{game.style_w}}>{{ game.white }}</td>
 				</tr>
-			{% set lastDay = game.day %}
 			{% if loop.last%}
 			</tbody>
 		</table>
