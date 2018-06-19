@@ -128,6 +128,7 @@ class Game(object):
     # Team IDs, seeding games and "winner/loser of" games
     def parseGame(self, game_notation):
         style = ""
+        game = None
         team_id = -1
         t = self.tournament
 

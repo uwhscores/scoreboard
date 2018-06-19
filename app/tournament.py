@@ -206,16 +206,16 @@ class Tournament(object):
         # strftime(\"%H:%M\", start_time) as
         if (offset):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                               WHERE tid=? ORDER BY day, start_time LIMIT ?,45",
+                               WHERE tid=? ORDER BY start_time LIMIT ?,45",
                              (self.tid, offset))
         # whole schedule
         elif (division is None and pod is None):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE tid=? ORDER BY day, start_time", (self.tid,))
+                                WHERE tid=? ORDER BY start_time", (self.tid,))
         # division schedule
         elif (pod is None):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY day, start_time",
+                                WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY start_time",
                              (division, self.tid))
         # pod schedule
         elif (division is None):
@@ -223,11 +223,11 @@ class Tournament(object):
             # or not
             if pod in self.getDivisions():
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",
+                                    WHERE (pod like ? or type='CO') AND tid=? ORDER BY start_time",
                                  (pod, self.tid))
             else:
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE pod like ? AND tid=? ORDER BY day, start_time",
+                                    WHERE pod like ? AND tid=? ORDER BY start_time",
                                  (pod, self.tid))
 
         # TODO: remove is this is really dead
@@ -467,7 +467,11 @@ class Tournament(object):
             if self.checkForTies(standings):
                 return -1
             seed = int(seed) - 1
-            return standings[seed].team.team_id
+            if seed < len(standings):
+                return standings[seed].team.team_id
+            else:
+                app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
+                return -1
         else:
             return -1
 
