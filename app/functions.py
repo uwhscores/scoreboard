@@ -272,3 +272,26 @@ def validateJSONSchema(source, schema_name):
         return (False, msg)
 
     return (True, "")
+
+
+def ordinalize(number):
+    """ returns the ordinalized string given a number
+    1 -> 1st, 3 -> 3rd, 6 -> 6th
+    takes in an int or a string, retunrs a string
+    """
+    #n = int(number)
+    # return str(lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10 % 10 != 1)*(n % 10 <
+    # 4)*n % 10::4]))
+    n = int(number)
+    if 4 <= n <= 20:
+        suffix = 'th'
+    elif n == 1 or (n % 10) == 1:
+        suffix = 'st'
+    elif n == 2 or (n % 10) == 2:
+        suffix = 'nd'
+    elif n == 3 or (n % 10) == 3:
+        suffix = 'rd'
+    elif n < 100:
+        suffix = 'th'
+    ord_num = str(n) + suffix
+    return ord_num

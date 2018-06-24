@@ -1,7 +1,9 @@
 from datetime import datetime
 import re
 from app import app
-
+#import functions.ordinalize as ordinalize
+#from .functions import ordinalize
+import functions
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """
@@ -16,9 +18,13 @@ class Game(object):
     def __init__(self, tournament, gid, day, start_datetime, pool, black, white, game_type, division, pod, description):
         self.tournament = tournament
         self.gid = gid
-        self.day = day
+        #self.day = day
+
         self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
         self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
+
+        day_names = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"]
+        self.day = "%s-%s" % (day_names[self.start_datetime.weekday()], functions.ordinalize(self.start_datetime.day))
         self.pool = pool
         self.game_type = game_type
         self.division = division

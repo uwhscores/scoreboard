@@ -3,6 +3,8 @@ import re
 import json
 from game import Game
 from models import Stats, Ranking, Params
+#from functions import *
+import functions
 from flask import g, flash
 from string import split
 from app import app
@@ -30,9 +32,17 @@ class Tournament(object):
 
         days = []
         # TODO: Going to need an update function when building tournament ahead of games
-        cur = db.execute("SELECT DISTINCT day from games WHERE tid=?", (tid,))
+        # cur = db.execute("SELECT DISTINCT day from games WHERE tid=?", (tid,))
+        # for r in cur.fetchall():
+        #     days.append(r['day'])
+        cur = db.execute("SELECT DISTINCT start_time FROM games WHERE tid=?", (tid,))
+        day_names = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"]
         for r in cur.fetchall():
-            days.append(r['day'])
+            # extract day of the month 2018-07-25 17:40:00
+            dt = datetime.strptime(r['start_time'], '%Y-%m-%d %H:%M:%S')
+            date_string = "%s-%s" % (day_names[dt.weekday()], functions.ordinalize(dt.day))
+            if date_string not in days:
+                days.append(date_string)
 
         self.days = days
 
