@@ -59,7 +59,6 @@ CREATE TABLE rankings(
 		place text NOT NULL,
 		game text,
 		division text,
-		PRIMARY KEY(tid, place)
 );
 
 
