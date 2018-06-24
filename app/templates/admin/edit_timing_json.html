@@ -47,12 +47,16 @@
 $(document).ready(function(){
 
    $.ajax({
-            url: "http://{{request.host}}/api/v1/tournaments/{{tournament.tid}}/timingruleset",
-            type: 'GET',
-            dataType: 'json',
-            success: function(res) {
+			{% if "localhost" in  request.host  %}
+			url: "http://{{request.host}}/api/v1/tournaments/{{tournament.tid}}/timingruleset",
+			{% else % }
+			url: "https://{{request.host}}/api/v1/tournaments/{{tournament.tid}}/timingruleset",
+			{% endif %}
+			type: 'GET',
+			dataType: 'json',
+			success: function(res) {
 				document.getElementById("timing_json").innerHTML = JSON.stringify(res, null, 2)
-            }
+			}
         });
 
 })
