@@ -265,7 +265,7 @@ class Tournament(object):
         db = self.db
 
         cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
-                        FROM games WHERE tid=? ORDER BY day, start_time', (self.tid,))
+                        FROM games WHERE tid=? ORDER BY start_time', (self.tid,))
         # allGames = self.expandGames(cur.fetchall())
         team_games = cur.fetchall()
 
