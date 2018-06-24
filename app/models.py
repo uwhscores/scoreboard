@@ -18,11 +18,15 @@ class Stats(object):
         tid = tournament.tid
         db = tournament.db
 
-        cur = db.execute('SELECT t.name, t.division FROM teams t WHERE tid=? and team_id=?', (tid, team_id))
+        cur = db.execute('SELECT t.name, t.division, t.flag_file FROM teams t WHERE tid=? and team_id=?', (tid, team_id))
         team = cur.fetchone()
 
         self.name = team['name']
         self.division = team['division']
+        if team['flag_file']:
+            self.flag_url = {'full_res': team['flag_file'], 'thumb': team['flag_file']}
+        else:
+            self.flag_url = None
 
         self.pod = pod
 

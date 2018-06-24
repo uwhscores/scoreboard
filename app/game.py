@@ -66,6 +66,9 @@ class Game(object):
             (self.black_tid, self.black, self.style_b) = self.parseGame(black)
             (self.white_tid, self.white, self.style_w) = self.parseGame(white)
 
+        self.black_flag = tournament.getTeamFlag(self.black_tid)
+        self.white_flag = tournament.getTeamFlag(self.white_tid)
+
         self.timing_rules = self.tournament.getTimingRules(self.game_type)
 
     def __repr__(self):

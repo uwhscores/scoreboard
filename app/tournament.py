@@ -152,6 +152,25 @@ class Tournament(object):
 
         return team_info
 
+    def getTeamFlag(self, team_id):
+        """ returns dictionary with flag url and thumbnail url """
+        flag_url = None
+
+        try:
+            team_id = int(team_id)
+        except ValueError:
+            return None
+
+        db = self.db
+        cur = db.execute('SELECT flag_file FROM teams WHERE flag_file IS NOT NULL AND team_id=? AND tid=?', (team_id, self.tid))
+        row = cur.fetchone()
+        if row:
+            flag_url = {}
+            flag_url['full_res'] = row['flag_file']
+            flag_url['thumb'] = row['flag_file']
+
+        return flag_url
+
     def getTeamRoster(self, team_id):
         """ return a list of dictionaries of the players for the team """
         roster = None
@@ -507,6 +526,7 @@ class Tournament(object):
                 place = re.findall(r"\d+", place)[0]
             game = r['game']
 
+            team_id = 0
             # Winner of
             match = re.search('^W(\d+)$', game)
             if match:
@@ -519,7 +539,7 @@ class Tournament(object):
                     game = "TIE IN GAME %s!!" % gid
                 else:
                     team = self.getTeam(team_id)
-                    game = team
+                    # game = team
 
             # Loser of
             match = re.search('^L(\d+)$', game)
@@ -533,7 +553,7 @@ class Tournament(object):
                     game = "TIE IN GAME %s!!" % gid
                 else:
                     team = self.getTeam(team_id)
-                    game = team
+                    #game = team
 
             # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
             # TODO: this doesn't look right anymore, need to check this still works
@@ -554,8 +574,8 @@ class Tournament(object):
                     game = "Pod " + pod + " seed " + seed
                     style = "soft"
                 else:
-                    name = self.getTeam(team_id)
-                    game = name
+                    team = self.getTeam(team_id)
+                    #game = name
             # broken logic
             # else:
             #    app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
@@ -565,7 +585,12 @@ class Tournament(object):
             else:
                 entry['div'] = div
             entry['place'] = functions.ordinalize(place)
-            entry['name'] = game
+            if team_id > 0:
+                entry['name'] = self.getTeam(team_id)
+                entry['flag_url'] = self.getTeamFlag(team_id)
+            else:
+                entry['name'] = game
+                entry['flag_url'] = None
             entry['style'] = style
 
             final.append(entry)

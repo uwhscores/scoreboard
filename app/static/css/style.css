@@ -138,6 +138,11 @@ tr.odd {
 	clear: both;
 }
 
+img.flag-thumb {
+	height: 24px;
+	padding-right: .5em;
+}
+
 #tabContents {
 	padding-left: 1em;
 }

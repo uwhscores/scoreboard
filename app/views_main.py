@@ -46,7 +46,6 @@ def renderTourament(short_name):
 
     site_message = t.getSiteMessage()
 
-    # b
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, placings=placings, divisions=divisions,
                            team_list=team_list, pods=pod_names, site_message=site_message)
 #         standings=standings, games=games, pods=pod_names, titleText=titleText, \

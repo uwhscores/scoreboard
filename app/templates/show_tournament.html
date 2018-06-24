@@ -94,7 +94,12 @@
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
-								<td><div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span></td>
+								<td>
+									<div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span>
+									{% if game.white_flag -%}
+									<img src="{{ game.white_flag.thumb }}" class="flag-thumb pull-right" >
+									{%- endif %}
+								</td>
 								<td>
 								{{game.score_w}}
 								{% if game.note_w -%}
@@ -116,7 +121,12 @@
 									</br><span style="background-color:#ccc; padding:0.2em">{{ game.description }}</span>
 								{% endif %}
 								</td>
-								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>
+								<td>
+									<div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span>
+									{% if game.black_flag -%}
+									<img src="{{ game.black_flag.thumb }}" class="flag-thumb pull-right" >
+									{%- endif %}
+								</td>
 								<td>
 								{{game.score_b}}
 								{% if game.note_b -%}
@@ -167,11 +177,11 @@
 				</thead>
 				<tbody>
 				{% for rank in standings -%}
-				{% set team = rank.team %}
-					{% if loop.previtem %}
-						{% set lastDiv = loop.previtem.team.division %}
-						{% set lastPod = loop.previtem.team.pod %}
-					{% endif %}
+				{% set team = rank.team -%}
+					{% if loop.previtem -%}
+						{% set lastDiv = loop.previtem.team.division -%}
+						{% set lastPod = loop.previtem.team.pod -%}
+					{%- endif %}
 					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
  				</tbody>
 				<thead>
@@ -201,7 +211,12 @@
 						<td>{{ team.pod }} </td>
 						{%- endif %}
 						<td>{{ rank.place }}</td>
+						<!-- {{ team.team_id }} -->
+						{% if team.flag_url -%}
+						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb"> {{ team.name }} </td>
+						{% else -%}
 						<td>{{ team.name }}</td>
+						{%- endif %}
 						<td>{{ team.points }} </td>
 						<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
 						<td>{{ team.goals_allowed }}</td>
@@ -250,7 +265,12 @@
 					</thead>
 					{% endif %}
 					<tr >
-						<td>{{ team.place }} {{ team.div }}</td><td class={{ team.style }}>{{ team.name }}</td>
+						<td>{{ team.place }} {{ team.div }}</td>
+						{% if team.flag_url -%}
+						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb"> {{ team.name }} </td>
+						{% else -%}
+						<td class={{ team.style }}>{{ team.name }}</td>
+						{%- endif %}
 					</tr>
 				{% endfor %}
 				</tbody>
