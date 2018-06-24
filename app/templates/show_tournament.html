@@ -237,17 +237,21 @@
 					</tr>
 				</thead>
 				<tbody>
-				{% set row = 1 %}
 				{% for team in placings %}
-					{% if row % 2 == 0 %}
-						{% set class="even" %}
-					{% else %}
-						{% set class="odd" %}
+					{% if loop.previtem %}
+						{% set lastDiv = loop.previtem.div %}
 					{% endif %}
-					<tr class={{ class }} >
-						<td>{{ team.place }}</td><td class={{ team.style }}>{{ team.name }}</td>
+					{% if not loop.first and team.div != lastDiv -%}
+					<thead>
+						<tr>
+							<th>Place</th>
+							<th>Team</th>
+						</tr>
+					</thead>
+					{% endif %}
+					<tr >
+						<td>{{ team.place }} {{ team.div }}</td><td class={{ team.style }}>{{ team.name }}</td>
 					</tr>
-					{% set row = row + 1 %}
 				{% endfor %}
 				</tbody>
 			</table>

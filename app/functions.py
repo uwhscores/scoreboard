@@ -282,7 +282,11 @@ def ordinalize(number):
     #n = int(number)
     # return str(lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10 % 10 != 1)*(n % 10 <
     # 4)*n % 10::4]))
-    n = int(number)
+    try:
+        n = int(number)
+    except ValueError:
+        return number
+
     if 4 <= n <= 20:
         suffix = 'th'
     elif n == 1 or (n % 10) == 1:

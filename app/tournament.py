@@ -491,18 +491,21 @@ class Tournament(object):
         """
         db = self.db
         if (div):
-            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
+            cur = db.execute("SELECT division, place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
-            cur = db.execute("SELECT place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
+            cur = db.execute("SELECT division, place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
 
-        rankings = cur.fetchall()
+        placings = cur.fetchall()
 
         final = []
-        for rank in rankings:
+        for r in placings:
             entry = {}
             style = ""
-            place = rank['place']
-            game = rank['game']
+            div = r['division']
+            place = r['place']
+            if re.findall(r"\d+", place):
+                place = re.findall(r"\d+", place)[0]
+            game = r['game']
 
             # Winner of
             match = re.search('^W(\d+)$', game)
@@ -557,13 +560,17 @@ class Tournament(object):
             # else:
             #    app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
 
-            entry['place'] = place
+            if self.expandGroupAbbr(div):
+                entry['div'] = self.expandGroupAbbr(div)
+            else:
+                entry['div'] = div
+            entry['place'] = functions.ordinalize(place)
             entry['name'] = game
             entry['style'] = style
 
             final.append(entry)
 
-        return final
+        return sorted(final, key=lambda k: k['div'])
 
     def getParams(self):
         """ retrieve parameters for the tournament
