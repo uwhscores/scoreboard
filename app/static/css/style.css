@@ -152,6 +152,12 @@ img.flag-thumb {
 	.game-line {
 		display: block;
 	}
+
+	.game-description {
+		word-wrap: break-word;
+		display: inline-block;
+		width: 80px;
+	}
 }
 
 @media print {
