@@ -95,6 +95,32 @@ tr.odd {
 	margin-bottom: 2em;
 }
 
+.team-flag {
+	padding: 0em 0em 1em 1em;
+}
+
+.team-fag:after {
+	clear: both;
+}
+
+img.flag-thumb {
+	height: 24px;
+	padding-right: .5em;
+}
+
+.game-description {
+	 background-color: #ccc;
+	 padding: 0.2em;
+	 font-size: 0.9em;
+}
+
+.game-line {
+	display: inline;
+}
+
+.game-time {
+	font-weight: bold;
+}
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
@@ -111,6 +137,20 @@ tr.odd {
 
 	.team-flag {
 		max-width: 160px;
+	}
+
+	img.flag-thumb {
+		height: 16px;
+	}
+
+	.table>tbody>tr>td {
+		padding: 4px;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.game-line {
+		display: block;
 	}
 }
 
@@ -130,19 +170,8 @@ tr.odd {
 	}
 }
 
-.team-flag {
-	padding: 0em 0em 1em 1em;
-}
 
-.team-fag:after {
-	clear: both;
-}
 
-img.flag-thumb {
-	height: 24px;
-	padding-right: .5em;
-}
-
-#tabContents {
+/* #tabContents {
 	padding-left: 1em;
-}
+} */

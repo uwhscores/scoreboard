@@ -78,7 +78,7 @@
 							{%- endfor %}
 						</ul>
 					</nav>
-					<table id="games" class="table">
+					<table id="games" class="table table-sm">
 						<thead>
 							<tr>
 								<th>#</th>
@@ -93,7 +93,10 @@
 								<td rowspan=3>{{ game.gid }}</td>
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
-								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
+								<td class="game-time">
+									<span class="game-line">{{ game.day | replace("-", " ") }} </span>
+									<span class="game-line"> {{ game.start_time }}</span>
+								</td>
 								<td>
 									<div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span>
 									{% if game.white_flag -%}
@@ -109,16 +112,16 @@
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td>
-								Pool: {{ game.pool }}
+								<span class="game-line">Pool: {{ game.pool }}</span>
 								{% if game.pod_color and game.pod -%}
-									Pod: <span style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
+									Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
 								{% elif game.pod %}
-									Pod: {{ game.pod }}
+									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.type == "CO" %}
-									</br><span style="background-color:#ccc; padding:0.2em">Cross Over</span>
+									<span class=game-description>Cross Over</span>
 								{% endif %}
 								{% if game.description -%}
-									</br><span style="background-color:#ccc; padding:0.2em">{{ game.description }}</span>
+									<span class=game-description>{{ game.description }}</span>
 								{% endif %}
 								</td>
 								<td>
