@@ -4,7 +4,7 @@ from app import app
 from app import global_limiter
 from app import audit_logger
 from flask import request, redirect, render_template, flash
-from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 # from flask.ext.login import UserMixin
 # from functions import *
 from functions import getTournamets, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
