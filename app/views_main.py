@@ -1,4 +1,4 @@
-from app import app
+from app import app, cache
 from flask import request, redirect, render_template
 from functions import *
 
@@ -14,7 +14,9 @@ def renderHome():
 
     return render_template('show_home.html', tournaments=tournaments)
 
+
 @app.route('/t/<short_name>')
+@cache.cached()
 def renderTourament(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
