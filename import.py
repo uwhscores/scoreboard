@@ -41,8 +41,8 @@ class Import(object):
 
         self.src_folder = src_folder
 
-        self.__importTeams(tid)
-        self.__importSchedule(tid)
+        teams = self.__importTeams(tid)
+        self.__importSchedule(tid, teams=teams)
         self.__importPods(tid)
         self.__importGroups(tid)
         self.__importRankings(tid)
@@ -117,7 +117,7 @@ class Import(object):
         self.db.execute('DELETE FROM params WHERE tid=?', (tid,))
         self.db.commit()
 
-    def __importSchedule(self, tid, sched_file=None):
+    def __importSchedule(self, tid, sched_file=None, teams=None):
         sched_file = os.path.join(self.src_folder, "schedule.csv")
         if not os.path.isfile(sched_file):
             return None
@@ -135,37 +135,90 @@ class Import(object):
                 if not row['gid']:
                     continue
 
+                # get the game ID number out of colums like #53
+                gid_match = re.match(r".*?(\d+)", row['gid'])
+                #import pdb; pdb.set_trace()
+                if gid_match:
+                    gid = gid_match.group(1)
+                    gid = int(gid)
+                else:
+                    continue
+
+                #print "Working on game %s" % gid
                 if re.match('^\d\:\d\d', row['time']) is not None:
                     row['time'] = "0%s" % row['time']
 
-                white = self.__processGame(row['white'])
-                black = self.__processGame(row['black'])
+                white = self.__processGame(row['white'], teams)
+                black = self.__processGame(row['black'], teams)
+
+                if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
+                    white_id = white.split("T")[1]
+                    div = teams[white_id]['div']
+                    pod = row['white'].split(" ")[0]
+                else:
+                    div = row['div']
+                    pod = row['pod']
 
                 date = datetime.strptime(row['date'], '%m/%d/%y')
-                time = datetime.strptime(row['time'], '%H:%M')
+                if re.match(r"^\d\d:\d\d$", row['time']):
+                    time = datetime.strptime(row['time'], '%H:%M')
+                elif re.match(r"^\d\d:\d\d:\d\d$", row['time']):
+                    time = datetime.strptime(row['time'], '%H:%M:%S')
+                else:
+                    print "Error parsing time for gid %s" % gid
+                    continue
+
                 start_time = datetime.combine(
                     datetime.date(date), datetime.time(time))
 
                 cur = self.db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                                      (tid, row['gid'], row['day'], start_time, row['pool'], black, white, row['div'], row['pod'], row['type'], row['desc']))
+                                      (tid, gid, row['day'], start_time, row['pool'], black, white, div, pod, row['type'], row['desc']))
                 self.db.commit()
 
-    def __processGame(self, game_string):
+    def __processGame(self, game_string, teams=None):
 
         orig_string = game_string
+
+        m = re.match("^(\w+)\s*Seed\s*(\d+)", game_string)
+        if m:
+            game_string = "S%s%s" % (m.group(1), m.group(2))
+            return game_string
 
         m = re.match("^[l|L].*?(\d+)", game_string)
         if m:
             game_string = "L%s" % m.group(1)
+            return game_string
 
         m = re.match("^[w|W].*?(\d+)", game_string)
         if m:
             game_string = "W%s" % m.group(1)
+            return game_string
 
-        m = re.match("^(\w)\s*Seed\s*(\d+)", game_string)
-        if m:
-            game_string = "S%s%s" % (m.group(1), m.group(2))
+        pieces = game_string.split()
+        if len(pieces) == 2:
+            group = pieces[0]
+            name = pieces[1]
+            #import pdb; pdb.set_trace()
+            for team in teams:
+                #import pdb; pdb.set_trace()
+                if group == "MM" or group == "MW":
+                    if teams[team]['short_name'] == name and teams[team]['div'] == group:
+                        game_string = "T%s" % team
+                elif group == "MA" or group == "MB":
+                    if teams[team]['short_name'] == name and teams[team]['div'] == "EM":
+                        game_string = "T%s" % team
+                elif group == "WA" or group == "WB":
+                    if teams[team]['short_name'] == name and teams[team]['div'] == "EW":
+                        game_string = "T%s" % team
+                else:
+                    print "Unknown group? %s " % group
+            if not re.match(r"T[\d+]", game_string):
+                import pdb; pdb.set_trace()
+            return game_string
+        else:
+            print "Not sure what happened: %s" % pieces
 
+        #import pdb; pdb.set_trace()
         return game_string
 
     def __importTeams(self, tid, teams_file=None):
@@ -186,13 +239,22 @@ class Import(object):
         else:
             short_name = tid
 
+        teams_dict = {}
         with open(team_file, 'rb') as f:
             teams = csv.DictReader(f)
             for row in teams:
-                flag_file = "/static/flags/%s/%s.png" % (short_name, row['team_id'])
+                team_id = row['team_id']
+                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
+                # worlds hack, delete me!!
+                team_name = "%s %s" % (row['div'], row['name'])
+
+                teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
+
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
-                                      (tid, row['team_id'], row['name'], row['short_name'], row['div'], flag_file))
+                                      (tid, row['team_id'], team_name, row['short_name'], row['div'], flag_file))
                 self.db.commit()
+
+        return teams_dict
 
     def __importRankings(self, tid, rankings_file=None):
         rankings_file = os.path.join(self.src_folder, "rankings.csv")
