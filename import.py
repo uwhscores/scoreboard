@@ -205,10 +205,10 @@ class Import(object):
                     if teams[team]['short_name'] == name and teams[team]['div'] == group:
                         game_string = "T%s" % team
                 elif group == "MA" or group == "MB":
-                    if teams[team]['short_name'] == name and teams[team]['div'] == "EM":
+                    if teams[team]['short_name'] == name and teams[team]['div'] == "M":
                         game_string = "T%s" % team
                 elif group == "WA" or group == "WB":
-                    if teams[team]['short_name'] == name and teams[team]['div'] == "EW":
+                    if teams[team]['short_name'] == name and teams[team]['div'] == "W":
                         game_string = "T%s" % team
                 else:
                     print "Unknown group? %s " % group
