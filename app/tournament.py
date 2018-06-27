@@ -7,7 +7,7 @@ from models import Stats, Ranking, Params
 import functions
 from flask import g, flash
 from string import split
-from app import app, cache
+from app import app
 
 # main struction for a tournament
 

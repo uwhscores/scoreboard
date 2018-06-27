@@ -5,7 +5,6 @@ import logging.handlers
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask import Flask
-from flask_caching import Cache
 #, request, session, g, redirect, url_for, abort, \
 #	render_template, flash, jsonify, json
 
@@ -21,8 +20,8 @@ if not db_path:
     db_path = os.path.join(app.root_path, 'scores.db')
 
 config = dict(
-    DATABASE=db_path,
-    DEBUG=False,
+    DATABASE= db_path,
+    DEBUG=True,
     SECRET_KEY='testkey'
     # USERNAME='admin',
     # PASSWORD='default',
@@ -35,11 +34,9 @@ app.config.update(config)
 global_limiter = Limiter(
     app,
     key_func=get_remote_address,
-    global_limits=["1000 per day", "100 per hour"]
-    # global_limits=[]
+    #global_limits=["1000 per day", "100 per hour"]
+    global_limits=[]
 )
-
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 LOG_FILENAME = 'logs/audit_log'
 audit_logger = logging.getLogger('audit_log')
