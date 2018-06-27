@@ -28,7 +28,10 @@
 		<a href="/t/{{tournament.short_name}}/print"><i class="fa fa-fw fa-print"></i>Printer Friendly Schedule</a>
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
-		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>
+		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">
+			{% if team.flag_url %}<img src={{ team.flag_url}} class="flag-thumb pull-left">{% endif %}
+			{{ team.name }}
+		</a>
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>

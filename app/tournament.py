@@ -210,17 +210,17 @@ class Tournament(object):
         db = self.db
         if (div is None and pod is None):
             cur = db.execute(
-                "SELECT team_id, name, division FROM teams WHERE tid=? ORDER BY name", (self.tid,))
+                "SELECT team_id, name, division, flag_file FROM teams WHERE tid=? ORDER BY name", (self.tid,))
         elif (pod is None):
-            cur = db.execute("SELECT team_id, name, division FROM teams WHERE division=? AND tid=? ORDER BY name",
+            cur = db.execute("SELECT team_id, name, division, flag_file FROM teams WHERE division=? AND tid=? ORDER BY name",
                              (div, self.tid))
         elif (div is None):
-            cur = db.execute("SELECT t.team_id, t.name, t.division FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
+            cur = db.execute("SELECT t.team_id, t.name, t.division, t.flag_file FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
                              (pod, self.tid))
 
         teams = []
         for team in cur.fetchall():
-            teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division']})
+            teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division'], 'flag_url': team['flag_file']})
 
         return teams
 
