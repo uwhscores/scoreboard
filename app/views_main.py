@@ -18,7 +18,7 @@ def renderHome():
 def renderTourament(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
@@ -47,7 +47,7 @@ def renderTourament(short_name):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, placings=placings, divisions=divisions,
-                           team_list=team_list, pods=pod_names, site_message=site_message)
+                           team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
 #         standings=standings, games=games, pods=pod_names, titleText=titleText, \
 #         placings=placings, divisions=divisions, team_list=team_list, site_message=getParam('site_message'))
 
@@ -56,7 +56,7 @@ def renderTourament(short_name):
 def renderTDiv(short_name, div):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
@@ -97,7 +97,7 @@ def renderTDiv(short_name, div):
 def renderTPod(short_name, pod):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
@@ -133,7 +133,7 @@ def renderTPod(short_name, pod):
 def renderTTeam(short_name, team_id):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
@@ -183,7 +183,7 @@ def renderTTeam(short_name, team_id):
 def renderTouramentTV(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
@@ -232,7 +232,7 @@ def renderTouramentTV(short_name):
 def renderTouramentPrint(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
+        flash("Unknown Tournament Name")
         return redirect(request.url_root)
 
     t = getTournamentByID(tid)
