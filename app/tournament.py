@@ -36,7 +36,7 @@ class Tournament(object):
         # for r in cur.fetchall():
         #     days.append(r['day'])
         cur = db.execute("SELECT DISTINCT start_time FROM games WHERE tid=?", (tid,))
-        day_names = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"]
+        day_names = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"]
         for r in cur.fetchall():
             # extract day of the month 2018-07-25 17:40:00
             dt = datetime.strptime(r['start_time'], '%Y-%m-%d %H:%M:%S')

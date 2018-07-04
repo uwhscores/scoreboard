@@ -23,7 +23,7 @@ class Game(object):
         self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
         self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
 
-        day_names = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"]
+        day_names = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"]
         self.day = "%s-%s" % (day_names[self.start_datetime.weekday()], functions.ordinalize(self.start_datetime.day))
         self.pool = pool
         self.game_type = game_type
