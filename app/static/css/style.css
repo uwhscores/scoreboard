@@ -163,11 +163,27 @@ img.flag-thumb {
 	.table>tbody>tr>td {
 		padding: 4px;
 	}
+
+	/* .standings-table>thead>tr>th:nth-child(2),
+	.standings-table>tbody>tr>td:nth-child(2),
+	.standings-table>thead>tr>th:nth-child(3),
+	.standings-table>tbody>tr>td:nth-child(3) {
+		display: block;
+	} */
+
+	.standings-table>thead>tr>th {
+		padding-left: 2px;
+		padding-right: 4px;
+	}
+
+	table.standing-table {
+		max-width: 90%;
+	}
 }
 
 @media screen and (max-width: 600px) {
 	.game-line {
-		display: block;
+		display: inline-block;
 	}
 
 	.game-description {

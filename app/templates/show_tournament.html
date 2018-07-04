@@ -164,15 +164,16 @@
 					{%- endif %}
 				</div>
 			<div id="standings" class="tab-pane fade">
-			<h1>{{ titleText }} Standings</h1>
 			{% for group in grouped_standings|sort -%}
 			{% if group -%}
 			<h4>{{ group }}</h4>
+			{%- else %}
+			<h4>Standings</h4>
 			{%- endif %}
-			<table id=standings_tbl class="table table-striped">
+			<table class="table table-striped standings-table">
 				<thead>
 					<tr>
-						<th>Rank</th>
+						<th>#</th>
 						<th>Team</th>
 						<th>Points</th>
 						<th>Record</th>
@@ -185,7 +186,7 @@
 					{% for rank in grouped_standings[group] -%}
 					{% set team = rank.team -%}
 					<tr>
-						<td>{{ rank.place }}</td>
+						<td><strong>{{ rank.place }}</strong></td>
 						<!-- {{ team.team_id }} -->
 						{% if team.flag_url -%}
 						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb game-line"> <span class="game-line"> {{ team.name }} </span> </td>
