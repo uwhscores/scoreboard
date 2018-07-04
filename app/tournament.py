@@ -1137,6 +1137,31 @@ class Tournament(object):
 
         return standings
 
+    def splitStandingsByGroup(self, standings):
+        """ Helper function that takes in a standings list and groups them into a dictionary
+        by group (aka div or div and pod together)
+        """
+
+        grouped_standings = {}
+
+        for entry in standings:
+            group_name = None
+            pod_name = self.expandGroupAbbr(entry.pod)
+            div_name = self.expandGroupAbbr(entry.div)
+            if pod_name and pod_name == div_name:
+                group_name = pod_name
+            elif entry.div and entry.pod:
+                group_name = "%s - %s" % (self.expandGroupAbbr(entry.div), self.expandGroupAbbr(entry.pod))
+            elif entry.div and not entry.pod:
+                group_name = "%s" % (self.expandGroupAbbr(entry.div))
+
+            if group_name in grouped_standings:
+                grouped_standings[group_name].append(entry)
+            else:
+                grouped_standings[group_name] = [entry]
+
+        return grouped_standings
+
     def getTimingRules(self, game_type=None):
         """ gets timing rules for a specific game type,
         returns the default timing rules if game type not passed or game type cannot be found

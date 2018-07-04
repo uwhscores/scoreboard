@@ -135,6 +135,15 @@ img.flag-thumb {
 		display: none;
 	}
 
+	#tabNav li {
+		padding: 10px 0px;
+	}
+
+	#tabNav li a {
+		padding-left: 8px;
+		padding-right: 8px;
+	}
+
 	h1 {
 		font-size:20px;
 	}

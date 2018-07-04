@@ -165,15 +165,13 @@
 				</div>
 			<div id="standings" class="tab-pane fade">
 			<h1>{{ titleText }} Standings</h1>
+			{% for group in grouped_standings|sort -%}
+			{% if group -%}
+			<h4>{{ group }}</h4>
+			{%- endif %}
 			<table id=standings_tbl class="table table-striped">
 				<thead>
 					<tr>
-						{% if divisions -%}
-						<th>Div</th>
-						{%- endif %}
-						{% if pods -%}
-						<th>Pod</th>
-						{%- endif %}
 						<th>Rank</th>
 						<th>Team</th>
 						<th>Points</th>
@@ -184,44 +182,13 @@
 					</tr>
 				</thead>
 				<tbody>
-				{% for rank in standings -%}
-				{% set team = rank.team -%}
-					{% if loop.previtem -%}
-						{% set lastDiv = loop.previtem.team.division -%}
-						{% set lastPod = loop.previtem.team.pod -%}
-					{%- endif %}
-					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
- 				</tbody>
-				<thead>
+					{% for rank in grouped_standings[group] -%}
+					{% set team = rank.team -%}
 					<tr>
-						{% if divisions -%}
-						<th>Div</th>
-						{%- endif %}
-						{% if pods -%}
-						<th>Pod</th>
-						{%- endif %}
-						<th>Rank</th>
-						<th>Team</th>
-						<th>Points</th>
-						<th>Record</th>
-						<th>GA</th>
-						<th>GP</th>
-						<th>Overall</th>
-					</tr>
-				</thead>
-				<tbody>
-					{%- endif %}
-					<tr>
-						{% if divisions -%}
-						<td>{{ team.division}}</td>
-						{%- endif %}
-						{% if team.pod != None -%}
-						<td>{{ team.pod }} </td>
-						{%- endif %}
 						<td>{{ rank.place }}</td>
 						<!-- {{ team.team_id }} -->
 						{% if team.flag_url -%}
-						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb"> {{ team.name }} </td>
+						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb game-line"> <span class="game-line"> {{ team.name }} </span> </td>
 						{% else -%}
 						<td>{{ team.name }}</td>
 						{%- endif %}
@@ -231,9 +198,10 @@
 						<td>{{ team.games_played }} </td>
 						<td>{{ team.wins_t }}-{{ team.losses_t }}-{{ team.ties_t }}</td>
 					</tr>
-				{%- endfor %}
+					{%- endfor %}
 				<tbody>
 			</table>
+			{%- endfor %}
 
 			<div class="alert alert-info" role="alert">
 				<p>
