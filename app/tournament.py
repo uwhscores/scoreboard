@@ -1146,14 +1146,25 @@ class Tournament(object):
 
         for entry in standings:
             group_name = None
-            pod_name = self.expandGroupAbbr(entry.pod)
-            div_name = self.expandGroupAbbr(entry.div)
+            if self.expandGroupAbbr(entry.pod):
+                pod_name = self.expandGroupAbbr(entry.pod)
+            else:
+                pod_name = entry.pod
+            if self.expandGroupAbbr(entry.div):
+                div_name = self.expandGroupAbbr(entry.div)
+            else:
+                div_name = entry.div
+
             if pod_name and pod_name == div_name:
                 group_name = pod_name
-            elif entry.div and entry.pod:
-                group_name = "%s - %s" % (self.expandGroupAbbr(entry.div), self.expandGroupAbbr(entry.pod))
-            elif entry.div and not entry.pod:
-                group_name = "%s" % (self.expandGroupAbbr(entry.div))
+            elif pod_name and not div_name:
+                group_name = pod_name
+            elif div_name and pod_name:
+                group_name = "%s - %s" % (div_name, pod_name)
+            elif div_name and not pod_name:
+                group_name = div_name
+            else:
+                group_name = "Standings"
 
             if group_name in grouped_standings:
                 grouped_standings[group_name].append(entry)
