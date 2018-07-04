@@ -206,7 +206,13 @@
 
 			<div class="alert alert-info" role="alert">
 				<p>
-				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two or three points (base on tournament rules) for each win, and one point for a tie.</br>
+				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing.
+				{% if tournament.POINTS_WIN == 3 -%}
+				Teams earn three points for each win,
+				{% elif tournament.POINTS_WIN == 2 -%}
+				Teams earn two points for each win,
+				{%- endif %}
+				and one point for a tie.</br>
 				<strong>Record -</strong> Record in games played for points in standing </br>
 				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker </br>
 				<strong>GP -</strong> Games played for standings </br>
