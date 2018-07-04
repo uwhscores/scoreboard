@@ -129,6 +129,11 @@ img.flag-thumb {
 .stick-white {
 	background-color: #FFFFFF;
 }
+
+.tournament-banner {
+	max-width: 100%;
+}
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
