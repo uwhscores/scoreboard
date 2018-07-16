@@ -280,6 +280,20 @@
 						{% endfor -%}
 					</tbody>
 				</table>
+				<table id=coaches_tbl class="table table-striped">
+					<thead>
+						<tr>
+							<th>Coaches</th>
+						</tr>
+					</thead>
+					<tbody>
+						{%- for coach in team_info.coaches|sort %}
+						<tr>
+							<td>{{ coach.name }}</td>
+						</tr>
+						{% endfor -%}
+					</tbody>
+				</table>
 			</div>
 			{%- endif %}
 	</div> <!-- tabContent -->

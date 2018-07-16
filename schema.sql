@@ -100,7 +100,8 @@ CREATE TABLE players (
 	player_id TEXT PRIMARY KEY,
 	surname TEXT,
 	first_name TEXT,
-	display_name TEXT
+	display_name TEXT,
+	date_created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rosters (
