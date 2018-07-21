@@ -287,11 +287,13 @@
 						</tr>
 					</thead>
 					<tbody>
+						{%- if team_info.coaches %}
 						{%- for coach in team_info.coaches|sort %}
 						<tr>
 							<td>{{ coach.name }}</td>
 						</tr>
 						{% endfor -%}
+						{%- endif %}
 					</tbody>
 				</table>
 			</div>
