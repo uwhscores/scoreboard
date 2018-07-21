@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+import os
 import json
 from game import Game
 from models import Stats, Ranking, Params
@@ -56,6 +57,10 @@ class Tournament(object):
             self.POINTS_FORFEIT = int(params.getParam('points_forfeit'))
         else:
             self.POINTS_FORFEIT = 2
+
+        self.sm_logo = None
+        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
+            self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
     def __repr__(self):
         """ String reper only really used for log and debug """
