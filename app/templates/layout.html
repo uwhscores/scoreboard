@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if tournament -%}
     <meta name="description" content="UWHScores for {{ tournament.name }} - Follow game results and check updated standings throughout the day.">
-    {% if tournament.sm_logo -%}
+    {% if team_info and team_info.flag_url %}
+    <meta property="og:image" content="https://uwhscores.com/{{ team_info.flag_url }}" />
+    {% elif tournament.sm_logo -%}
     <meta property="og:image" content="https://uwhscores.com/{{ tournament.sm_logo }}" />
     {%- endif %}
     {% else %}
