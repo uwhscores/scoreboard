@@ -8,7 +8,7 @@
     {% if tournament -%}
     <meta name="description" content="UWHScores for {{ tournament.name }} - Follow game results and check updated standings throughout the day.">
     {% if tournament.sm_logo -%}
-    <meta property="og:image" content="{{ tournament.sm_logo }}" />
+    <meta property="og:image" content="https://uwhscores.com/{{ tournament.sm_logo }}" />
     {%- endif %}
     {% else %}
     <meta name="description" content="UWHScores for tournaments - Follow game results and check updated standings throughout the day.">
