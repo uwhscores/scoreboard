@@ -243,7 +243,7 @@ def renderTGroup(short_name, group):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
-                       pods=pod_names, team_list=team_list, site_message=site_message, title_text="Combined %s" % group)
+                       pods=pod_names, team_list=team_list, site_message=site_message, title_text="Combined")
 
 
 #######################################
