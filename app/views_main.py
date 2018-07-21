@@ -1,7 +1,7 @@
 from app import app
 from flask import request, redirect, render_template, flash
 from functions import getTournamets, getTournamentByID, getTournamentID
-
+import re
 
 @app.route('/')
 def renderHome():
@@ -183,6 +183,67 @@ def renderTTeam(short_name, team_id):
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True, team_info=team_info)
+
+
+@app.route('/t/<short_name>/multi/<group>')
+def renderTGroup(short_name, group):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unknown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    message = t.getDisableMessage()
+    if message:
+        return render_template('site_down.html', message=message)
+
+    games = []
+    team_list = None
+    if re.match(r".*\+.*", group):
+        # team IDs separated by plus sign
+        team_list = group.split("+")
+    else:
+        team_list = t.getTeamsLike(group)
+
+    if not team_list:
+        flash("Couldn't find any teams for %s" % group)
+        rdir_string = "/t/%s" % t.short_name
+        return redirect(rdir_string)
+
+    for team_id in team_list:
+        try:
+            team_id = int(team_id)
+        except ValueError:
+            continue
+
+        if t.getTeam(team_id) is not None:
+            games.extend(t.getTeamGames(team_id))
+
+    games.sort(key=lambda x: x.start_datetime)
+
+    divisions = t.getDivisionNames()
+    team_list = t.getTeams()
+
+    pods = t.getPodsActive()
+    pod_names = t.getPodNamesActive()
+
+    standings = []
+    if pods:
+        for pod in pods:
+            standings += t.getStandings(None, pod)
+    else:
+        standings = t.getStandings()
+
+    grouped_standings = t.splitStandingsByGroup(standings)
+
+    t.genTieFlashes()
+    placings = t.getPlacings()
+
+    site_message = t.getSiteMessage()
+
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+                       pods=pod_names, team_list=team_list, site_message=site_message, title_text="Combined %s" % group)
 
 
 #######################################

@@ -224,6 +224,23 @@ class Tournament(object):
 
         return teams
 
+    def getTeamsLike(self, group):
+        """ searches for teams given a name, like "USA" to get "USA Mens" and "USA Womens"
+        return list of team IDs """
+        db = self.db
+
+        search_string = "%%%s%%" % group
+        cur = db.execute("SELECT team_id FROM teams WHERE name LIKE ? AND tid=? COLLATE NOCASE", (search_string, self.tid))
+
+        team_ids = []
+        for r in cur.fetchall():
+            team_ids.append(r['team_id'])
+
+        if len(team_ids) > 0:
+            return team_ids
+        else:
+            return None
+
     def getGames(self, division=None, pod=None, offset=None):
         """ Get all games, allows for filter by division or pod and offset which was used for legacy TV display
         division and pod should be short names as would appear in DB
