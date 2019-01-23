@@ -1,6 +1,6 @@
 venv/*
 *.bk
-*.sql
+*.sql*
 *~
 *.tgz
 old/*

@@ -7,9 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if tournament -%}
     <meta name="description" content="UWHScores for {{ tournament.name }} - Follow game results and check updated standings throughout the day.">
+    {% if team_info and team_info.flag_url %}
+    <meta property="og:image" content="https://uwhscores.com/{{ team_info.flag_url }}" />
+    {% elif tournament.sm_logo -%}
+    <meta property="og:image" content="https://uwhscores.com/{{ tournament.sm_logo }}" />
+    {%- endif %}
     {% else %}
     <meta name="description" content="UWHScores for tournaments - Follow game results and check updated standings throughout the day.">
     {% endif %}
+
     <meta name="author" content="">
 	<title>Underwater Hockey Scores</title>
 
@@ -17,7 +23,7 @@
   <!-- Latest compiled and minified CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
 
   <!-- site specific css -->
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" type="text/css">

@@ -2,7 +2,7 @@ from functions import getTournamets, getTournamentByID, getUserByID, validateJSO
 from app import app, global_limiter
 from app import audit_logger
 from flask import jsonify, request, make_response, g
-from flask.ext.httpauth import HTTPBasicAuth
+from flask_httpauth import HTTPBasicAuth
 from base64 import b64encode
 from os import urandom
 import urlparse
