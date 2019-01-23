@@ -25,10 +25,15 @@
 	<div class="row">
 	{% if team_list -%}
 	<div id="team_nav" class="col-md-4 listgroup">
+		{% if print_friendly -%}
 		<a href="/t/{{tournament.short_name}}/print"><i class="fa fa-fw fa-print"></i>Printer Friendly Schedule</a>
+		{% endif %}
 		<h3>Filter For Team</h3>
 		{% for team in team_list -%}
-		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">{{ team.name }}</a>
+		<a class="list-group-item" href="/t/{{ tournament.short_name}}/team/{{ team.team_id  }}">
+			{% if team.flag_url %}<img src={{ team.flag_url}} class="flag-thumb pull-left">{% endif %}
+			{{ team.name }}
+		</a>
 		{%- endfor %}
 		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
 	</div>
@@ -78,7 +83,7 @@
 							{%- endfor %}
 						</ul>
 					</nav>
-					<table id="games" class="table">
+					<table id="games" class="table table-sm">
 						<thead>
 							<tr>
 								<th>#</th>
@@ -93,8 +98,16 @@
 								<td rowspan=3>{{ game.gid }}</td>
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
-								<td><strong>{{ game.day }} {{ game.start_time }}</strong></td>
-								<td><div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span></td>
+								<td class="game-time">
+									<span class="game-line">{{ game.day | replace("-", " ") }} </span>
+									<span class="game-line"> {{ game.start_time }}</span>
+								</td>
+								<td>
+									<div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span>
+									{% if game.white_flag -%}
+									<img src="{{ game.white_flag.thumb }}" class="flag-thumb pull-right" >
+									{%- endif %}
+								</td>
 								<td>
 								{{game.score_w}}
 								{% if game.note_w -%}
@@ -104,19 +117,24 @@
 							</tr>
 							<tr  class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
 								<td>
-								Pool: {{ game.pool }}
+								<span class="game-line">Pool: {{ game.pool }}</span>
 								{% if game.pod_color and game.pod -%}
-									Pod: <span style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
+									Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
 								{% elif game.pod %}
-									Pod: {{ game.pod }}
+									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.type == "CO" %}
-									</br><span style="background-color:#ccc; padding:0.2em">Cross Over</span>
+									<span class=game-description>Cross Over</span>
 								{% endif %}
 								{% if game.description -%}
-									</br><span style="background-color:#ccc; padding:0.2em">{{ game.description }}</span>
+									<span class=game-description>{{ game.description }}</span>
 								{% endif %}
 								</td>
-								<td><div class="color-box" style="background-color: #000000;"></div><span class="{{game.style_b}}">{{ game.black }}</span></td>
+								<td>
+									<i class="fas fa-square-full stick-color stick-black"></i><span class="{{game.style_b}}">{{ game.black }}</span>
+									{% if game.black_flag -%}
+									<img src="{{ game.black_flag.thumb }}" class="flag-thumb pull-right" >
+									{%- endif %}
+								</td>
 								<td>
 								{{game.score_b}}
 								{% if game.note_b -%}
@@ -146,17 +164,16 @@
 					{%- endif %}
 				</div>
 			<div id="standings" class="tab-pane fade">
-			<h1>{{ titleText }} Standings</h1>
-			<table id=standings_tbl class="table table-striped">
+			{% for group in grouped_standings|sort -%}
+			{% if group -%}
+			<h4>{{ group }}</h4>
+			{%- else %}
+			<h4>Standings</h4>
+			{%- endif %}
+			<table class="table table-striped standings-table">
 				<thead>
 					<tr>
-						{% if divisions -%}
-						<th>Div</th>
-						{%- endif %}
-						{% if pods -%}
-						<th>Pod</th>
-						{%- endif %}
-						<th>Rank</th>
+						<th>#</th>
 						<th>Team</th>
 						<th>Points</th>
 						<th>Record</th>
@@ -166,59 +183,40 @@
 					</tr>
 				</thead>
 				<tbody>
-				{% for rank in standings -%}
-				{% set team = rank.team %}
-					{% if loop.previtem %}
-						{% set lastDiv = loop.previtem.team.division %}
-						{% set lastPod = loop.previtem.team.pod %}
-					{% endif %}
-					{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
- 				</tbody>
-				<thead>
+					{% for rank in grouped_standings[group] -%}
+					{% set team = rank.team -%}
 					<tr>
-						{% if divisions -%}
-						<th>Div</th>
-						{%- endif %}
-						{% if pods -%}
-						<th>Pod</th>
-						{%- endif %}
-						<th>Rank</th>
-						<th>Team</th>
-						<th>Points</th>
-						<th>Record</th>
-						<th>GA</th>
-						<th>GP</th>
-						<th>Overall</th>
-					</tr>
-				</thead>
-				<tbody>
-					{%- endif %}
-					<tr>
-						{% if divisions -%}
-						<td>{{ team.division}}</td>
-						{%- endif %}
-						{% if team.pod != None -%}
-						<td>{{ team.pod }} </td>
-						{%- endif %}
-						<td>{{ rank.place }}</td>
+						<td><strong>{{ rank.place }}</strong></td>
+						<!-- {{ team.team_id }} -->
+						{% if team.flag_url -%}
+						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb game-line"> <span class="game-line"> {{ team.name }} </span> </td>
+						{% else -%}
 						<td>{{ team.name }}</td>
+						{%- endif %}
 						<td>{{ team.points }} </td>
 						<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
 						<td>{{ team.goals_allowed }}</td>
 						<td>{{ team.games_played }} </td>
 						<td>{{ team.wins_t }}-{{ team.losses_t }}-{{ team.ties_t }}</td>
 					</tr>
-				{%- endfor %}
+					{%- endfor %}
 				<tbody>
 			</table>
+			{%- endfor %}
 
 			<div class="alert alert-info" role="alert">
 				<p>
-				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing. Teams earn two or three points (base on tournament rules) for each win, and one point for a tie.</br>
-				<strong>Record -</strong> Record in games played for points in standing </br>
-				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker </br>
-				<strong>GP -</strong> Games played for standings </br>
-				<strong>Overall -</strong> Total tournament record including non-standings games and brackets
+				<strong>Points -</strong> Primary ranking metric. Points earned from round-robin game play for standing.
+				{% if tournament.POINTS_WIN == 3 -%}
+				Teams earn three points for each win,
+				{% elif tournament.POINTS_WIN == 2 -%}
+				Teams earn two points for each win,
+				{%- endif %}
+				and one point for a tie.</br>
+				<strong>Record -</strong> Record in games played for points in standing. Wins-Losses-Ties. </br>
+				<strong>GA -</strong> Goals allowed in games played for standings, used as tie breaker. </br>
+				<strong>GP -</strong> Games played for standings. </br>
+				<strong>Overall -</strong> Total tournament record including non-standings games and brackets. Wins-Losses-Ties.
 				</p>
 				<p>
 				For more information on how standings are calculated and tie-breakers please see the <a href=/faq>FAQ</a>
@@ -237,17 +235,26 @@
 					</tr>
 				</thead>
 				<tbody>
-				{% set row = 1 %}
 				{% for team in placings %}
-					{% if row % 2 == 0 %}
-						{% set class="even" %}
-					{% else %}
-						{% set class="odd" %}
+					{% if loop.previtem %}
+						{% set lastDiv = loop.previtem.div %}
 					{% endif %}
-					<tr class={{ class }} >
-						<td>{{ team.place }}</td><td class={{ team.style }}>{{ team.name }}</td>
+					{% if not loop.first and team.div != lastDiv -%}
+					<thead>
+						<tr>
+							<th>Place</th>
+							<th>Team</th>
+						</tr>
+					</thead>
+					{% endif %}
+					<tr >
+						<td>{{ team.place }} {{ team.div }}</td>
+						{% if team.flag_url -%}
+						<td><img src="{{ team.flag_url.thumb }}" class="flag-thumb"> {{ team.name }} </td>
+						{% else -%}
+						<td class={{ team.style }}>{{ team.name }}</td>
+						{%- endif %}
 					</tr>
-					{% set row = row + 1 %}
 				{% endfor %}
 				</tbody>
 			</table>
@@ -256,7 +263,7 @@
 
 			{% if team_info and team_info.roster -%}
 			<div id="roster" class="tab-pane fade">
-				<h1>{{ titleText }} Roster</h1>
+				<h1>{{ title_text }} Roster</h1>
 				<table id=roster_tbl class="table table-striped">
 					<thead>
 						<tr>
@@ -271,6 +278,22 @@
 							<td>{{ player.number if player.number != None else "" }}</td>
 						</tr>
 						{% endfor -%}
+					</tbody>
+				</table>
+				<table id=coaches_tbl class="table table-striped">
+					<thead>
+						<tr>
+							<th>Coaches</th>
+						</tr>
+					</thead>
+					<tbody>
+						{%- if team_info.coaches %}
+						{%- for coach in team_info.coaches|sort %}
+						<tr>
+							<td>{{ coach.name }}</td>
+						</tr>
+						{% endfor -%}
+						{%- endif %}
 					</tbody>
 				</table>
 			</div>

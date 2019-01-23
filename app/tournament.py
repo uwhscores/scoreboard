@@ -1,8 +1,11 @@
 from datetime import datetime
 import re
+import os
 import json
 from game import Game
 from models import Stats, Ranking, Params
+#from functions import *
+import functions
 from flask import g, flash
 from string import split
 from app import app
@@ -30,9 +33,17 @@ class Tournament(object):
 
         days = []
         # TODO: Going to need an update function when building tournament ahead of games
-        cur = db.execute("SELECT DISTINCT day from games WHERE tid=?", (tid,))
+        # cur = db.execute("SELECT DISTINCT day from games WHERE tid=?", (tid,))
+        # for r in cur.fetchall():
+        #     days.append(r['day'])
+        cur = db.execute("SELECT DISTINCT start_time FROM games WHERE tid=?", (tid,))
+        day_names = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"]
         for r in cur.fetchall():
-            days.append(r['day'])
+            # extract day of the month 2018-07-25 17:40:00
+            dt = datetime.strptime(r['start_time'], '%Y-%m-%d %H:%M:%S')
+            date_string = "%s-%s" % (day_names[dt.weekday()], functions.ordinalize(dt.day))
+            if date_string not in days:
+                days.append(date_string)
 
         self.days = days
 
@@ -46,6 +57,10 @@ class Tournament(object):
             self.POINTS_FORFEIT = int(params.getParam('points_forfeit'))
         else:
             self.POINTS_FORFEIT = 2
+
+        self.sm_logo = None
+        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
+            self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
     def __repr__(self):
         """ String reper only really used for log and debug """
@@ -142,6 +157,25 @@ class Tournament(object):
 
         return team_info
 
+    def getTeamFlag(self, team_id):
+        """ returns dictionary with flag url and thumbnail url """
+        flag_url = None
+
+        try:
+            team_id = int(team_id)
+        except ValueError:
+            return None
+
+        db = self.db
+        cur = db.execute('SELECT flag_file FROM teams WHERE flag_file IS NOT NULL AND team_id=? AND tid=?', (team_id, self.tid))
+        row = cur.fetchone()
+        if row:
+            flag_url = {}
+            flag_url['full_res'] = row['flag_file']
+            flag_url['thumb'] = row['flag_file']
+
+        return flag_url
+
     def getTeamRoster(self, team_id):
         """ return a list of dictionaries of the players for the team """
         roster = None
@@ -181,19 +215,36 @@ class Tournament(object):
         db = self.db
         if (div is None and pod is None):
             cur = db.execute(
-                "SELECT team_id, name, division FROM teams WHERE tid=? ORDER BY name", (self.tid,))
+                "SELECT team_id, name, division, flag_file FROM teams WHERE tid=? ORDER BY name", (self.tid,))
         elif (pod is None):
-            cur = db.execute("SELECT team_id, name, division FROM teams WHERE division=? AND tid=? ORDER BY name",
+            cur = db.execute("SELECT team_id, name, division, flag_file FROM teams WHERE division=? AND tid=? ORDER BY name",
                              (div, self.tid))
         elif (div is None):
-            cur = db.execute("SELECT t.team_id, t.name, t.division FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
+            cur = db.execute("SELECT t.team_id, t.name, t.division, t.flag_file FROM teams t, pods p WHERE t.team_id=p.team_id AND p.pod=? AND t.tid=p.tid AND t.tid=?",
                              (pod, self.tid))
 
         teams = []
         for team in cur.fetchall():
-            teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division']})
+            teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division'], 'flag_url': team['flag_file']})
 
         return teams
+
+    def getTeamsLike(self, group):
+        """ searches for teams given a name, like "USA" to get "USA Mens" and "USA Womens"
+        return list of team IDs """
+        db = self.db
+
+        search_string = "%%%s%%" % group
+        cur = db.execute("SELECT team_id FROM teams WHERE name LIKE ? AND tid=? COLLATE NOCASE", (search_string, self.tid))
+
+        team_ids = []
+        for r in cur.fetchall():
+            team_ids.append(r['team_id'])
+
+        if len(team_ids) > 0:
+            return team_ids
+        else:
+            return None
 
     def getGames(self, division=None, pod=None, offset=None):
         """ Get all games, allows for filter by division or pod and offset which was used for legacy TV display
@@ -206,16 +257,16 @@ class Tournament(object):
         # strftime(\"%H:%M\", start_time) as
         if (offset):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                               WHERE tid=? ORDER BY day, start_time LIMIT ?,45",
+                               WHERE tid=? ORDER BY start_time LIMIT ?,45",
                              (self.tid, offset))
         # whole schedule
         elif (division is None and pod is None):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE tid=? ORDER BY day, start_time", (self.tid,))
+                                WHERE tid=? ORDER BY start_time", (self.tid,))
         # division schedule
         elif (pod is None):
             cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY day, start_time",
+                                WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY start_time",
                              (division, self.tid))
         # pod schedule
         elif (division is None):
@@ -223,11 +274,11 @@ class Tournament(object):
             # or not
             if pod in self.getDivisions():
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE (pod like ? or type='CO') AND tid=? ORDER BY day, start_time",
+                                    WHERE (pod like ? or type='CO') AND tid=? ORDER BY start_time",
                                  (pod, self.tid))
             else:
                 cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE pod like ? AND tid=? ORDER BY day, start_time",
+                                    WHERE pod like ? AND tid=? ORDER BY start_time",
                                  (pod, self.tid))
 
         # TODO: remove is this is really dead
@@ -255,7 +306,7 @@ class Tournament(object):
         db = self.db
 
         cur = db.execute('SELECT gid, day, start_time, pool, black, white, division, pod, type, description \
-                        FROM games WHERE tid=? ORDER BY day, start_time', (self.tid,))
+                        FROM games WHERE tid=? ORDER BY start_time', (self.tid,))
         # allGames = self.expandGames(cur.fetchall())
         team_games = cur.fetchall()
 
@@ -467,7 +518,11 @@ class Tournament(object):
             if self.checkForTies(standings):
                 return -1
             seed = int(seed) - 1
-            return standings[seed].team.team_id
+            if seed < len(standings):
+                return standings[seed].team.team_id
+            else:
+                app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
+                return -1
         else:
             return -1
 
@@ -477,19 +532,23 @@ class Tournament(object):
         """
         db = self.db
         if (div):
-            cur = db.execute("SELECT place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
+            cur = db.execute("SELECT division, place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
-            cur = db.execute("SELECT place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
+            cur = db.execute("SELECT division, place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
 
-        rankings = cur.fetchall()
+        placings = cur.fetchall()
 
         final = []
-        for rank in rankings:
+        for r in placings:
             entry = {}
             style = ""
-            place = rank['place']
-            game = rank['game']
+            div = r['division']
+            place = r['place']
+            if re.findall(r"\d+", place):
+                place = re.findall(r"\d+", place)[0]
+            game = r['game']
 
+            team_id = 0
             # Winner of
             match = re.search('^W(\d+)$', game)
             if match:
@@ -502,7 +561,7 @@ class Tournament(object):
                     game = "TIE IN GAME %s!!" % gid
                 else:
                     team = self.getTeam(team_id)
-                    game = team
+                    # game = team
 
             # Loser of
             match = re.search('^L(\d+)$', game)
@@ -516,7 +575,7 @@ class Tournament(object):
                     game = "TIE IN GAME %s!!" % gid
                 else:
                     team = self.getTeam(team_id)
-                    game = team
+                    #game = team
 
             # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
             # TODO: this doesn't look right anymore, need to check this still works
@@ -537,19 +596,28 @@ class Tournament(object):
                     game = "Pod " + pod + " seed " + seed
                     style = "soft"
                 else:
-                    name = self.getTeam(team_id)
-                    game = name
+                    team = self.getTeam(team_id)
+                    #game = name
             # broken logic
             # else:
             #    app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
 
-            entry['place'] = place
-            entry['name'] = game
+            if self.expandGroupAbbr(div):
+                entry['div'] = self.expandGroupAbbr(div)
+            else:
+                entry['div'] = div
+            entry['place'] = functions.ordinalize(place)
+            if team_id > 0:
+                entry['name'] = self.getTeam(team_id)
+                entry['flag_url'] = self.getTeamFlag(team_id)
+            else:
+                entry['name'] = game
+                entry['flag_url'] = None
             entry['style'] = style
 
             final.append(entry)
 
-        return final
+        return sorted(final, key=lambda k: k['div'])
 
     def getParams(self):
         """ retrieve parameters for the tournament
@@ -1090,6 +1158,42 @@ class Tournament(object):
             standings = self.calcStandings()
 
         return standings
+
+    def splitStandingsByGroup(self, standings):
+        """ Helper function that takes in a standings list and groups them into a dictionary
+        by group (aka div or div and pod together)
+        """
+
+        grouped_standings = {}
+
+        for entry in standings:
+            group_name = None
+            if self.expandGroupAbbr(entry.pod):
+                pod_name = self.expandGroupAbbr(entry.pod)
+            else:
+                pod_name = entry.pod
+            if self.expandGroupAbbr(entry.div):
+                div_name = self.expandGroupAbbr(entry.div)
+            else:
+                div_name = entry.div
+
+            if pod_name and pod_name == div_name:
+                group_name = pod_name
+            elif pod_name and not div_name:
+                group_name = pod_name
+            elif div_name and pod_name:
+                group_name = "%s - %s" % (div_name, pod_name)
+            elif div_name and not pod_name:
+                group_name = div_name
+            else:
+                group_name = "Standings"
+
+            if group_name in grouped_standings:
+                grouped_standings[group_name].append(entry)
+            else:
+                grouped_standings[group_name] = [entry]
+
+        return grouped_standings
 
     def getTimingRules(self, game_type=None):
         """ gets timing rules for a specific game type,

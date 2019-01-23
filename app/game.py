@@ -1,7 +1,9 @@
 from datetime import datetime
 import re
 from app import app
-
+#import functions.ordinalize as ordinalize
+#from .functions import ordinalize
+import functions
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """
@@ -16,9 +18,13 @@ class Game(object):
     def __init__(self, tournament, gid, day, start_datetime, pool, black, white, game_type, division, pod, description):
         self.tournament = tournament
         self.gid = gid
-        self.day = day
+        #self.day = day
+
         self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
         self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
+
+        day_names = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"]
+        self.day = "%s-%s" % (day_names[self.start_datetime.weekday()], functions.ordinalize(self.start_datetime.day))
         self.pool = pool
         self.game_type = game_type
         self.division = division
@@ -59,6 +65,9 @@ class Game(object):
             self.score_w = "--"
             (self.black_tid, self.black, self.style_b) = self.parseGame(black)
             (self.white_tid, self.white, self.style_w) = self.parseGame(white)
+
+        self.black_flag = tournament.getTeamFlag(self.black_tid)
+        self.white_flag = tournament.getTeamFlag(self.white_tid)
 
         self.timing_rules = self.tournament.getTimingRules(self.game_type)
 
@@ -128,6 +137,7 @@ class Game(object):
     # Team IDs, seeding games and "winner/loser of" games
     def parseGame(self, game_notation):
         style = ""
+        game = None
         team_id = -1
         t = self.tournament
 

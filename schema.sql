@@ -59,7 +59,6 @@ CREATE TABLE rankings(
 		place text NOT NULL,
 		game text,
 		division text,
-		PRIMARY KEY(tid, place)
 );
 
 
@@ -101,7 +100,8 @@ CREATE TABLE players (
 	player_id TEXT PRIMARY KEY,
 	surname TEXT,
 	first_name TEXT,
-	display_name TEXT
+	display_name TEXT,
+	date_created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rosters (
