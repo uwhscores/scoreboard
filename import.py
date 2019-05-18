@@ -42,8 +42,8 @@ class Import(object):
         self.src_folder = src_folder
 
         teams = self.__importTeams(tid)
+        teams = self.__importPods(tid, teams=teams)
         self.__importSchedule(tid, teams=teams)
-        self.__importPods(tid)
         self.__importGroups(tid)
         self.__importRankings(tid)
         self.__importParams(tid)
@@ -154,7 +154,7 @@ class Import(object):
                 if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
                     white_id = white.split("T")[1]
                     div = teams[white_id]['div']
-                    pod = row['white'].split(" ")[0]
+                    pod = teams[white_id]['pod']
                 else:
                     div = row['div']
                     pod = row['pod']
@@ -181,45 +181,68 @@ class Import(object):
 
         m = re.match("^(\w+)\s*Seed\s*(\d+)", game_string)
         if m:
-            game_string = "S%s%s" % (m.group(1), m.group(2))
-            return game_string
+            return "S%s%s" % (m.group(1), m.group(2))
 
         m = re.match("^[l|L].*?(\d+)", game_string)
         if m:
-            game_string = "L%s" % m.group(1)
-            return game_string
+            return "L%s" % m.group(1)
 
         m = re.match("^[w|W].*?(\d+)", game_string)
         if m:
-            game_string = "W%s" % m.group(1)
-            return game_string
+            return "W%s" % m.group(1)
 
-        pieces = game_string.split()
-        if len(pieces) == 2:
-            group = pieces[0]
-            name = pieces[1]
-            #import pdb; pdb.set_trace()
-            for team in teams:
-                #import pdb; pdb.set_trace()
-                if group == "MM" or group == "MW":
-                    if teams[team]['short_name'] == name and teams[team]['div'] == group:
-                        game_string = "T%s" % team
-                elif group == "MA" or group == "MB":
-                    if teams[team]['short_name'] == name and teams[team]['div'] == "M":
-                        game_string = "T%s" % team
-                elif group == "WA" or group == "WB":
-                    if teams[team]['short_name'] == name and teams[team]['div'] == "W":
-                        game_string = "T%s" % team
-                else:
-                    print "Unknown group? %s " % group
-            if not re.match(r"T[\d+]", game_string):
-                import pdb; pdb.set_trace()
-            return game_string
-        else:
-            print "Not sure what happened: %s" % pieces
+        # worlds logic, just keeping around cause
+        # pieces = game_string.split()
+        # if len(pieces) == 2:
+        #     group = pieces[0]
+        #     name = pieces[1]
+        #     #import pdb; pdb.set_trace()
+        #     for team in teams:
+        #         #import pdb; pdb.set_trace()
+        #         if group == "MM" or group == "MW":
+        #             if teams[team]['short_name'] == name and teams[team]['div'] == group:
+        #                 game_string = "T%s" % team
+        #         elif group == "MA" or group == "MB":
+        #             if teams[team]['short_name'] == name and teams[team]['div'] == "M":
+        #                 game_string = "T%s" % team
+        #         elif group == "WA" or group == "WB":
+        #             if teams[team]['short_name'] == name and teams[team]['div'] == "W":
+        #                 game_string = "T%s" % team
+        #         else:
+        #             print "Unknown group? %s " % group
+        #     if not re.match(r"T[\d+]", game_string):
+        #         import pdb; pdb.set_trace()
+        #     return game_string
+        # else:
+        #     print "Not sure what happened: %s" % pieces
+
+        team_id = self.__findTeam(game_string, teams)
+        if team_id:
+            return   "T%s" % team_id
+
+        # maybe seed notation like A5, B3
+        m = re.match(r"^(\w)(\d+)$", game_string)
+        if m:
+            group = m.group(1)
+            rank = m.group(2)
+            if group == "A":
+                group = "G1"
+            elif group == "B":
+                group = "G2"
+
+            return "S%s%s" % (group, rank)
 
         #import pdb; pdb.set_trace()
         return game_string
+
+    def __findTeam(self, team_name, teams_dict):
+        team_id = None
+        for id, team in teams_dict.items():
+            if team['short_name'] == team_name or team['name'] == team_name:
+                team_id = id
+                break
+
+        return team_id
 
     def __importTeams(self, tid, teams_file=None):
         team_file = os.path.join(self.src_folder, "teams.csv")
@@ -244,10 +267,12 @@ class Import(object):
             teams = csv.DictReader(f)
             for row in teams:
                 team_id = row['team_id']
+                flag_file = None
                 flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
-                # worlds hack, delete me!!
-                team_name = "%s %s" % (row['div'], row['name'])
 
+                # worlds hack, delete me!!
+                #team_name = "%s %s" % (row['div'], row['name'])
+                team_name = row['name']
                 teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
 
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
@@ -288,7 +313,7 @@ class Import(object):
                                       (tid, row['group_id'], row['name']))
                 self.db.commit()
 
-    def __importPods(self, tid, pods_file=None):
+    def __importPods(self, tid, pods_file=None, teams=None):
         pods_file = os.path.join(self.src_folder, "pods.csv")
         if not os.path.isfile(pods_file):
             return None
@@ -302,7 +327,14 @@ class Import(object):
             for row in pods:
                 cur = self.db.execute("INSERT INTO pods(tid, team_id, pod) VALUES(?,?,?)",
                                       (tid, row['team_id'], row['pod']))
+                if teams:
+                    team_id = row['team_id']
+                    pod = row['pod']
+                    teams[team_id]['pod'] = pod
+
                 self.db.commit()
+
+        return teams
 
     def __importParams(self, tid, params_file=None):
         params_file = os.path.join(self.src_folder, "params.cfg")
