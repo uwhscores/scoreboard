@@ -159,7 +159,19 @@ class Import(object):
                     div = row['div']
                     pod = row['pod']
 
-                date = datetime.strptime(row['date'], '%m/%d/%y')
+                date = None
+                try: 
+                    date = datetime.strptime(row['date'], '%m/%d/%Y')
+                except ValueError:
+                    pass 
+
+                if not date:
+                    try:
+                        date = datetime.strptime(row['date'], '%m/%d/%y')
+                    except ValueError:
+                        print("Couldn't convert date with either attempt")
+                        sys.exit(1)
+
                 if re.match(r"^\d\d:\d\d$", row['time']):
                     time = datetime.strptime(row['time'], '%H:%M')
                 elif re.match(r"^\d\d:\d\d:\d\d$", row['time']):
@@ -268,7 +280,7 @@ class Import(object):
             for row in teams:
                 team_id = row['team_id']
                 flag_file = None
-                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
+                #flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
                 # worlds hack, delete me!!
                 #team_name = "%s %s" % (row['div'], row['name'])

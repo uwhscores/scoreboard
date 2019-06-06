@@ -1405,7 +1405,7 @@ class Tournament(object):
 
         pod_matrix = params.getParam('seeded_pod_matrix')
         if not pod_matrix:
-            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matix param, that's an issue")
+            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matrix param, that's an issue")
             return None
 
         try:
@@ -1436,11 +1436,24 @@ class Tournament(object):
         if not all(has_tie is False for has_tie in ties):
             return 0
 
+        if "DirectRules" in pod_matrix:
+            # Need to verify that any direct mapping rule games are done
+            for rule in pod_matrix["DirectRules"]:
+                app.logger.debug("Checking directrule: %s" % rule)
+                match = re.search(r"^[W|L](\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getWinner(gid)
+                    app.logger.debug("Team ID for winner game: %s= %s" % (gid, team_id))
+                    if team_id < 1:
+                        return 0
+
         app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
 
         db = self.db
 
         for pod in round1:
+            # check if its really a pod
             podStandings = self.getStandings(None, pod)
 
             rules = pod_matrix[pod]
@@ -1448,17 +1461,45 @@ class Tournament(object):
 
             for rank in podStandings:
                 app.logger.debug("Offset = %s" % offset)
+                new_pod = rules[offset]
+                if not new_pod:
+                    # Spot in JSON is "None", used when a seed is determened with extra logic like a crossover game
+                    offset += 1
+                    continue
                 team = rank.team
                 team_id = team.team_id
-                new_pod = rules[offset]
                 cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)", (self.tid, team_id, new_pod))
                 db.commit()
                 # cur = db.execute("UPDATE teams SET division=? WHERE team_id=? and tid=?",(pod, team_id, app.config['TID']))
                 # db.commit()
                 offset += 1
 
-            # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
-            params.updateParam('seeded_pods', 1)
+        if "DirectRules" in pod_matrix:
+            # direct placement rules, directionary of key pairs liks  {"W23": "A", "L23": "B"} indicating that the Winnder of game 23
+            # goes to the A pod and the loser goes to the B pod
+            for rule, new_pod in pod_matrix["DirectRules"].iteritems():
+                # parse the game
+                team_id = None
+
+                match = re.search(r"^W(\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getWinner(gid)
+
+                # Loser of
+                match = re.search(r"^L(\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getLoser(gid)
+
+                if team_id > 0:
+                    db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)", (self.tid, team_id, new_pod))
+                    db.commit()
+                else:
+                    app.logger.debug("Didn't find a team while parting a direct rule, bad")
+
+        # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
+        params.updateParam('seeded_pods', 1)
 
         return True
 
