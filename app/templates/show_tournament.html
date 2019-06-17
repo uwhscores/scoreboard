@@ -119,7 +119,8 @@
 								<td>
 								<span class="game-line">Pool: {{ game.pool }}</span>
 								{% if game.pod_color and game.pod -%}
-									Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
+									<!-- Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span> -->
+									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.pod %}
 									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.type == "CO" %}

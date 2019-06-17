@@ -508,6 +508,17 @@ class Tournament(object):
         else:
             return False
 
+    def getGroupColor(self, group_id):
+        """ gets an HTML color code for the group if its part of the group table """
+        db = self.db
+        cur = db.execute("SELECT group_color FROM groups where group_id = ? AND tid=?", (group_id, self.tid))
+        row = cur.fetchone()
+
+        if row:
+            return row[0]
+        else:
+            return None
+
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """

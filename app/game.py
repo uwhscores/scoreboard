@@ -32,7 +32,9 @@ class Game(object):
         self.description = description
 
         # functionality existed before refactor, maybe add it back in later
-        self.podColor = None
+        self.pod_color = None
+        if self.pod:
+            self.pod_color = tournament.getGroupColor(pod)
 
         # pull the record from the scores table, if it exists use that data to fill in the game
         db = tournament.db

@@ -24,6 +24,7 @@ class Import(object):
 
         # self.tid = self.__findTD()
         self.src_folder = None
+        self.tid = None
 
     def setSource(self, src_folder):
         self.src_folder = src_folder
@@ -33,6 +34,7 @@ class Import(object):
             src_folder = self.src_folder
 
         tid = self.__findTID(src_folder)
+        self.tid = tid
         if not tid:
             raise Exception("Unable to locate TID")
 
@@ -149,7 +151,14 @@ class Import(object):
                     row['time'] = "0%s" % row['time']
 
                 white = self.__processGame(row['white'], teams)
+                if not white:
+                    print("Cannot parse white: %s for game %s" % (row['white'], row['gid']))
+                    sys.exit(1)
+
                 black = self.__processGame(row['black'], teams)
+                if not black:
+                    print("Cannot parse black: %s for game %s" % (row['black'], row['gid']))
+                    sys.exit(1)
 
                 if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
                     white_id = white.split("T")[1]
@@ -160,10 +169,10 @@ class Import(object):
                     pod = row['pod']
 
                 date = None
-                try: 
+                try:
                     date = datetime.strptime(row['date'], '%m/%d/%Y')
                 except ValueError:
-                    pass 
+                    pass
 
                 if not date:
                     try:
@@ -191,17 +200,23 @@ class Import(object):
 
         orig_string = game_string
 
-        m = re.match("^(\w+)\s*Seed\s*(\d+)", game_string)
+        m = re.match("^(\w+)\s*[sS]eed\s*(\d+)", game_string)
         if m:
-            return "S%s%s" % (m.group(1), m.group(2))
+            pod = m.group(1)
+            pod = pod[:1] # nations 2019, you should remove this
+            seed = m.group(2)
+            return "S%s%s" % (pod, seed)
 
         m = re.match("^[l|L].*?(\d+)", game_string)
         if m:
-            return "L%s" % m.group(1)
+            game_string = "L%s" % m.group(1)
+            return game_string
 
         m = re.match("^[w|W].*?(\d+)", game_string)
         if m:
-            return "W%s" % m.group(1)
+            game_string = "W%s" % m.group(1)
+            return game_string
+
 
         # worlds logic, just keeping around cause
         # pieces = game_string.split()
@@ -231,7 +246,8 @@ class Import(object):
         team_id = self.__findTeam(game_string, teams)
         if team_id:
             return   "T%s" % team_id
-
+        else:
+            return None
         # maybe seed notation like A5, B3
         m = re.match(r"^(\w)(\d+)$", game_string)
         if m:
@@ -246,6 +262,15 @@ class Import(object):
 
         #import pdb; pdb.set_trace()
         return game_string
+
+    def __isUnique(self, game_string):
+        """ Tests if a team assignement already exists in the schedule, mostly for like W## or L## """
+        cur = self.db.execute("SELECT gid FROM games WHERE tid=? AND (white = ? or black = ?)", (self.tid, game_string, game_string))
+        game_id = cur.fetchone()
+        if game_id:
+            return False
+        else:
+            return True
 
     def __findTeam(self, team_name, teams_dict):
         team_id = None
@@ -321,8 +346,13 @@ class Import(object):
         with open(groups_file, 'rb') as f:
             groups = csv.DictReader(f)
             for row in groups:
-                cur = self.db.execute("INSERT INTO groups(tid,group_id,name) VALUES(?,?,?)",
-                                      (tid, row['group_id'], row['name']))
+                if 'group_color' in row:
+                    group_color = row['group_color']
+                else:
+                    group_color = None
+
+                cur = self.db.execute("INSERT INTO groups(tid,group_id,name,group_color) VALUES(?,?,?,?)",
+                                      (tid, row['group_id'], row['name'], group_color))
                 self.db.commit()
 
     def __importPods(self, tid, pods_file=None, teams=None):
