@@ -351,8 +351,13 @@ class Import(object):
                 else:
                     group_color = None
 
-                cur = self.db.execute("INSERT INTO groups(tid,group_id,name,group_color) VALUES(?,?,?,?)",
-                                      (tid, row['group_id'], row['name'], group_color))
+                if 'pod_round' in row:
+                    pod_round = row['pod_round']
+                else:
+                    pod_round = None
+
+                cur = self.db.execute("INSERT INTO groups(tid,group_id,name,group_color, pod_round) VALUES(?,?,?,?,?)",
+                                      (tid, row['group_id'], row['name'], group_color, pod_round))
                 self.db.commit()
 
     def __importPods(self, tid, pods_file=None, teams=None):

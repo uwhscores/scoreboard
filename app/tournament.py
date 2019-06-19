@@ -519,6 +519,19 @@ class Tournament(object):
         else:
             return None
 
+    def getGroupRound(self, pod):
+        """ Gets a round number for the pod if its set, used for sorting pods by round """
+        db = self.db
+        cur = db.execute("SELECT pod_round FROM groups WHERE group_id = ? AND tid = ?", (pod, self.tid))
+
+        row = cur.fetchone()
+
+        if row:
+            return row[0]
+        else:
+            return None
+
+
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
@@ -1188,14 +1201,24 @@ class Tournament(object):
             else:
                 div_name = entry.div
 
-            if pod_name and pod_name == div_name:
-                group_name = pod_name
-            elif pod_name and not div_name:
-                group_name = pod_name
+            group_round = self.getGroupRound(entry.pod)
+
+            if pod_name == div_name:
+                div_name = None
+
+
+            if group_round and div_name and pod_name:
+                group_name = "Round %s: %s - %s" % (group_round, div_name, pod_name)
+            elif group_round and div_name:
+                group_name = "Round %s: %s" % (group_round, div_name)
+            elif group_round and pod_name:
+                group_name = "Round %s: %s" % (group_round, pod_name)
             elif div_name and pod_name:
                 group_name = "%s - %s" % (div_name, pod_name)
-            elif div_name and not pod_name:
+            elif div_name:
                 group_name = div_name
+            elif pod_name:
+                group_name = pod_name
             else:
                 group_name = "Standings"
 

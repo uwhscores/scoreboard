@@ -73,6 +73,7 @@ CREATE TABLE groups(
 	group_id text NOT NULL,
 	name text NOT NULL,
 	group_color text,
+	pod_round integer,
 	PRIMARY KEY(tid, group_id)
 );
 
