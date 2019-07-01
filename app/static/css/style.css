@@ -10,6 +10,9 @@
 	color: gray;
 }
 
+.tournament_banner {
+	max-width: 100%;
+}
 #dayPager {
 	margin: 0px;
 }

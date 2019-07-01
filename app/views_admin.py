@@ -7,7 +7,7 @@ from flask import request, redirect, render_template, flash
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 # from flask.ext.login import UserMixin
 # from functions import *
-from functions import getTournamets, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
+from functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -27,7 +27,7 @@ def load_user(user_id):
 @app.route("/admin")
 @login_required
 def renderAdmin():
-    ts = getTournamets()
+    ts = getTournaments()
     tournaments = []
     for t in ts:
         if ts[t].is_active:
@@ -578,7 +578,7 @@ def renderUserManager(user_id):
         flash("Unknown User")
         return redirect("/admin/users")
 
-    ts = getTournamets()
+    ts = getTournaments()
     tournaments = []
     for t in ts:
         if ts[t].is_active:

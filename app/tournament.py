@@ -62,9 +62,13 @@ class Tournament(object):
         if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
+        self.banner = None
+        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "banner.png")):
+            self.banner = os.path.join("static/flags", self.short_name, "banner.png")
+
     def __repr__(self):
         """ String reper only really used for log and debug """
-        return "{} - {} - {}".format(self.name, self.start_date, self.location)
+        return "{} - {} - {}".format(self.name, self.start_date, self.location.encode('utf8'))
 
     def __cmp__(self, other):
         """ sort compare based on start_date """

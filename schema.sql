@@ -58,7 +58,7 @@ CREATE TABLE rankings(
 		tid INTEGER NOT NULL,
 		place text NOT NULL,
 		game text,
-		division text,
+		division text
 );
 
 

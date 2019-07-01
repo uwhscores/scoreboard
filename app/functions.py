@@ -35,11 +35,34 @@ def closeDB(error):
         g.sqlite_db.close()
 
 
-def getTournamets():
+def getTournaments(filter=None):
     """ get dictionary of tournament objects indexed by tournament ID """
     db = getDB()
 
-    cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments ORDER BY start_date DESC")
+    if filter == "past":
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE end_date < date('now') ORDER BY start_date DESC")
+    elif filter == "future":
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE start_date > date('now', '+1 day') ORDER BY start_date DESC")
+    elif filter == "live":
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE start_date <= date('now','+1 day') AND end_date > date('now') ORDER BY start_date DESC")
+    else:
+        # all
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments ORDER BY start_date DESC")
+    rows = cur.fetchall()
+
+    tournaments = {}
+    for t in rows:
+        tournaments[t['tid']] = (Tournament(t['tid'], t['name'], t['short_name'], t['start_date'], t['end_date'], t['location'], t['active'], db))
+
+    return tournaments
+
+
+def getTournamentsPast():
+    """ get all tournaments that are past their end date """
+    db = getDB()
+
+    cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE end_date < date('now') ORDER BY start_date DESC")
+
     rows = cur.fetchall()
 
     tournaments = {}
