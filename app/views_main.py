@@ -40,7 +40,7 @@ def renderTourament(short_name):
 
     games = t.getGames()
     if not games or len(games) == 0:
-        return render_template('coming_soon.html', tournament=t)
+        return render_template('show_coming_soon.html', tournament=t)
 
     divisions = t.getDivisionNames()
     team_list = t.getTeams()
