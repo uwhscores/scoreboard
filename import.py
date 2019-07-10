@@ -44,12 +44,15 @@ class Import(object):
         self.src_folder = src_folder
 
         teams = self.__importTeams(tid)
-        teams = self.__importPods(tid, teams=teams)
-        self.__importSchedule(tid, teams=teams)
+        teams_pods = self.__importPods(tid, teams=teams)
+        if teams_pods:
+            self.__importSchedule(tid, teams=teams_pods)
+        else:
+            self.__importSchedule(tid, teams=teams)
         self.__importGroups(tid)
         self.__importRankings(tid)
         self.__importParams(tid)
-        self.__importRosters(tid)
+        self.__importRosters(tid, teams=teams)
 
     def __findTID(self, src_folder):
         tid = None
@@ -150,12 +153,12 @@ class Import(object):
                 if re.match('^\d\:\d\d', row['time']) is not None:
                     row['time'] = "0%s" % row['time']
 
-                white = self.__processGame(row['white'], teams)
+                white = self.__processGame(row['white'], teams, row['div'])
                 if not white:
                     print("Cannot parse white: %s for game %s" % (row['white'], row['gid']))
                     sys.exit(1)
 
-                black = self.__processGame(row['black'], teams)
+                black = self.__processGame(row['black'], teams, row['div'])
                 if not black:
                     print("Cannot parse black: %s for game %s" % (row['black'], row['gid']))
                     sys.exit(1)
@@ -163,7 +166,10 @@ class Import(object):
                 if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
                     white_id = white.split("T")[1]
                     div = teams[white_id]['div']
-                    pod = teams[white_id]['pod']
+                    if 'pod' in teams[white_id]:
+                        pod = teams[white_id]['pod']
+                    else:
+                        pod = None
                 else:
                     div = row['div']
                     pod = row['pod']
@@ -196,7 +202,7 @@ class Import(object):
                                       (tid, gid, row['day'], start_time, row['pool'], black, white, div, pod, row['type'], row['desc']))
                 self.db.commit()
 
-    def __processGame(self, game_string, teams=None):
+    def __processGame(self, game_string, teams=None, division=None):
 
         orig_string = game_string
 
@@ -243,6 +249,7 @@ class Import(object):
         # else:
         #     print "Not sure what happened: %s" % pieces
 
+        game_string = division + " " + game_string
         team_id = self.__findTeam(game_string, teams)
         if team_id:
             return   "T%s" % team_id
@@ -272,7 +279,7 @@ class Import(object):
         else:
             return True
 
-    def __findTeam(self, team_name, teams_dict):
+    def __findTeam(self, team_name, teams_dict, division=None):
         team_id = None
         for id, team in teams_dict.items():
             if team['short_name'] == team_name or team['name'] == team_name:
@@ -305,7 +312,7 @@ class Import(object):
             for row in teams:
                 team_id = row['team_id']
                 flag_file = None
-                #flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
+                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
                 # worlds hack, delete me!!
                 #team_name = "%s %s" % (row['div'], row['name'])
@@ -398,7 +405,7 @@ class Import(object):
                                   (tid, p[0], p[1]))
             self.db.commit()
 
-    def __importRosters(self, tid, roster_file=None):
+    def __importRosters(self, tid, roster_file=None, teams=None):
         if not roster_file:
             roster_file = os.path.join(self.src_folder, "rosters.csv")
         if not os.path.isfile(roster_file):
@@ -410,7 +417,22 @@ class Import(object):
 
         with open(roster_file, 'rb') as f:
             rosters = csv.DictReader(f)
+            team_name = None
+            team_id = None
             for row in rosters:
+                if row['team']:
+                    team_name = row['team']
+                    team_id = self.__findTeam(team_name, teams)
+                    if not team_id:
+                        raise(Exception("Couldn't parse team name %s" % team_name))
+
+                if not 'player_name' in row or not row['player_name']:
+                    continue
+
+                if not team_id:
+                    print("I forgot me team")
+                    raise(Exception("I sucks"))
+
                 player_name = row['player_name'].strip()
                 # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
                 # player_name = ''.join([x for x in player_name if ord(x) < 128])
@@ -418,6 +440,11 @@ class Import(object):
                 last_name = name_parts[-1]
                 first_name = " ".join(name_parts[:-1])
                 player_name = "%s, %s" % (last_name, first_name)
+                try:
+                    player_name = player_name.decode("utf-8")
+                except UnicodeDecodeError as e:
+                    import pdb; pdb.set_trace()
+                    raise(e)
                 # import pdb; pdb.set_trace()
                 cur = self.db.execute("SELECT player_id FROM players WHERE display_name=?", (player_name,))
                 player = cur.fetchone()
@@ -440,11 +467,18 @@ class Import(object):
                 if re.match(r"\d+", row['cap_number']):
                     cap_number = row['cap_number']
 
+                is_coach = False
+                coach_title = None
+                if 'designation' in row and row['designation']:
+                    designation = row['designation']
+                    if designation == "coach" or designation == "Coach":
+                        is_coach = True
+                        coach_title = "Coach"
                 try:
-                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], cap_number))
+                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number, is_coach, coach_title) VALUES (?,?,?,?,?,?)", (tid, player_id, team_id, cap_number, is_coach, coach_title))
                     self.db.commit()
                 except sqlite3.IntegrityError as e:
-                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, row['team_id'], cap_number)
+                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, team_id, cap_number)
                     sys.exit(1)
 
     def __genID(self):
