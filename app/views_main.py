@@ -100,13 +100,15 @@ def renderTDiv(short_name, div):
 
     grouped_standings = t.splitStandingsByGroup(standings)
 
+    placings = t.getPlacings(div=div)
+
     division_name = t.expandGroupAbbr(div)
     if division_name is None:
         division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
-                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name)
+                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name, placings=placings)
 
 
 @app.route('/t/<short_name>/pod/<pod>')
