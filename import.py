@@ -43,16 +43,16 @@ class Import(object):
 
         self.src_folder = src_folder
 
-        teams = self.__importTeams(tid)
-        teams_pods = self.__importPods(tid, teams=teams)
-        if teams_pods:
-            self.__importSchedule(tid, teams=teams_pods)
-        else:
-            self.__importSchedule(tid, teams=teams)
-        self.__importGroups(tid)
+        #teams = self.__importTeams(tid)
+        #teams_pods = self.__importPods(tid, teams=teams)
+        #if teams_pods:
+        #    self.__importSchedule(tid, teams=teams_pods)
+        #else:
+        #    self.__importSchedule(tid, teams=teams)
+        #self.__importGroups(tid)
         self.__importRankings(tid)
-        self.__importParams(tid)
-        self.__importRosters(tid, teams=teams)
+        #self.__importParams(tid)
+        #self.__importRosters(tid, teams=teams)
 
     def __findTID(self, src_folder):
         tid = None
@@ -75,7 +75,7 @@ class Import(object):
             short_name = t_config.get("tournament", "short_name")
             start_date = t_config.get("tournament", "start_date")
             end_date = t_config.get("tournament", "end_date")
-            location = t_config.get("tournament", "location")
+            location = t_config.get("tournament", "location").decode("utf-8")
 
             if not name or not short_name or not start_date or not end_date or not location:
                 raise Exception("Tournaments cfg missing reuqired field")
@@ -436,10 +436,10 @@ class Import(object):
                 player_name = row['player_name'].strip()
                 # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
                 # player_name = ''.join([x for x in player_name if ord(x) < 128])
-                name_parts = player_name.split(" ")
-                last_name = name_parts[-1]
-                first_name = " ".join(name_parts[:-1])
-                player_name = "%s, %s" % (last_name, first_name)
+                # name_parts = player_name.split(" ")
+                # last_name = name_parts[-1]
+                # first_name = " ".join(name_parts[:-1])
+                # player_name = "%s, %s" % (last_name, first_name)
                 try:
                     player_name = player_name.decode("utf-8")
                 except UnicodeDecodeError as e:
@@ -457,7 +457,7 @@ class Import(object):
                         if exists:
                             player_id = None
 
-                    self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (player_id, player_name))
+                    self.db.execute("INSERT INTO players (player_id, display_name, date_created) VALUES (?,?,datetime('now'))", (player_id, player_name))
                     self.db.commit()
 
                 else:
