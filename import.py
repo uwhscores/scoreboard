@@ -6,6 +6,7 @@
 import os
 import sys
 import sqlite3
+import string
 import csv
 import re
 from datetime import datetime
@@ -43,16 +44,16 @@ class Import(object):
 
         self.src_folder = src_folder
 
-        #teams = self.__importTeams(tid)
-        #teams_pods = self.__importPods(tid, teams=teams)
-        #if teams_pods:
-        #    self.__importSchedule(tid, teams=teams_pods)
-        #else:
-        #    self.__importSchedule(tid, teams=teams)
-        #self.__importGroups(tid)
+        teams = self.__importTeams(tid)
+        teams_pods = self.__importPods(tid, teams=teams)
+        if teams_pods:
+           self.__importSchedule(tid, teams=teams_pods)
+        else:
+           self.__importSchedule(tid, teams=teams)
+        self.__importGroups(tid)
         self.__importRankings(tid)
-        #self.__importParams(tid)
-        #self.__importRosters(tid, teams=teams)
+        self.__importParams(tid)
+        self.__importRosters(tid, teams=teams)
 
     def __findTID(self, src_folder):
         tid = None
@@ -203,7 +204,6 @@ class Import(object):
                 self.db.commit()
 
     def __processGame(self, game_string, teams=None, division=None):
-
         orig_string = game_string
 
         m = re.match("^(\w+)\s*[sS]eed\s*(\d+)", game_string)
@@ -249,21 +249,16 @@ class Import(object):
         # else:
         #     print "Not sure what happened: %s" % pieces
 
-        game_string = division + " " + game_string
+        # game_string = division + " " + game_string
         team_id = self.__findTeam(game_string, teams)
         if team_id:
             return   "T%s" % team_id
-        else:
-            return None
-        # maybe seed notation like A5, B3
-        m = re.match(r"^(\w)(\d+)$", game_string)
+
+        # Seed notation "group #"
+        m = re.match(r"^(\w+)\s(\d+)$", game_string)
         if m:
             group = m.group(1)
             rank = m.group(2)
-            if group == "A":
-                group = "G1"
-            elif group == "B":
-                group = "G2"
 
             return "S%s%s" % (group, rank)
 
@@ -312,12 +307,15 @@ class Import(object):
             for row in teams:
                 team_id = row['team_id']
                 flag_file = None
-                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
                 # worlds hack, delete me!!
                 #team_name = "%s %s" % (row['div'], row['name'])
                 team_name = row['name']
                 teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
+
+                country = string.join(team_name.split(" ")[1:], " ")
+                country = country.lower().replace(" ", "_")
+                flag_file = "/static/flags/%s/%s.png" % (short_name, country)
 
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
                                       (tid, row['team_id'], team_name, row['short_name'], row['div'], flag_file))
