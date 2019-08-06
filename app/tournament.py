@@ -572,8 +572,9 @@ class Tournament(object):
             style = ""
             div = r['division']
             place = r['place']
-            if re.findall(r"\d+", place):
-                place = re.findall(r"\d+", place)[0]
+            match = re.match(r"^\w+?(\d+)$", place)
+            if match:
+                place = match.group(1)
             game = r['game']
 
             team_id = 0

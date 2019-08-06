@@ -185,11 +185,12 @@ class Game(object):
 
         # Seed notation - Division or Pod
         # match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
-        match = re.search(r"^S(\d\w|\w+)(\d+)$", game_notation)
+        match = re.search(r"^S(\d\w?|\w+?)(\d+)$", game_notation)
         if match:
             group_abriviation = match.group(1)
             seed = match.group(2)
             # app.logger.debug("Matching pod or division - %s" % group)
+            #app.logger.debug("Seed notation: group= %s, seed= %s" % (group_abriviation, seed))
 
             if group_abriviation in t.getPods():
                 team_id = t.getSeed(seed, None, group_abriviation)
