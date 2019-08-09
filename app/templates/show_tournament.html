@@ -281,22 +281,25 @@
 						{% endfor -%}
 					</tbody>
 				</table>
+				{%- if team_info.coaches %}
 				<table id=coaches_tbl class="table table-striped">
 					<thead>
 						<tr>
-							<th>Coaches</th>
+							<th>Coaches and Staff</th>
 						</tr>
 					</thead>
 					<tbody>
-						{%- if team_info.coaches %}
 						{%- for coach in team_info.coaches|sort %}
 						<tr>
 							<td>{{ coach.name }}</td>
+							{% if coach.title %}
+							<td>{{ coach.title }}</td>
+							{% endif %}
 						</tr>
 						{% endfor -%}
-						{%- endif %}
 					</tbody>
 				</table>
+				{%- endif %}
 			</div>
 			{%- endif %}
 	</div> <!-- tabContent -->
