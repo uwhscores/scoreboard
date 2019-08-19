@@ -907,7 +907,10 @@ class Tournament(object):
 
         ONLY USE WHEN COMPARING TWO TEAMS DIRECTLY, DO NOT USE TO SORT TEAMS """
         # app.logger.debug("in cmpTeams between %s and %s for pod %s" % (team_a, team_b, pod))
-        if team_a.pod != team_b.pod and team_a.division.lower() != team_b.division.lower():
+        if not team_a.pod and team_a.division.lower() != team_b.division.lower():
+            # no pods and not in same division
+            return self.divToInt(team_a.division) - self.divToInt(team_b.division)
+        elif team_a.pod != team_b.pod and team_a.division.lower() != team_b.division.lower():
             # app.logger.debug("not same division")
             return self.divToInt(team_a.division) - self.divToInt(team_b.division)
         elif team_a.pod != team_b.pod:
@@ -941,9 +944,8 @@ class Tournament(object):
 
     def cmpTeamsSort(self, team_b, team_a):
         """ Compares teams without including head-to-head, required for sorting sets of three or more teams """
-        if team_a.pod != team_b.pod:
-            if team_a.division.lower() != team_b.division.lower():
-                return self.divToInt(team_a.division) - self.divToInt(team_b.division)
+        if team_a.division.lower() != team_b.division.lower():
+            return self.divToInt(team_a.division) - self.divToInt(team_b.division)
         elif team_a.wins != team_b.wins:
             return team_a.wins - team_b.wins
         elif team_a.losses != team_b.losses:
