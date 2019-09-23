@@ -28,7 +28,13 @@ class Stats(object):
         else:
             self.flag_url = None
 
-        self.pod = pod
+        if pod:
+            self.pod = pod
+            no_pod = False
+        else:
+            self.pod = team['division']
+            pod = team['division']
+            no_pod = True
 
         # stats
         self.points = 0
@@ -55,6 +61,9 @@ class Stats(object):
             game_pod = None
             if game['pod']:
                 game_pod = game['pod']
+            elif re.match(r"RR", game['type']):
+                app.logger.debug("RR game and no pod using divisoin")
+                game_pod = self.pod
 
             if game['type'] and not re.match(r"^RR.*", game['type']):
                 game_pod = None
@@ -119,7 +128,7 @@ class Stats(object):
             if game['type'] and not re.match(r"^RR.*", game['type']):
                 continue
 
-            if pod and game['pod'] != pod:
+            if not no_pod and pod and game['pod'] != pod:
                 continue
 
             if white_tid == team_id:

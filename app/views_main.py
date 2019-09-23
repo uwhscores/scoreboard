@@ -1,19 +1,27 @@
 from app import app
 from flask import request, redirect, render_template, flash
-from functions import getTournamets, getTournamentByID, getTournamentID
+from functions import getTournaments, getTournamentByID, getTournamentID
 import re
 
 @app.route('/')
 def renderHome():
-    ts = getTournamets()
-    tournaments = []
+    ts_p = getTournaments(filter="past")
+    past_tournaments = []
 
-    for t in ts:
-        tournaments.append(ts[t])
+    for t in ts_p:
+        past_tournaments.append(ts_p[t])
 
-    tournaments = sorted(tournaments)
+    ts_f = getTournaments(filter="future")
+    future_tournaments = []
+    for t in ts_f:
+        future_tournaments.append(ts_f[t])
 
-    return render_template('show_home.html', tournaments=tournaments)
+    ts_live = getTournaments(filter="live")
+    live_tournaments = []
+    for t in ts_live:
+        live_tournaments.append(ts_live[t])
+
+    return render_template('show_home.html', past_tournaments=past_tournaments, future_tournaments=future_tournaments, live_tournaments=live_tournaments)
 
 
 @app.route('/t/<short_name>')
@@ -31,6 +39,9 @@ def renderTourament(short_name):
         return render_template('site_down.html', message=message)
 
     games = t.getGames()
+    if not games or len(games) == 0:
+        return render_template('show_coming_soon.html', tournament=t)
+
     divisions = t.getDivisionNames()
     team_list = t.getTeams()
 
@@ -89,13 +100,15 @@ def renderTDiv(short_name, div):
 
     grouped_standings = t.splitStandingsByGroup(standings)
 
+    placings = t.getPlacings(div=div)
+
     division_name = t.expandGroupAbbr(div)
     if division_name is None:
         division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
-                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name)
+                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name, placings=placings)
 
 
 @app.route('/t/<short_name>/pod/<pod>')

@@ -1,4 +1,4 @@
-{% extends "tv_layout.html" %}
+{% extends "print_layout.html" %}
 
 {% block tabs %}
 <div id="page_body" class="container" style="margin-left:2em">
@@ -31,7 +31,7 @@
 					<td>{{ game.day }} {{ game.start_time }}</td>
 					<td>{{ game.pool }}</td>
 					{% if game.pod_color %}
-						<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
+						<td style="background-color:{{ game.pod_color }} !important">{{ game.pod }}</td>
 					{% else %}
 						<td>{{ game.pod }} </td>
 					{% endif %}

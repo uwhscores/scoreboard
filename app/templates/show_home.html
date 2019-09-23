@@ -13,9 +13,25 @@
 					<div class="page-header tournament-header">
 						<h1 class="tournament-title">UWHScores Home</h1>
 						<p class=lead>
-							Welcome to UWHScores.com, the source for major US underwater hockey tournament schedules, scores and standings.
+							Welcome to UWHScores.com, the source for underwater hockey tournament schedules, scores and standings.
 						<p>
 					</div>
+					{% if live_tournaments -%}
+					<div class="panel panel-default">
+					  <div class="panel-heading">
+					    <h3 class="panel-title">Tournaments In Progress</h3>
+					  </div>
+						{% for t in live_tournaments %}
+					  <div class="panel-body">
+							{% if t.banner %}
+							<a href="/t/{{t.short_name}}"><img class=tournament_banner src="/{{t.banner}}"></a>
+							{% endif %}
+							<h4><a href="/t/{{t.short_name}}">{{t.name}} <i class="fa fa-chevron-right"></i></a></h4>
+							<strong>{{ t.location }}, {{ t.date_string}}</strong>
+					  </div>
+						{% endfor %}
+					</div>
+					{%- endif %}
 					<p>
 						UWHScores.com provides a source for both players and tournament organizers to get valuable information about tournaments
 						as they happen. Players can follow their teams schedule, which is updated continuously throughout the tournament, and standings.
@@ -79,10 +95,29 @@
 		<!-- side bar -->
 		<div class="col-md-4">
 			<div class="well">
-				<h3>Tournaments</h3>
+				{% if future_tournaments -%}
+				<h3>Upcoming Tournaments</h3>
 				<div class="list-group">
-					{% for t in tournaments -%}
-						<a href="/t/{{t.short_name}}" class="list-group-item"><h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}</a>
+					{% for t in future_tournaments|sort -%}
+						<a href="/t/{{t.short_name}}" class="list-group-item">
+							{% if t.banner %}
+							<img class=tournament_banner  src=/{{t.banner}}>
+							{% endif %}
+							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
+						</a>
+					{% endfor %}
+				</div>
+				{%- endif %}
+
+				<h3>Past Tournaments</h3>
+				<div class="list-group">
+					{% for t in past_tournaments|sort -%}
+						<a href="/t/{{t.short_name}}" class="list-group-item">
+							{% if t.banner %}
+							<img class=tournament_banner  src=/{{t.banner}}>
+							{% endif %}
+							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
+						</a>
 					{% endfor %}
 				</div>
 			</div>

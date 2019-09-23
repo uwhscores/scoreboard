@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block nav %}
+	{% include "nav_bar.html" with context %}
+{% endblock nav %}
+
+{% block main %}
+<div id="page_body" class="container">
+  {% if tournament.banner %}
+    <img class="tournament_banner" src=/{{tournament.banner}}>
+  {% endif %}
+  <div class="jumbotron">
+    <h2 class="tournament-title">{{ tournament.name }}</h2>
+    <h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
+    <p>Tournament details coming soon, please check back later.<p>
+  </div>
+	<ol class="breadcrumb">
+		<li><a href="/"> <i class="fa fa-chevron-left"></i> Home</a></li>
+	</ol>
+</div>
+{% endblock main %}

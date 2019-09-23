@@ -6,6 +6,7 @@
 import os
 import sys
 import sqlite3
+import string
 import csv
 import re
 from datetime import datetime
@@ -24,6 +25,7 @@ class Import(object):
 
         # self.tid = self.__findTD()
         self.src_folder = None
+        self.tid = None
 
     def setSource(self, src_folder):
         self.src_folder = src_folder
@@ -33,6 +35,7 @@ class Import(object):
             src_folder = self.src_folder
 
         tid = self.__findTID(src_folder)
+        self.tid = tid
         if not tid:
             raise Exception("Unable to locate TID")
 
@@ -42,12 +45,15 @@ class Import(object):
         self.src_folder = src_folder
 
         teams = self.__importTeams(tid)
-        teams = self.__importPods(tid, teams=teams)
-        self.__importSchedule(tid, teams=teams)
+        teams_pods = self.__importPods(tid, teams=teams)
+        if teams_pods:
+           self.__importSchedule(tid, teams=teams_pods)
+        else:
+           self.__importSchedule(tid, teams=teams)
         self.__importGroups(tid)
         self.__importRankings(tid)
         self.__importParams(tid)
-        self.__importRosters(tid)
+        self.__importRosters(tid, teams=teams)
 
     def __findTID(self, src_folder):
         tid = None
@@ -70,7 +76,7 @@ class Import(object):
             short_name = t_config.get("tournament", "short_name")
             start_date = t_config.get("tournament", "start_date")
             end_date = t_config.get("tournament", "end_date")
-            location = t_config.get("tournament", "location")
+            location = t_config.get("tournament", "location").decode("utf-8")
 
             if not name or not short_name or not start_date or not end_date or not location:
                 raise Exception("Tournaments cfg missing reuqired field")
@@ -148,18 +154,40 @@ class Import(object):
                 if re.match('^\d\:\d\d', row['time']) is not None:
                     row['time'] = "0%s" % row['time']
 
-                white = self.__processGame(row['white'], teams)
-                black = self.__processGame(row['black'], teams)
+                white = self.__processGame(row['white'], teams, row['div'])
+                if not white:
+                    print("Cannot parse white: %s for game %s" % (row['white'], row['gid']))
+                    sys.exit(1)
+
+                black = self.__processGame(row['black'], teams, row['div'])
+                if not black:
+                    print("Cannot parse black: %s for game %s" % (row['black'], row['gid']))
+                    sys.exit(1)
 
                 if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
                     white_id = white.split("T")[1]
                     div = teams[white_id]['div']
-                    pod = teams[white_id]['pod']
+                    if 'pod' in teams[white_id]:
+                        pod = teams[white_id]['pod']
+                    else:
+                        pod = None
                 else:
                     div = row['div']
                     pod = row['pod']
 
-                date = datetime.strptime(row['date'], '%m/%d/%y')
+                date = None
+                try:
+                    date = datetime.strptime(row['date'], '%m/%d/%Y')
+                except ValueError:
+                    pass
+
+                if not date:
+                    try:
+                        date = datetime.strptime(row['date'], '%m/%d/%y')
+                    except ValueError:
+                        print("Couldn't convert date with either attempt")
+                        sys.exit(1)
+
                 if re.match(r"^\d\d:\d\d$", row['time']):
                     time = datetime.strptime(row['time'], '%H:%M')
                 elif re.match(r"^\d\d:\d\d:\d\d$", row['time']):
@@ -175,21 +203,26 @@ class Import(object):
                                       (tid, gid, row['day'], start_time, row['pool'], black, white, div, pod, row['type'], row['desc']))
                 self.db.commit()
 
-    def __processGame(self, game_string, teams=None):
-
+    def __processGame(self, game_string, teams=None, division=None):
         orig_string = game_string
 
-        m = re.match("^(\w+)\s*Seed\s*(\d+)", game_string)
+        m = re.match("^(\w+)\s*[sS]eed\s*(\d+)", game_string)
         if m:
-            return "S%s%s" % (m.group(1), m.group(2))
+            pod = m.group(1)
+            pod = pod[:1] # nations 2019, you should remove this
+            seed = m.group(2)
+            return "S%s%s" % (pod, seed)
 
         m = re.match("^[l|L].*?(\d+)", game_string)
         if m:
-            return "L%s" % m.group(1)
+            game_string = "L%s" % m.group(1)
+            return game_string
 
         m = re.match("^[w|W].*?(\d+)", game_string)
         if m:
-            return "W%s" % m.group(1)
+            game_string = "W%s" % m.group(1)
+            return game_string
+
 
         # worlds logic, just keeping around cause
         # pieces = game_string.split()
@@ -216,26 +249,32 @@ class Import(object):
         # else:
         #     print "Not sure what happened: %s" % pieces
 
+        # game_string = division + " " + game_string
         team_id = self.__findTeam(game_string, teams)
         if team_id:
             return   "T%s" % team_id
 
-        # maybe seed notation like A5, B3
-        m = re.match(r"^(\w)(\d+)$", game_string)
+        # Seed notation "group #"
+        m = re.match(r"^(\w+)\s(\d+)$", game_string)
         if m:
             group = m.group(1)
             rank = m.group(2)
-            if group == "A":
-                group = "G1"
-            elif group == "B":
-                group = "G2"
 
             return "S%s%s" % (group, rank)
 
         #import pdb; pdb.set_trace()
         return game_string
 
-    def __findTeam(self, team_name, teams_dict):
+    def __isUnique(self, game_string):
+        """ Tests if a team assignement already exists in the schedule, mostly for like W## or L## """
+        cur = self.db.execute("SELECT gid FROM games WHERE tid=? AND (white = ? or black = ?)", (self.tid, game_string, game_string))
+        game_id = cur.fetchone()
+        if game_id:
+            return False
+        else:
+            return True
+
+    def __findTeam(self, team_name, teams_dict, division=None):
         team_id = None
         for id, team in teams_dict.items():
             if team['short_name'] == team_name or team['name'] == team_name:
@@ -268,12 +307,15 @@ class Import(object):
             for row in teams:
                 team_id = row['team_id']
                 flag_file = None
-                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
                 # worlds hack, delete me!!
                 #team_name = "%s %s" % (row['div'], row['name'])
                 team_name = row['name']
                 teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
+
+                country = string.join(team_name.split(" ")[1:], " ")
+                country = country.lower().replace(" ", "_")
+                flag_file = "/static/flags/%s/%s.png" % (short_name, country)
 
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
                                       (tid, row['team_id'], team_name, row['short_name'], row['div'], flag_file))
@@ -309,8 +351,18 @@ class Import(object):
         with open(groups_file, 'rb') as f:
             groups = csv.DictReader(f)
             for row in groups:
-                cur = self.db.execute("INSERT INTO groups(tid,group_id,name) VALUES(?,?,?)",
-                                      (tid, row['group_id'], row['name']))
+                if 'group_color' in row:
+                    group_color = row['group_color']
+                else:
+                    group_color = None
+
+                if 'pod_round' in row:
+                    pod_round = row['pod_round']
+                else:
+                    pod_round = None
+
+                cur = self.db.execute("INSERT INTO groups(tid,group_id,name,group_color, pod_round) VALUES(?,?,?,?,?)",
+                                      (tid, row['group_id'], row['name'], group_color, pod_round))
                 self.db.commit()
 
     def __importPods(self, tid, pods_file=None, teams=None):
@@ -351,7 +403,7 @@ class Import(object):
                                   (tid, p[0], p[1]))
             self.db.commit()
 
-    def __importRosters(self, tid, roster_file=None):
+    def __importRosters(self, tid, roster_file=None, teams=None):
         if not roster_file:
             roster_file = os.path.join(self.src_folder, "rosters.csv")
         if not os.path.isfile(roster_file):
@@ -363,14 +415,34 @@ class Import(object):
 
         with open(roster_file, 'rb') as f:
             rosters = csv.DictReader(f)
+            team_name = None
+            team_id = None
             for row in rosters:
+                if row['team']:
+                    team_name = row['team']
+                    team_id = self.__findTeam(team_name, teams)
+                    if not team_id:
+                        raise(Exception("Couldn't parse team name %s" % team_name))
+
+                if not 'player_name' in row or not row['player_name']:
+                    continue
+
+                if not team_id:
+                    print("I forgot me team")
+                    raise(Exception("I sucks"))
+
                 player_name = row['player_name'].strip()
                 # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
                 # player_name = ''.join([x for x in player_name if ord(x) < 128])
-                name_parts = player_name.split(" ")
-                last_name = name_parts[-1]
-                first_name = " ".join(name_parts[:-1])
-                player_name = "%s, %s" % (last_name, first_name)
+                # name_parts = player_name.split(" ")
+                # last_name = name_parts[-1]
+                # first_name = " ".join(name_parts[:-1])
+                # player_name = "%s, %s" % (last_name, first_name)
+                try:
+                    player_name = player_name.decode("utf-8")
+                except UnicodeDecodeError as e:
+                    import pdb; pdb.set_trace()
+                    raise(e)
                 # import pdb; pdb.set_trace()
                 cur = self.db.execute("SELECT player_id FROM players WHERE display_name=?", (player_name,))
                 player = cur.fetchone()
@@ -383,7 +455,7 @@ class Import(object):
                         if exists:
                             player_id = None
 
-                    self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (player_id, player_name))
+                    self.db.execute("INSERT INTO players (player_id, display_name, date_created) VALUES (?,?,datetime('now'))", (player_id, player_name))
                     self.db.commit()
 
                 else:
@@ -391,13 +463,21 @@ class Import(object):
 
                 cap_number = None
                 if re.match(r"\d+", row['cap_number']):
-                    cap_number = row['cap_number']
+                    if row['cap_number'] > 0:
+                        cap_number = row['cap_number']
 
+                is_coach = False
+                coach_title = None
+                if 'designation' in row and row['designation']:
+                    designation = row['designation']
+                    if designation in ["coach", "Coach", "Manager", "Support Staff"]:
+                        is_coach = True
+                        coach_title = designation
                 try:
-                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number) VALUES (?,?,?,?)", (tid, player_id, row['team_id'], cap_number))
+                    cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number, is_coach, coach_title) VALUES (?,?,?,?,?,?)", (tid, player_id, team_id, cap_number, is_coach, coach_title))
                     self.db.commit()
                 except sqlite3.IntegrityError as e:
-                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, row['team_id'], cap_number)
+                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, team_id, cap_number)
                     sys.exit(1)
 
     def __genID(self):

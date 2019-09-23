@@ -62,9 +62,13 @@ class Tournament(object):
         if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
+        self.banner = None
+        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "banner.png")):
+            self.banner = os.path.join("static/flags", self.short_name, "banner.png")
+
     def __repr__(self):
         """ String reper only really used for log and debug """
-        return "{} - {} - {}".format(self.name, self.start_date, self.location)
+        return "{} - {} - {}".format(self.name, self.start_date, self.location.encode('utf8'))
 
     def __cmp__(self, other):
         """ sort compare based on start_date """
@@ -508,6 +512,30 @@ class Tournament(object):
         else:
             return False
 
+    def getGroupColor(self, group_id):
+        """ gets an HTML color code for the group if its part of the group table """
+        db = self.db
+        cur = db.execute("SELECT group_color FROM groups where group_id = ? AND tid=?", (group_id, self.tid))
+        row = cur.fetchone()
+
+        if row:
+            return row[0]
+        else:
+            return None
+
+    def getGroupRound(self, pod):
+        """ Gets a round number for the pod if its set, used for sorting pods by round """
+        db = self.db
+        cur = db.execute("SELECT pod_round FROM groups WHERE group_id = ? AND tid = ?", (pod, self.tid))
+
+        row = cur.fetchone()
+
+        if row:
+            return row[0]
+        else:
+            return None
+
+
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
@@ -544,8 +572,9 @@ class Tournament(object):
             style = ""
             div = r['division']
             place = r['place']
-            if re.findall(r"\d+", place):
-                place = re.findall(r"\d+", place)[0]
+            match = re.match(r"^\w+?(\d+)$", place)
+            if match:
+                place = match.group(1)
             game = r['game']
 
             team_id = 0
@@ -878,7 +907,10 @@ class Tournament(object):
 
         ONLY USE WHEN COMPARING TWO TEAMS DIRECTLY, DO NOT USE TO SORT TEAMS """
         # app.logger.debug("in cmpTeams between %s and %s for pod %s" % (team_a, team_b, pod))
-        if team_a.pod != team_b.pod and team_a.division.lower() != team_b.division.lower():
+        if not team_a.pod and team_a.division.lower() != team_b.division.lower():
+            # no pods and not in same division
+            return self.divToInt(team_a.division) - self.divToInt(team_b.division)
+        elif team_a.pod != team_b.pod and team_a.division.lower() != team_b.division.lower():
             # app.logger.debug("not same division")
             return self.divToInt(team_a.division) - self.divToInt(team_b.division)
         elif team_a.pod != team_b.pod:
@@ -912,9 +944,8 @@ class Tournament(object):
 
     def cmpTeamsSort(self, team_b, team_a):
         """ Compares teams without including head-to-head, required for sorting sets of three or more teams """
-        if team_a.pod != team_b.pod:
-            if team_a.division.lower() != team_b.division.lower():
-                return self.divToInt(team_a.division) - self.divToInt(team_b.division)
+        if team_a.division.lower() != team_b.division.lower():
+            return self.divToInt(team_a.division) - self.divToInt(team_b.division)
         elif team_a.wins != team_b.wins:
             return team_a.wins - team_b.wins
         elif team_a.losses != team_b.losses:
@@ -1177,14 +1208,24 @@ class Tournament(object):
             else:
                 div_name = entry.div
 
-            if pod_name and pod_name == div_name:
-                group_name = pod_name
-            elif pod_name and not div_name:
-                group_name = pod_name
+            group_round = self.getGroupRound(entry.pod)
+
+            if pod_name == div_name:
+                div_name = None
+
+
+            if group_round and div_name and pod_name:
+                group_name = "Round %s: %s - %s" % (group_round, div_name, pod_name)
+            elif group_round and div_name:
+                group_name = "Round %s: %s" % (group_round, div_name)
+            elif group_round and pod_name:
+                group_name = "Round %s: %s" % (group_round, pod_name)
             elif div_name and pod_name:
                 group_name = "%s - %s" % (div_name, pod_name)
-            elif div_name and not pod_name:
+            elif div_name:
                 group_name = div_name
+            elif pod_name:
+                group_name = pod_name
             else:
                 group_name = "Standings"
 
@@ -1405,7 +1446,7 @@ class Tournament(object):
 
         pod_matrix = params.getParam('seeded_pod_matrix')
         if not pod_matrix:
-            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matix param, that's an issue")
+            app.logger.debug("Trying to populate seeded pods but can't find seeded_pod_matrix param, that's an issue")
             return None
 
         try:
@@ -1436,11 +1477,24 @@ class Tournament(object):
         if not all(has_tie is False for has_tie in ties):
             return 0
 
+        if "DirectRules" in pod_matrix:
+            # Need to verify that any direct mapping rule games are done
+            for rule in pod_matrix["DirectRules"]:
+                app.logger.debug("Checking directrule: %s" % rule)
+                match = re.search(r"^[W|L](\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getWinner(gid)
+                    app.logger.debug("Team ID for winner game: %s= %s" % (gid, team_id))
+                    if team_id < 1:
+                        return 0
+
         app.logger.debug("All round-robins done - seeding the pods %s" % pods_done)
 
         db = self.db
 
         for pod in round1:
+            # check if its really a pod
             podStandings = self.getStandings(None, pod)
 
             rules = pod_matrix[pod]
@@ -1448,17 +1502,45 @@ class Tournament(object):
 
             for rank in podStandings:
                 app.logger.debug("Offset = %s" % offset)
+                new_pod = rules[offset]
+                if not new_pod:
+                    # Spot in JSON is "None", used when a seed is determened with extra logic like a crossover game
+                    offset += 1
+                    continue
                 team = rank.team
                 team_id = team.team_id
-                new_pod = rules[offset]
                 cur = db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)", (self.tid, team_id, new_pod))
                 db.commit()
                 # cur = db.execute("UPDATE teams SET division=? WHERE team_id=? and tid=?",(pod, team_id, app.config['TID']))
                 # db.commit()
                 offset += 1
 
-            # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
-            params.updateParam('seeded_pods', 1)
+        if "DirectRules" in pod_matrix:
+            # direct placement rules, directionary of key pairs liks  {"W23": "A", "L23": "B"} indicating that the Winnder of game 23
+            # goes to the A pod and the loser goes to the B pod
+            for rule, new_pod in pod_matrix["DirectRules"].iteritems():
+                # parse the game
+                team_id = None
+
+                match = re.search(r"^W(\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getWinner(gid)
+
+                # Loser of
+                match = re.search(r"^L(\d+)$", rule)
+                if match:
+                    gid = match.group(1)
+                    team_id = self.getLoser(gid)
+
+                if team_id > 0:
+                    db.execute("INSERT INTO pods (tid, team_id, pod) VALUES (?,?,?)", (self.tid, team_id, new_pod))
+                    db.commit()
+                else:
+                    app.logger.debug("Didn't find a team while parting a direct rule, bad")
+
+        # set seeded pods to 1 to indicated that pods have been seeded, short circuits the function from being called again
+        params.updateParam('seeded_pods', 1)
 
         return True
 

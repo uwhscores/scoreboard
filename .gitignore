@@ -10,3 +10,6 @@ tournaments/*
 logs/*
 .pytest_cache/*
 app/static/flags/*
+.DS_Store
+*/.DS_Store
+db_dumps/*

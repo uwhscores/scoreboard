@@ -39,13 +39,13 @@ def test_tournament_init(tmpdir):
     assert test_t.days == []
     assert test_t.getGames() == []
 
-    tournament_list = functions.getTournamets()
+    tournament_list = functions.getTournaments()
 
     assert tournament_list == {}
 
     test_t.commitToDB()
 
-    tournament_list = functions.getTournamets()
+    tournament_list = functions.getTournaments()
     assert len(tournament_list) == 1
 
     found_tournament = tournament_list[1]
@@ -55,7 +55,7 @@ def test_tournament_init(tmpdir):
     test_t.short_name = "new_name"
     test_t.commitToDB()
 
-    tournament_list = functions.getTournamets()
+    tournament_list = functions.getTournaments()
     assert len(tournament_list) == 1
 
     found_tournament = tournament_list[1]

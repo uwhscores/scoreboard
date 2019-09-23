@@ -1,4 +1,4 @@
-from functions import getTournamets, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
+from functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
 from app import app, global_limiter
 from app import audit_logger
 from flask import jsonify, request, make_response, g
@@ -127,7 +127,7 @@ def documentationPath():
 
 @app.route('/api/v1/tournaments')
 def apiGetTournaments():
-    tournaments = getTournamets()
+    tournaments = getTournaments()
 
     response = []
 

@@ -32,7 +32,9 @@ class Game(object):
         self.description = description
 
         # functionality existed before refactor, maybe add it back in later
-        self.podColor = None
+        self.pod_color = None
+        if self.pod:
+            self.pod_color = tournament.getGroupColor(pod)
 
         # pull the record from the scores table, if it exists use that data to fill in the game
         db = tournament.db
@@ -183,11 +185,12 @@ class Game(object):
 
         # Seed notation - Division or Pod
         # match = re.search( '^S([A|B|C|O|E])?(\d+)$', game )
-        match = re.search(r"^S(\d\w|\w+)(\d+)$", game_notation)
+        match = re.search(r"^S(\d\w?|\w+?)(\d+)$", game_notation)
         if match:
             group_abriviation = match.group(1)
             seed = match.group(2)
             # app.logger.debug("Matching pod or division - %s" % group)
+            #app.logger.debug("Seed notation: group= %s, seed= %s" % (group_abriviation, seed))
 
             if group_abriviation in t.getPods():
                 team_id = t.getSeed(seed, None, group_abriviation)

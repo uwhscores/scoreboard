@@ -35,7 +35,7 @@
 			{{ team.name }}
 		</a>
 		{%- endfor %}
-		<a class="list-group-item list-group-item-info" href="/">Full Schedule</a>
+		<a class="list-group-item list-group-item-info" href="/t/{{ tournament.short_name }}">Full Schedule</a>
 	</div>
 	{% else %}
 	<div class="col-md-4">
@@ -62,7 +62,7 @@
 		<ul id=tabNav class="nav nav-pills">
 			<li role="presentation" class="active btn-lg" ><a href="#schedule" data-toggle="tab">Schedule</a></li>
 			<li role="presentation" class="btn-lg"><a href="#standings" data-toggle="tab">Standings</a></li>
-			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Places</a></li>{% endif %}
+			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Placings</a></li>{% endif %}
 			{% if team_info and team_info.roster %}<li role="presentation" class="btn-lg"><a href="#roster" data-toggle="tab">Roster</a></li>{% endif %}
 		</ul>
 
@@ -119,7 +119,8 @@
 								<td>
 								<span class="game-line">Pool: {{ game.pool }}</span>
 								{% if game.pod_color and game.pod -%}
-									Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span>
+									<!-- Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span> -->
+									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.pod %}
 									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.type == "CO" %}
@@ -219,7 +220,7 @@
 				<strong>Overall -</strong> Total tournament record including non-standings games and brackets. Wins-Losses-Ties.
 				</p>
 				<p>
-				For more information on how standings are calculated and tie-breakers please see the <a href=/faq>FAQ</a>
+				Standings are update as games are updated and includes all tie breakers. For more information on how standings are calculated and tie-breakers please see the <a href=/faq>FAQ</a>
 				</p>
 			</div>
 			</div>
@@ -280,22 +281,25 @@
 						{% endfor -%}
 					</tbody>
 				</table>
+				{%- if team_info.coaches %}
 				<table id=coaches_tbl class="table table-striped">
 					<thead>
 						<tr>
-							<th>Coaches</th>
+							<th>Coaches and Staff</th>
 						</tr>
 					</thead>
 					<tbody>
-						{%- if team_info.coaches %}
 						{%- for coach in team_info.coaches|sort %}
 						<tr>
 							<td>{{ coach.name }}</td>
+							{% if coach.title %}
+							<td>{{ coach.title }}</td>
+							{% endif %}
 						</tr>
 						{% endfor -%}
-						{%- endif %}
 					</tbody>
 				</table>
+				{%- endif %}
 			</div>
 			{%- endif %}
 	</div> <!-- tabContent -->

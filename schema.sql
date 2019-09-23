@@ -58,7 +58,7 @@ CREATE TABLE rankings(
 		tid INTEGER NOT NULL,
 		place text NOT NULL,
 		game text,
-		division text,
+		division text
 );
 
 
@@ -72,6 +72,8 @@ CREATE TABLE groups(
 	tid INTEGER NOT NULL,
 	group_id text NOT NULL,
 	name text NOT NULL,
+	group_color text,
+	pod_round integer,
 	PRIMARY KEY(tid, group_id)
 );
 
