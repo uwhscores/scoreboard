@@ -463,15 +463,16 @@ class Import(object):
 
                 cap_number = None
                 if re.match(r"\d+", row['cap_number']):
-                    cap_number = row['cap_number']
+                    if row['cap_number'] > 0:
+                        cap_number = row['cap_number']
 
                 is_coach = False
                 coach_title = None
                 if 'designation' in row and row['designation']:
                     designation = row['designation']
-                    if designation == "coach" or designation == "Coach":
+                    if designation in ["coach", "Coach", "Manager", "Support Staff"]:
                         is_coach = True
-                        coach_title = "Coach"
+                        coach_title = designation
                 try:
                     cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number, is_coach, coach_title) VALUES (?,?,?,?,?,?)", (tid, player_id, team_id, cap_number, is_coach, coach_title))
                     self.db.commit()
