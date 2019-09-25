@@ -2,8 +2,8 @@
 import os
 import pytest
 import flask
-from sys import path
-path.append(".")
+from unittest import mock
+
 
 db_file = os.path.join("test.db")
 os.environ["SCOREBOARD_DB"] = db_file
@@ -17,21 +17,28 @@ from common_functions import create_db, init_db
 # import pdb; pdb.set_trace()
 
 
+def init_tournament(tmpdir):
+        tid = 1
+        name = "Test Tournament"
+        short_name = "test_tourn"
+        start_date = "2018-01-01"
+        end_date = "2018-01-02"
+        location = "Pytest, PY"
+        active = True
+
+        db_file = tmpdir.join("test_db.db").strpath
+        os.environ["SCOREBOARD_DB"] = db_file
+
+        db = create_db(db_file)
+
+        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, db)
+
+        return test_t
+
+
 def test_tournament_init(tmpdir):
-    tid = 1
-    name = "Test Tournament"
-    short_name = "test_tourn"
-    start_date = "2018-01-01"
-    end_date = "2018-01-02"
-    location = "Pytest, PY"
-    active = True
 
-    db_file = tmpdir.join("test_db.db").strpath
-    os.environ["SCOREBOARD_DB"] = db_file
-
-    db = create_db(db_file)
-
-    test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, db)
+    test_t = init_tournament(tmpdir)
 
     assert test_t is not None
 
@@ -61,3 +68,19 @@ def test_tournament_init(tmpdir):
     found_tournament = tournament_list[1]
     assert found_tournament.name == "Test Tournament"
     assert found_tournament.short_name == "new_name"
+
+
+def test_tournament_rankings():
+    tid = 1
+    name = "Test Tournament"
+    short_name = "test_tourn"
+    start_date = "2018-01-01"
+    end_date = "2018-01-02"
+    location = "Pytest, PY"
+    active = True
+
+    with mock.patch('app.functions.sqlite3') as mocked_sqlite:
+        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, mocked_sqlite)
+
+        assert test_t.serialize() is not None
+        assert test_t.getTeams() == []

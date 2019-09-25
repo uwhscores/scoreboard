@@ -38,6 +38,9 @@ global_limiter = Limiter(
     global_limits=[]
 )
 
+if not os.path.isdir("logs/"):
+    os.mkdir("logs")
+
 LOG_FILENAME = 'logs/audit_log'
 audit_logger = logging.getLogger('audit_log')
 audit_logger.setLevel(logging.INFO)

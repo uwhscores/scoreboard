@@ -7,8 +7,8 @@ from base64 import b64encode
 from flask import g, flash
 from jsonschema import validate, ValidationError, RefResolutionError
 
-from tournament import Tournament
-from models import User
+from .tournament import Tournament
+from .models import User
 
 
 def connectDB():
@@ -141,8 +141,8 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
 
     if row:
         user_id = row['user_id']
-        hashed = str(row['password'])
-        password_try = str(password_try)
+        hashed = row['password'].encode('utf-8')
+        password_try = password_try.encode('utf-8')
         failed_logins = row['failed_logins']
 
         # if too many failed passwords in a row, just block, will require manual intervention

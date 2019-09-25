@@ -1,11 +1,11 @@
-from functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
+from .functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
 from app import app, global_limiter
 from app import audit_logger
 from flask import jsonify, request, make_response, g
 from flask_httpauth import HTTPBasicAuth
 from base64 import b64encode
 from os import urandom
-import urlparse
+import urllib.parse
 
 auth = HTTPBasicAuth()
 
@@ -131,7 +131,7 @@ def apiGetTournaments():
 
     response = []
 
-    for t in tournaments.values():
+    for t in list(tournaments.values()):
         response.append(t.serialize())
     return jsonify(tournaments=response)
 
@@ -230,7 +230,7 @@ def apiGetTeamInfo(tid, team_id):
 
     #request.url_root
     if team_info['flag_url']:
-        team_info['flag_url'] = urlparse.urljoin(request.url_root, team_info['flag_url'])
+        team_info['flag_url'] = urllib.parse.urljoin(request.url_root, team_info['flag_url'])
 
     return jsonify(team=team_info)
 
@@ -246,7 +246,7 @@ def apiGetStandings(tid):
         raise InvalidUsage(message, status_code=503)
 
     pods = t.getPodsActive()
-    standings = []
+    standings = None
 
     pod_ask = request.args.get('pod')
     div_ask = request.args.get('div')
@@ -254,10 +254,12 @@ def apiGetStandings(tid):
     if pod_ask and div_ask:
         raise InvalidUsage("Cannot filter by pod and div at same time", status_code=400)
 
-    if not t.isGroup(div_ask):
+    if div_ask and not t.isGroup(div_ask):
         raise InvalidUsage("division not found", status_code=404)
 
     if pod_ask:
+        app.logger.debug("pods = %s" % pods)
+        app.logger.debug("pod_ask = %s" % pod_ask)
         if pod_ask in pods:
             standings = t.getStandings(pod=pod_ask)
         else:
@@ -269,11 +271,12 @@ def apiGetStandings(tid):
         standings = t.getStandings()
 
     answer = []
-    for s in standings:
-        if div_ask and s.div == div_ask:
-            answer.append(s.serialize())
-        elif not div_ask:
-            answer.append(s.serialize())
+    for group in standings:
+        for r in standings[group]:
+            if div_ask and div_ask == r.div:
+                answer.append(r.serialize())
+            elif not div_ask:
+                answer.append(r.serialize())
 
     return jsonify(standings=answer)
 

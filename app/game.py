@@ -3,7 +3,7 @@ import re
 from app import app
 #import functions.ordinalize as ordinalize
 #from .functions import ordinalize
-import functions
+from . import functions
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """
