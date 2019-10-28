@@ -67,7 +67,7 @@
 	{% for messages in get_flashed_messages() %}
 		<div class=alert alert-warning> {{ message }} </div>
 	{% endfor %}
-	<form action='/admin/update' method=post name='update'>
+	<form action='/admin/t/{{tournament.short_name}}/scores' method=post name='update'>
 		<input type=hidden name=tid value={{ tournament.tid }}>
 		<input type=hidden name=gid value={{ game.gid }}>
 		<input type=hidden name=btid value={{ game.black_tid }}>

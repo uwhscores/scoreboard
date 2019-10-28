@@ -104,6 +104,85 @@ def renderTAdmin(short_name):
     return render_template('admin/tournament_admin.html', tournament=t, ties=ties, disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),
                            redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
+@app.route('/admin/t/<short_name>/scores', methods=['GET'])
+@login_required
+def renderScores(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    games = t.getGames()
+    return render_template('/admin/show_update.html', games=games, tournament=t)
+
+
+@app.route('/admin/t/<short_name>/scores/<game_id>', methods=['GET'])
+@login_required
+def renderScoreInput(short_name, game_id):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    game = t.getGame(game_id)
+    if not game:
+        return render_template('show_error.html', error_message="404: Unknown Game ID"), 404
+    if (game.score_b == "--"):
+        game.score_b = "0"
+    if (game.score_w == "--"):
+        game.score_w = "0"
+
+    if (game.black_tid < 0 or game.white_tid < 0):
+        flash('Team(s) not determined yet. Cannot set score')
+        return redirect("/admin/t/%s" % t.short_name)
+
+    return render_template('/admin/update_single.html', tournament=t, game=game)
+
+
+@app.route('/admin/t/<short_name>/scores', methods=['POST'])
+@login_required
+def updateScore(short_name):
+    tid = getTournamentID(short_name)
+    if tid < 1:
+        flash("Unkown Tournament Name")
+        return redirect(request.url_root)
+
+    t = getTournamentByID(tid)
+
+    if not t.isAuthorized(current_user):
+        flash("You are not authorized for this tournament")
+        return redirect("/admin")
+
+    form = request.form
+    game = {}
+    game['gid'] = int(form.get('gid'))
+    game['score_b'] = int(form.get('score_b'))
+    game['score_w'] = int(form.get('score_w'))
+    game['black_tid'] = int(form.get('btid'))
+    game['white_tid'] = int(form.get('wtid'))
+    game['pod'] = form.get('pod')
+
+    game['forfeit_w'] = form.get('forfeit_w')
+    game['forfeit_b'] = form.get('forfeit_b')
+
+    audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
+                      (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
+    t.updateGame(game)
+
+    return redirect("/admin/t/%s/scores" % short_name)
+
 
 @app.route('/admin/t/<short_name>/gametiming')
 @login_required
@@ -257,83 +336,6 @@ def redraw(short_name, group=None):
             return redirect("/admin/t/%s" % short_name)
         else:
             return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
-
-
-@app.route('/admin/update', methods=['POST', 'GET'])
-@login_required
-def renderUpdate():
-    if request.method == 'GET':
-        if request.args.get('gid'):
-            if request.args.get('tid'):
-                t = getTournamentByID(request.args.get('tid'))
-                if not t:
-                    flash("Invalid tournament ID")
-                    return redirect('/admin')
-            else:
-                return redirect('/admin')
-
-            if not t.isAuthorized(current_user):
-                flash("You are not authorized for this tournament")
-                return redirect("/admin")
-
-            gid = request.args.get('gid')
-            game = t.getGame(gid)
-            if not game:
-                return render_template('show_error.html', error_message="404: Unknown Game ID"), 404
-            if (game.score_b == "--"):
-                game.score_b = "0"
-            if (game.score_w == "--"):
-                game.score_w = "0"
-
-            if (game.black_tid < 0 or game.white_tid < 0):
-                flash('Team(s) not determined yet. Cannot set score')
-                return redirect("/admin/t/%s" % t.short_name)
-
-            return render_template('/admin/update_single.html', tournament=t, game=game)
-
-        elif request.args.get('tid'):
-            t = getTournamentByID(request.args.get('tid'))
-
-            if not t.isAuthorized(current_user):
-                flash("You are not authorized for this tournament")
-                return redirect("/admin")
-
-            games = t.getGames()
-            return render_template('/admin/show_update.html', games=games, tournament=t)
-        else:
-            return redirect('/admin')
-
-    elif request.method == 'POST':
-        if request.form.get('tid'):
-            tid = request.form.get('tid')
-            t = getTournamentByID(tid)
-            if not t:
-                flash("Invalid tournament ID")
-                return redirect('/admin')
-        else:
-            return redirect('/admin')
-
-        if not t.isAuthorized(current_user):
-            flash("You are not authorized for this tournament")
-            return redirect("/admin")
-
-        form = request.form
-        game = {}
-        game['gid'] = int(form.get('gid'))
-        game['score_b'] = int(form.get('score_b'))
-        game['score_w'] = int(form.get('score_w'))
-        game['black_tid'] = int(form.get('btid'))
-        game['white_tid'] = int(form.get('wtid'))
-        game['pod'] = form.get('pod')
-
-        game['forfeit_w'] = form.get('forfeit_w')
-        game['forfeit_b'] = form.get('forfeit_b')
-
-        audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
-                          (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
-        t.updateGame(game)
-
-        return redirect("/admin/update?tid=%s" % tid)
 
 
 @app.route('/admin/update_config', methods=['POST', 'GET'])
