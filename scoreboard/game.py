@@ -1,9 +1,7 @@
 from datetime import datetime
 import re
-from app import app
-#import functions.ordinalize as ordinalize
-#from .functions import ordinalize
-from . import functions
+
+from scoreboard import functions, app
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """

@@ -1,11 +1,12 @@
-from .functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
-from app import app, global_limiter
-from app import audit_logger
+
+from base64 import b64encode
 from flask import jsonify, request, make_response, g
 from flask_httpauth import HTTPBasicAuth
-from base64 import b64encode
 from os import urandom
 import urllib.parse
+
+from scoreboard import app, global_limiter, audit_logger
+from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
 
 auth = HTTPBasicAuth()
 

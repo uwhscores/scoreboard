@@ -4,10 +4,9 @@ import json
 import os
 import re
 
-from . import functions
-from app import app
-from .game import Game
-from .models import Stats, Ranking, Params
+from scoreboard import functions, app
+from scoreboard.game import Game
+from scoreboard.models import Stats, Ranking, Params
 
 
 # main struction for a tournament
@@ -560,7 +559,6 @@ class Tournament(object):
         else:
             return None
 
-
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
@@ -590,7 +588,7 @@ class Tournament(object):
         returns list place dictionaries
         """
         db = self.db
-        if (div):
+        if div:
             cur = db.execute("SELECT division, place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
             cur = db.execute("SELECT division, place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
@@ -1199,8 +1197,9 @@ class Tournament(object):
         """ wrapper function for standings, currently doesn't do anything other than call calcStandings
         # TODO: make tournament.getStandings() cache standings for performance
         """
-        if not hasattr(g, 'standings'):
-            app.logger.debug("Calcuating standings")
+
+        if g and 'standings' not in g:
+            app.logger.debug("Calculating standings")
             g.standings = self.calcStandings()
 
         # filter for pod and div

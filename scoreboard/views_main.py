@@ -1,4 +1,4 @@
-from app import app
+from scoreboard import app
 from flask import request, redirect, render_template, flash
 from .functions import getTournaments, getTournamentByID, getTournamentID
 import re

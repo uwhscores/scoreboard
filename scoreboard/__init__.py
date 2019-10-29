@@ -53,5 +53,5 @@ audit_logger.addHandler(handler)
 
 
 #from app import functions, tournament, models, views_main, views_admin, views_api_v1
-from app import views_main, views_admin, views_api_v1
+from scoreboard import views_main, views_admin, views_api_v1
     #views_admin, views_static

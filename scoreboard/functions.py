@@ -1,4 +1,4 @@
-from app import app
+from scoreboard import app
 import sqlite3
 import os
 import bcrypt
@@ -7,8 +7,8 @@ from base64 import b64encode
 from flask import g, flash
 from jsonschema import validate, ValidationError, RefResolutionError
 
-from .tournament import Tournament
-from .models import User
+from scoreboard.tournament import Tournament
+from scoreboard.models import User
 
 
 def connectDB():

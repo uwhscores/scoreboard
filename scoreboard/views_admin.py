@@ -1,13 +1,10 @@
-import re
-import json
-from app import app
-from app import global_limiter
-from app import audit_logger
 from flask import request, redirect, render_template, flash
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-# from flask.ext.login import UserMixin
-# from functions import *
-from .functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
+import json
+import re
+
+from scoreboard import app, global_limiter, audit_logger
+from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
 
 login_manager = LoginManager()
 login_manager.init_app(app)

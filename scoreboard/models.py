@@ -1,9 +1,10 @@
-from app import app
-import re
-from datetime import datetime
 from base64 import b64encode
+from datetime import datetime
 from os import urandom
 import bcrypt
+import re
+
+from scoreboard import app
 
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against

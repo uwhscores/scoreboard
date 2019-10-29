@@ -9,7 +9,7 @@ tournaments/*
 *.pyc
 logs/*
 .pytest_cache/*
-app/static/flags/*
+scoreboard/static/flags/*
 .DS_Store
 */.DS_Store
 db_dumps/*
