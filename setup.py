@@ -7,5 +7,5 @@ setup(name='scoreboard',
       description='Underwater Hockey Tournament Tracker',
       author='Jim Lester',
       author_email='jim@jimlester.net',
-      packages=['app']
+      packages=['scoreboard']
       )
