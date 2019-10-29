@@ -409,6 +409,8 @@ class Tournament(object):
         div_names = []
         for div in divs:
             name = self.expandGroupAbbr(div)
+            if not name:
+                name = div
             div_names.append({'id': div, 'name': name})
 
         return div_names
@@ -472,6 +474,8 @@ class Tournament(object):
             pod_names = []
             for pod in pods:
                 name = self.expandGroupAbbr(pod)
+                if not name:
+                    name = pod
                 pod_names.append({'id': pod, 'name': name})
 
         return pod_names
