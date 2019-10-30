@@ -1,11 +1,11 @@
-from scoreboard import app
-import sqlite3
-import os
-import bcrypt
-import json
 from base64 import b64encode
+from flask import current_app as app
 from flask import g, flash
 from jsonschema import validate, ValidationError, RefResolutionError
+import bcrypt
+import json
+import os
+import sqlite3
 
 from scoreboard.tournament import Tournament
 from scoreboard.models import User
@@ -13,26 +13,25 @@ from scoreboard.models import User
 
 def connectDB():
     """ Connect to DB as configured """
-    with app.app_context():
-        rv = sqlite3.connect(os.environ["SCOREBOARD_DB"])
-        rv.row_factory = sqlite3.Row
-        return rv
+    rv = sqlite3.connect(os.environ["SCOREBOARD_DB"])
+    rv.row_factory = sqlite3.Row
+    return rv
 
 
 def getDB():
     """ Should store database object is context, doesn't right now """
     # TODO: Store db to context
-    # if not hasattr(app.g, 'sqlite_db'):
-    #     app.g.sqlite_db = connectDB()
-    # return app.g.sqlite_db
+    # if not hasattr(g, 'sqlite_db'):
+    #     g.sqlite_db = connectDB()
+    # return g.sqlite_db
     return connectDB()
 
 
-@app.teardown_appcontext
-def closeDB(error):
-    """ tear down database connection on exit """
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
+# @app.teardown_appcontext
+# def closeDB(error):
+#     """ tear down database connection on exit """
+#     if hasattr(g, 'sqlite_db'):
+#         g.sqlite_db.close()
 
 
 def getTournaments(filter=None):

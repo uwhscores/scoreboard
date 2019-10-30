@@ -2,7 +2,7 @@ import pytest
 import os
 from unittest import mock
 
-from app.models import Stats
+from scoreboard.models import Stats
 # def test_stats_compare(tmpdir):
 #     tid = 1
 #     name = "Test Tournament"
@@ -31,7 +31,7 @@ from app.models import Stats
 #     assert team_a > team_b
 
 
-@mock.patch('app.tournament.Tournament')
+@mock.patch('scoreboard.tournament.Tournament')
 def test_stats_compare(mock_t):
 
     team_a = {"team_id": 1, "name": "team_a", "division": "A", "flag_url": None}
@@ -76,7 +76,8 @@ def test_stats_compare(mock_t):
     assert team_a != team_b
     assert team_a < team_b
 
-@mock.patch('app.tournament.Tournament')
+
+@mock.patch('scoreboard.tournament.Tournament')
 def test_stats_sort(mock_t):
     team_a = {"team_id": 1, "name": "team_a", "division": "A", "flag_url": None}
     team_b = {"team_id": 2, "name": "team_b", "division": "A", "flag_url": None}
@@ -203,7 +204,7 @@ def test_stats_sort(mock_t):
     assert third.name == "team_c"
 
 
-@mock.patch('app.tournament.Tournament')
+@mock.patch('scoreboard.tournament.Tournament')
 def test_ranking(mock_t):
     team_a = {"team_id": 1, "name": "team_a", "division": "A", "flag_url": None}
     team_b = {"team_id": 2, "name": "team_b", "division": "A", "flag_url": None}

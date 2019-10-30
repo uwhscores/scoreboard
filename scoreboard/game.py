@@ -1,7 +1,8 @@
 from datetime import datetime
+from flask import current_app as app
 import re
 
-from scoreboard import functions, app
+from scoreboard import functions
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """

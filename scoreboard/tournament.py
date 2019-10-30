@@ -1,10 +1,12 @@
 from datetime import datetime
-from flask import g, flash
+from flask import current_app as app
+from flask import flash
+from flask import g as flask_g
 import json
 import os
 import re
 
-from scoreboard import functions, app
+from scoreboard import functions
 from scoreboard.game import Game
 from scoreboard.models import Stats, Ranking, Params
 
@@ -12,7 +14,7 @@ from scoreboard.models import Stats, Ranking, Params
 # main struction for a tournament
 class Tournament(object):
 
-    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db):
+    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db, context=None):
         self.tid = tid
         self.name = name
         self.short_name = short_name
@@ -21,6 +23,10 @@ class Tournament(object):
         self.location = location
         self.is_active = active
         self.db = db
+        if context:
+            self.context = context
+        else:
+            self.context = flask_g
 
         self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
         self.end_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -688,12 +694,19 @@ class Tournament(object):
     def getParams(self):
         """ retrieve parameters for the tournament
         Keeps them stashed in the gloabl store for performance"""
-        if g:
-            if not hasattr(g, 'params'):
-                g.params = Params(self)
-            return g.params
-        else:
-            return Params(self)
+        # if not self.context:
+        #     context = g
+        # if g:
+        #     if not hasattr(g, 'params'):
+        #         g.params = Params(self)
+        #     return g.params
+        # else:
+        #     return Params(self)
+
+        if not hasattr(self.context, 'params'):
+            self.context.params = Params(self)
+
+        return self.context.params
 
     def getCoinFlip(self, tid_a, tid_b):
         """ Gets winner of coin flip, returns team ID for winner of -1 if no coin flip found """
@@ -718,7 +731,7 @@ class Tournament(object):
         Doesn't test that ties required action, e.g. all teams would be tied at start of tournament
         """
         # TODO: Definitely need test case for tournament.getTies, function shouldn't have worked before adding self to getTeam calls
-        if not hasattr(g, 'ties'):
+        if not hasattr(self.context, 'ties'):
             return None
 
         ties = g.ties
@@ -763,32 +776,32 @@ class Tournament(object):
             # TODO:  code to add divisional check goes here
 
         if tid_c:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_a, tid_b, tid_c))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_a, tid_b, tid_c))
             else:
-                g.ties.append((tid_a, tid_b, tid_c))
+                self.context.ties.append((tid_a, tid_b, tid_c))
 
         if tid_a < tid_b:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_a, tid_b))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_a, tid_b))
             else:
-                g.ties.append((tid_a, tid_b))
+                self.context.ties.append((tid_a, tid_b))
         else:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_b, tid_a))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_b, tid_a))
             else:
-                g.ties.append((tid_b, tid_a))
+                self.context.ties.append((tid_b, tid_a))
 
         return 0
 
     def genTieFlashes(self):
-        if not hasattr(g, 'ties'):
+        if not hasattr(self.context, 'ties'):
             return 0
 
-        ties = g.ties
+        ties = self.context.ties
 
         seen = set()
         list = [x for x in ties if x not in seen and not seen.add(x)]
@@ -1202,30 +1215,30 @@ class Tournament(object):
         # TODO: make tournament.getStandings() cache standings for performance
         """
 
-        if g and 'standings' not in g:
+        if not hasattr(self.context, 'standings'):
             app.logger.debug("Calculating standings")
-            g.standings = self.calcStandings()
+            self.context.standings = self.calcStandings()
 
         # filter for pod and div
         standings = {}
         if pod:
-            if pod in g.standings:
-                standings[pod] = g.standings[pod]
+            if pod in self.context.standings:
+                standings[pod] = self.context.standings[pod]
             else:
                 standings = None
         elif div:
-            if div in g.standings:
-                standings[div] = g.standings[div]
+            if div in self.context.standings:
+                standings[div] = self.context.standings[div]
             else:
                 div_pods = self.getPodsActive(div=div)
                 if not div_pods:
                     # pod has no division, so the best we can do is return everything
-                    standings = g.standings
+                    standings = self.context.standings
                 else:
                     for pod in div_pods:
-                        standings[pod] = g.standings[pod]
+                        standings[pod] = self.context.standings[pod]
         else:
-            standings = g.standings
+            standings = self.context.standings
 
         return standings
 
