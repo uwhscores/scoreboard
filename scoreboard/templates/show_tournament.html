@@ -123,6 +123,8 @@
 									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.pod %}
 									<span class="game-line"> Pod: {{ game.pod }} </span>
+								{% elif game.division %}
+									<span class="game-line"> Div: {{ game.division }} </span>
 								{% elif game.type == "CO" %}
 									<span class=game-description>Cross Over</span>
 								{% endif %}
