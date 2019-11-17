@@ -79,10 +79,11 @@ def renderTAdmin(short_name):
         if l:
             redraws.append(div)
     pods = t.getPodsActive()
-    for pod in pods:
-        l = t.getRedraw(None, pod=pod)
-        if l:
-            redraws.append(pod)
+    if pods:
+        for pod in pods:
+            l = t.getRedraw(None, pod=pod)
+            if l:
+                redraws.append(pod)
 
     # stats = getTournamentStats()
 

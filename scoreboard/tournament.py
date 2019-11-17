@@ -62,11 +62,12 @@ class Tournament(object):
             self.POINTS_FORFEIT = 2
 
         self.sm_logo = None
-        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
+        if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "sm_logo.png")):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
         self.banner = None
-        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "banner.png")):
+        app.logger.debug("Looking for banner in %s" % os.path.join("app/static/flags", self.short_name, "banner.png"))
+        if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner.png")):
             self.banner = os.path.join("static/flags", self.short_name, "banner.png")
 
     def __repr__(self):
@@ -582,14 +583,17 @@ class Tournament(object):
             if self.checkForTies(standings):
                 return -1
             seed = int(seed) - 1
-            if seed < len(standings):
+
+            try:
                 if pod:
-                    return standings[pod][seed].team.team_id
+                    team_id = standings[pod][seed].team.team_id
                 else:
-                    return standings[division][seed].team.team_id
-            else:
+                    team_id = standings[division][seed].team.team_id
+            except IndexError:
                 app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
                 return -1
+
+            return team_id
         else:
             return -1
 
