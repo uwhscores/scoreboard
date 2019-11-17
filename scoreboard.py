@@ -21,7 +21,7 @@ if __name__ == '__main__':
     if not db_path:
         db_path = os.path.join("scoreboard/", 'scores.db')
 
-    app = create_app(db_path)
+    app = create_app(db_path, debug=True)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run(host='0.0.0.0')
     # app.run()

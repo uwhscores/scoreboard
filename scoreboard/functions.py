@@ -13,7 +13,7 @@ from scoreboard.models import User
 
 def connectDB():
     """ Connect to DB as configured """
-    rv = sqlite3.connect(os.environ["SCOREBOARD_DB"])
+    rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
 

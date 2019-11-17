@@ -66,7 +66,6 @@ class Tournament(object):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
         self.banner = None
-        app.logger.debug("Looking for banner in %s" % os.path.join("app/static/flags", self.short_name, "banner.png"))
         if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner.png")):
             self.banner = os.path.join("static/flags", self.short_name, "banner.png")
 

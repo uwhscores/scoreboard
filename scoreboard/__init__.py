@@ -24,13 +24,13 @@ global_limiter = Limiter(
 )
 
 
-def create_app(db_path=None):
+def create_app(db_path=None, debug=False):
     app = Flask(__name__)
     app.config.from_object(__name__)
 
     config = dict(
         DATABASE = db_path,
-        DEBUG = True,
+        DEBUG = debug,
         SECRET_KEY = 'testkey'
     )
     app.config.update(config)
