@@ -40,6 +40,7 @@ def init_tournament(tmpdir):
 
 
 def test_tournament_init(app, tmpdir):
+    app.config['DATABASE'] = tmpdir.join("test_db.db").strpath
 
     test_t = init_tournament(tmpdir)
 
