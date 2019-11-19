@@ -1,6 +1,5 @@
 from base64 import b64encode
 from flask import current_app as app
-from flask import g, flash
 from jsonschema import validate, ValidationError, RefResolutionError
 import bcrypt
 import json
@@ -9,6 +8,7 @@ import sqlite3
 
 from scoreboard.tournament import Tournament
 from scoreboard.models import User
+from scoreboard.exceptions import UserAuthError
 
 
 def connectDB():
@@ -132,8 +132,9 @@ def getUserList():
     return users
 
 
-def authenticate_user(email, password_try, silent=False, ip_addr=None):
+def authenticate_user(email, password_try, ip_addr=None):
     """ authenticate user for login """
+    user_id = None
     db = getDB()
 
     cur = db.execute("SELECT user_id, password, failed_logins FROM users WHERE email=? AND active=1", (email,))
@@ -142,36 +143,38 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
 
     if row:
         user_id = row['user_id']
-        hashed = row['password'].encode('utf-8')
+        hashed = row['password']
         password_try = password_try.encode('utf-8')
+
+        # python2-3 legacy issues, some passwords/users in the db are encoded some aren't
+        try:
+            hashed = hashed.encode('utf-8')
+        except AttributeError:
+            pass
+
         failed_logins = row['failed_logins']
 
         # if too many failed passwords in a row, just block, will require manual intervention
         if failed_logins > 10:
             # should fire off password reset email here once I write that
-            if not silent:
-                flash("Account locked due to too many failed passwords")
-
-            return None
+            raise UserAuthError("LOCKED", message="Account locked due to too many failed passwords")
 
         if bcrypt.hashpw(password_try, hashed) == hashed:
             cur = db.execute("UPDATE users SET last_login=CURRENT_TIMESTAMP, failed_logins=0 WHERE user_id=?", (user_id,))
             db.commit()
-            return user_id
         else:
             failed_logins += 1
             cur = db.execute("UPDATE users SET failed_logins=? WHERE user_id=?", (failed_logins, user_id))
             db.commit()
 
-            if not silent:
-                flash("Incorrect password")
+            raise UserAuthError("FAIL", message="Incorrect password")
 
             return None
 
     else:
-        if not silent:
-            flash("Cannot find account")
-        return None
+        raise UserAuthError("NotFound", message="Cannot find account")
+
+    return user_id
 
 
 def addUser(new_user):

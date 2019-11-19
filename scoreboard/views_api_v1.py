@@ -4,9 +4,11 @@ from flask import jsonify, request, make_response, g
 from flask_httpauth import HTTPBasicAuth
 from os import urandom
 import urllib.parse
+import sqlite3
 
 from scoreboard import global_limiter, audit_logger
 from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
+from scoreboard.exceptions import UserAuthError
 
 auth = HTTPBasicAuth()
 
@@ -43,7 +45,11 @@ def verify_pw(email, password_try):
         return False
 
     # it wasn't a token, so lets try it as a username/password pair
-    user_id = authenticate_user(email, password_try, silent=True)
+    user_id = None
+    try:
+        user_id = authenticate_user(email, password_try)
+    except UserAuthError:
+        return False
 
     if user_id:
         g.user_id = user_id
@@ -76,12 +82,12 @@ def genToken(user_name):
         return None
 
     user_id = u['user_id']
-    token = b64encode(urandom(32))
+    token = b64encode(urandom(32)).decode('utf-8')
 
     try:
         cur = db.execute("INSERT INTO tokens (user_id, token, valid_til) VALUES (?,?, datetime('now', '+1 day'))", (user_id, token))
         db.commit()
-    except Execption as e:
+    except sqlite3.DatabaseError as e:
         db.rollback()
         # do something with the exception?
         return None
@@ -321,6 +327,7 @@ def apiGetTimingRules(tid):
 def login_token():
     user_name = request.authorization.username
     response = genToken(user_name)
+    app.logger.debug("API: Token generated %s" % response)
     audit_logger.info("API: Token generated for %s" % user_name)
     return jsonify(response)
 

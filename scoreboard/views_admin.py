@@ -6,6 +6,7 @@ import re
 
 from scoreboard import global_limiter, audit_logger
 from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
+from scoreboard.exceptions import UserAuthError
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -423,7 +424,12 @@ def do_login():
         password = form.get('password')
 
     if email:
-        user_id = authenticate_user(email, password, ip_addr=request.remote_addr)
+        user_id = None
+        try:
+            user_id = authenticate_user(email, password, ip_addr=request.remote_addr)
+        except UserAuthError as e:
+            flash(e.message)
+
         if user_id:
             login_user(getUserByID(user_id))
             audit_logger.info("Successful login by %s(%s)" % (current_user.short_name, current_user.user_id))

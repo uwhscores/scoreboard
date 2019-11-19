@@ -372,10 +372,10 @@ class User(object):
 
         hashed = bcrypt.hashpw(token, bcrypt.gensalt())
 
-        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token, self.user_id))
+        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token.decode('utf-8'), self.user_id))
         db.commit()
 
-        return token
+        return token.decode("utf-8")
 
     def setActive(self, active):
         db = self.db
@@ -395,10 +395,8 @@ class User(object):
             cur = db.execute("UPDATE users SET admin=0 WHERE user_id=?", (self.user_id,))
             db.commit()
 
-
-
     def __genUserKey(self):
-        return b64encode(urandom(9),"Aa")
+        return b64encode(urandom(9), b"Aa")
 
     def __genResetToken(self):
-        return b64encode(urandom(30),"-_")
+        return b64encode(urandom(30), b"-_")
