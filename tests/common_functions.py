@@ -1,4 +1,5 @@
 from scoreboard import functions
+from scoreboard.tournament import Tournament
 import json
 import os
 import sqlite3
@@ -18,6 +19,30 @@ def create_db(db_path):
     init_db(db)
 
     return db
+
+
+def connect_db(db_path):
+    db = sqlite3.connect(db_path)
+    db.row_factory = sqlite3.Row
+
+    return db
+
+
+def add_tournament(db, tid, name=None, short_name=None, start_date=None, end_date=None, location=None, active=True):
+    tid = tid
+    if not name:
+        name = "Test Tournament"
+    if not short_name:
+        short_name = "test_tourn"
+    if not start_date:
+        start_date = "2018-01-01"
+    if not end_date:
+        end_date = "2018-01-02"
+    if not location:
+        location = "Pytest, PY"
+
+    test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, db)
+    test_t.commitToDB()
 
 
 def load_schedule(schedule_name, tid, db):

@@ -1,4 +1,4 @@
-from flask import Flask, g, current_app
+from flask import Flask, current_app
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
@@ -29,9 +29,9 @@ def create_app(db_path=None, debug=False):
     app.config.from_object(__name__)
 
     config = dict(
-        DATABASE = db_path,
-        DEBUG = debug,
-        SECRET_KEY = 'testkey'
+        DATABASE=db_path,
+        DEBUG=debug,
+        SECRET_KEY="ojgMXp6Rv4n9qKaiAfC48yieA2m-UThR1v6Fuk3d"
     )
     app.config.update(config)
 

@@ -467,12 +467,14 @@ def pw_reset():
 
 @app.route('/login/reset', methods=['POST'])
 def set_password():
-
     form = request.form
     if form.get('token'):
         token = form.get('token')
         user_id = validateResetToken(token)
     else:
+        return render_template('show_error.html', error_message="You go away now")
+
+    if not user_id:
         return render_template('show_error.html', error_message="You go away now")
 
     if form.get('password1') and form.get('password2'):

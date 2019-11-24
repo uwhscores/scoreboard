@@ -177,11 +177,12 @@ def authenticate_user(email, password_try, ip_addr=None):
     return user_id
 
 
-def addUser(new_user):
+def addUser(new_user, db=None):
     """ add a new user to the database
     returns dictionary with the results of the add including their password reset reset_token
     always returns dictionary, must check 'success' field for True/False """
-    db = getDB()
+    if not db:
+        db = getDB()
 
     result = {'success': False, 'message': ""}
     # check that email is unique
@@ -196,18 +197,18 @@ def addUser(new_user):
         return result
 
     while True:
-        user_id = b64encode(os.urandom(6), "Aa")
+        user_id = b64encode(os.urandom(6), b"Aa").decode("utf-8")
         cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
         if not cur.fetchone():
             break
 
     while True:
-        token = b64encode(os.urandom(30), "-_")
+        token = b64encode(os.urandom(30), b"-_").decode("utf-8")
         cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
         if not cur.fetchone():
             break
 
-    hashed = bcrypt.hashpw(token, bcrypt.gensalt())
+    hashed = bcrypt.hashpw(token.encode("utf-8"), bcrypt.gensalt())
 
     cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active, reset_token) VALUES (?,?,?,?,1,?)",
                      (user_id, new_user['short_name'], new_user['email'], hashed, token))

@@ -31,11 +31,11 @@ class InvalidUsage(Exception):
 
 @auth.verify_password
 def verify_pw(email, password_try):
+    audit_logger.info("Attempting auth for user/token %s" % email)
 
     # first assume its a token for speed
     token = email
     user_id = authenticate_token(token)
-
     if user_id:
         g.user_id = user_id
         return True
@@ -53,6 +53,7 @@ def verify_pw(email, password_try):
 
     if user_id:
         g.user_id = user_id
+        audit_logger.info("Succesful authentication for %s" % user_id)
         return True
 
     # doesn't seem to be anybody we know
@@ -66,6 +67,7 @@ def authenticate_token(token):
     u = cur.fetchone()
 
     if u:
+        audit_logger.info("Verified token auth for %s" % u['user_id'])
         return u['user_id']
     else:
         return None
@@ -344,6 +346,13 @@ def logout_token():
     current_user = getUserByID(g.user_id)
     audit_logger.info("API: Logout for user %s(%s)" % (current_user.short_name, current_user.user_id))
     return jsonify(message='goodbye')
+
+
+@app.route('/api/v1/login/test')
+@auth.login_required
+def login_test():
+    """ Test route for verifying authentcation token is working """
+    return jsonify(message="success")
 
 
 @app.route('/api/v1/tournaments/<tid>/games/<gid>', methods=['POST'])

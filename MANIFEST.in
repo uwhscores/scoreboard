@@ -1,0 +1,3 @@
+graft scoreboard/static
+graft scoreboard/templates
+global-exclude *.pyc
