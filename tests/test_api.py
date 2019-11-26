@@ -92,3 +92,120 @@ def test_api_auth(test_client):
     valid_credentials = base64.b64encode(b'%b:' % token.encode('utf-8')).decode('utf-8')
     response = test_client.get("/api/v1/login/test", headers={'Authorization': 'Basic ' + valid_credentials})
     assert response.status_code == 401
+
+def test_update_score(test_client):
+    db = connect_db(test_client.application.config['DATABASE'])
+
+    response = test_client.get("/api/v1/tournaments/1")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "tournament" in response.json
+
+    assert response.json["tournament"]["tid"] == 1
+
+    response = test_client.get("/api/v1/tournaments/1/games")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "games" in response.json
+    games = response.json["games"]
+    for game in games:
+        assert "gid" in game
+
+    first_game = games[0]
+    assert first_game['score_w'] is None
+    assert first_game['score_b'] is None
+
+    valid_credentials = base64.b64encode(b'test_user@pytest.com:temp123!@#').decode('utf-8')
+    response = test_client.get("/api/v1/login", headers={'Authorization': 'Basic ' + valid_credentials})
+    assert response.status_code == 200
+    assert response.is_json
+    assert "token" in response.json
+    token = response.json["token"]
+    valid_credentials = base64.b64encode(b'%b:' % token.encode('utf-8')).decode('utf-8')
+
+    # set score of first game
+    first_game_score = { "game_score":
+                        {
+                            "tid": 1,
+                            "gid": 1,
+                            "score_w": 2,
+                            "score_b": 1,
+                            "black_id": first_game['black_id'],
+                            "white_id": first_game['white_id']
+                        }
+                    }
+
+    response = test_client.post("/api/v1/tournaments/1/games/1", headers={'Authorization': 'Basic ' + valid_credentials}, json=first_game_score)
+    assert response.status_code == 200
+    assert response.is_json
+    # assert "game" in response.json
+    assert response.json['score_w'] == 2
+    assert response.json['score_b'] == 1
+
+    # verify score is set by getting it again
+    response = test_client.get("/api/v1/tournaments/1/games/1")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "game" in response.json
+    game = response.json["game"]
+    print(game)
+    assert game["score_w"] == 2
+    assert game["score_b"] == 1
+
+    # update score again, should be allowed for corrections
+    first_game_score = { "game_score":
+                        {
+                            "tid": 1,
+                            "gid": 1,
+                            "score_w": 1,
+                            "score_b": 3,
+                            "black_id": first_game['black_id'],
+                            "white_id": first_game['white_id']
+                        }
+                    }
+
+    response = test_client.post("/api/v1/tournaments/1/games/1", headers={'Authorization': 'Basic ' + valid_credentials}, json=first_game_score)
+    assert response.status_code == 200
+    assert response.is_json
+    # assert "game" in response.json
+
+    response = test_client.get("/api/v1/tournaments/1/games/1")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "game" in response.json
+    game = response.json["game"]
+    print(game)
+    assert game["score_w"] == 1
+    assert game["score_b"] == 3
+
+    second_game = games[1]
+    assert second_game['score_w'] is None
+    assert second_game['score_b'] is None
+
+    second_game_score = { "game_score":
+                         {
+                                "tid": 1,
+                                "gid": 2,
+                                "forfeit_w": True,
+                                "score_w": 0,
+                                "score_b": 0,
+                                "black_id": second_game['black_id'],
+                                "white_id": second_game['white_id']
+                            }
+                        }
+
+    response = test_client.post("/api/v1/tournaments/1/games/2", headers={'Authorization': 'Basic ' + valid_credentials}, json=second_game_score)
+    print(response.data)
+    assert response.status_code == 200
+    assert response.is_json
+    # assert "game" in response.json
+
+    response = test_client.get("/api/v1/tournaments/1/games/2")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "game" in response.json
+    game = response.json["game"]
+    print(game)
+    assert game["score_w"] == 0
+    assert game["score_b"] == 0
+    assert game["forfeit"] == "w"

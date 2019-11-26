@@ -80,7 +80,7 @@ class Game(object):
         if not isinstance(score_b, int):
             score_b = None
 
-        score_w = self.score_b
+        score_w = self.score_w
         if not isinstance(score_w, int):
             score_w = None
 

@@ -434,6 +434,9 @@ def updateGame(tid, gid):
 
     audit_logger.info("API: Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
                       (t.short_name, score['gid'], current_user.short_name, current_user.user_id, score['score_b'], score['score_w']))
+    if score["forfeit_w"] or score["forfeit_b"]:
+        audit_logger.info("API: Forfeit set for game %s: W: %s, B: %s" % (score['gid'], score["forfeit_w"], score["forfeit_b"]))
+
     status = t.updateGame(score)
 
     if not status == 1:
