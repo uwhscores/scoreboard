@@ -86,6 +86,8 @@ def renderTDiv(short_name, div):
 
     standings = t.getStandings(div)
     grouped_standings = standings
+    group_names = t.getGroups()
+
 
     placings = t.getPlacings(div=div)
 
@@ -94,7 +96,7 @@ def renderTDiv(short_name, div):
         division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name, placings=placings)
 
 
@@ -120,6 +122,8 @@ def renderTPod(short_name, pod):
     division = t.getDivisionNames()
     standings = t.getStandings(pod=pod)
     grouped_standings = t.splitStandingsByGroup(standings)
+    group_names = t.getGroups()
+
 
     team_list = t.getTeams(pod=pod)
 
@@ -131,7 +135,7 @@ def renderTPod(short_name, pod):
         pod_name = "%s Pod" % pod
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=division,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=division,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=pod_name)
 
 
@@ -176,12 +180,13 @@ def renderTTeam(short_name, team_id):
         standings = t.getStandings()
 
     grouped_standings = t.splitStandingsByGroup(standings)
+    group_names = t.getGroups()
 
     team = t.getTeam(team_id)
     team_info = t.getTeamInfo(team_id)
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True, team_info=team_info)
 
 
