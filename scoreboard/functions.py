@@ -251,7 +251,7 @@ def validateJSONSchema(source, schema_name):
         Returns duple of Pass/Fail boolean and message
     """
     schema_file = schema_name.lower() + ".json"
-    schema_file = os.path.join("app/json_schemas", schema_file)
+    schema_file = os.path.join("scoreboard/json_schemas", schema_file)
 
     if not os.path.isfile(schema_file):
         return (False, "Unable to locate schema file for schema name %s" % schema_name)
