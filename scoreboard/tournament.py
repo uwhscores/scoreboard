@@ -61,6 +61,10 @@ class Tournament(object):
         else:
             self.POINTS_FORFEIT = 2
 
+        self.use_24hour = False
+        if params.getParam('use_24hour') == 1:
+            self.use_24hour = True
+
         self.sm_logo = None
         if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "sm_logo.png")):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
