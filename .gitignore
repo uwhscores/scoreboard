@@ -16,3 +16,4 @@ db_dumps/*
 *.bak
 .tox
 MANIFEST
+scoreboard.egg-info/
