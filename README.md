@@ -12,13 +12,9 @@ setup an instance and run it. These steps are likely not complete.
 
     `git clone git@github.com:notroot/scoreboard.git`
 
-    Checkout `dev`
-
-    `git checkout dev`
-
 3. Create a new virtualenv:
 
-    `cd scoreboard; virtualenv -p $( which python3.6) venv`
+    `cd scoreboard; virtualenv -p $( which python3.6 ) venv`
 
 4. Step into your virtualenv:
 
@@ -37,3 +33,17 @@ setup an instance and run it. These steps are likely not complete.
     `python scoreboard.py`
 
 8. Connect at http://localhost:5000
+
+
+## Build and Test
+The project uses tox to build, install and run pytest. Generally the Scoreboard package is not installed when deployed (though it could be) but allowing tox to setup the virtual environment for testing with Pytest is adventagous.
+
+### Steps
+1. Run `tox` from the root of the project
+
+That's it, tox does everything else and you'll get an output if all the tests pass or which ones fail
+
+### Adding Tests
+Tests are defined in the `/tests` folder along with supporting files. Automated tests should be contained in files starting with `test_` anything else should not have the test prefix. Individual tests are defined in the `test_*.py` files and are functions also starting with the `test_` prefix. Again any helper functions should be named not starting with the test prefix.
+
+New tests can either be added to an existing `test_*.py` if it makes sens to group it with those tests, or can start a new file. 
