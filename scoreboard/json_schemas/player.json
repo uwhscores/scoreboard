@@ -1,0 +1,17 @@
+{
+  "title": "Player",
+  "type": "object",
+  "properties": {
+    "player": {
+      "type": "object",
+      "properties": {
+        "display_name": {"type": "string"},
+        "player_id": {"type": "string"},
+        "teams": {"type": "array"}
+      },
+      "required": ["display_name", "player_id"]
+    }
+  },
+  "required": ["player"],
+  "additionalProperties": false
+}

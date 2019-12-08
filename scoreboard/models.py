@@ -8,6 +8,7 @@ import re
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 
+from scoreboard.exceptions import UpdateError
 
 class Stats(object):
     """ Class to hold all the stats for a given team in a given group (division or pod) a single team may have multiple stats
@@ -400,3 +401,85 @@ class User(object):
 
     def __genResetToken(self):
         return b64encode(urandom(30), b"-_")
+
+
+class Player(object):
+    """ Class object for players, this is the object used to represent players on teams as part of rosters. It is distinct from "users" which represent
+    users of the Scoreboard system for administration purposes """
+
+    def __init__(self, db, display_name, player_id=None):
+        self.db = db
+
+        if not player_id:
+            # generate a player ID and make sure its unique in the DB
+            while player_id is None:
+                player_id = b64encode(urandom(6), b"Aa").decode("utf-8")
+                cur = self.db.execute("SELECT player_id FROM players WHERE player_id=?", (player_id,))
+                exists = cur.fetchone()
+                if exists:
+                    player_id = None
+            app.logger.info("Generated new player ID %s for player %s" % (player_id, display_name))
+
+        self.player_id = player_id
+        self.display_name = display_name
+
+        self.teams = self.findTeams()
+
+    def __repr__(self):
+        return '{}: {} - {}'.format(self.player_id, self.display_name, self.teams)
+
+    def serialize(self):
+        return {
+            'player_id': self.player_id,
+            'display_name': self.display_name,
+            'teams': self.teams
+        }
+
+    def commit(self):
+
+        cur = self.db.execute("SELECT player_id FROM players WHERE player_id=?", (self.player_id,))
+        existing = cur.fetchone()
+
+        if existing:
+            self.db.execute("UPDATE players SET display_name=?, date_updated=datetime('now') WHERE player_id=?", (self.display_name, self.player_id))
+        else:
+            self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (self.player_id, self.display_name))
+        self.db.commit()
+
+        return True
+
+    def findTeams(self):
+        from scoreboard.functions import getTournamentByID
+
+        teams = []
+        cur = self.db.execute("SELECT tid, team_id, cap_number, is_coach, coach_title FROM rosters WHERE player_id=?", (self.player_id,))
+
+        rows = cur.fetchall()
+        for row in rows:
+            team = {}
+            tid = row['tid']
+            team_id = row['team_id']
+
+            t = getTournamentByID(tid)
+            team['tournament'] = t.name
+            team['t_short_name'] = t.short_name
+            team['name'] = t.getTeam(team_id)
+            team['team_id'] = team_id
+            teams.append(team)
+
+        return teams
+
+    def updateDisplayName(self, new_display_name):
+        try:
+            new_display_name = str(new_display_name)
+            new_display_name = new_display_name.strip()
+        except TypeError:
+            raise UpdateError("NotString", "Display name cannot be converted to string")
+
+        if len(new_display_name) > 48:
+            raise UpdateError("NameToLong", "Display name cannot be greater than 48 characters")
+
+        self.display_name = new_display_name
+        self.commit()
+
+        return True

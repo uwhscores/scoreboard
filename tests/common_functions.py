@@ -13,6 +13,8 @@ def init_db(db):
 
 
 def create_db(db_path):
+    if os.path.isfile(db_path):
+        os.unlink(db_path)
     db = sqlite3.connect(db_path)
     db.row_factory = sqlite3.Row
 

@@ -12,10 +12,11 @@ def app():
 
 @pytest.fixture(scope='module')
 def test_client(tmpdir_factory):
+    print("Creating test_client")
     db_path = tmpdir_factory.mktemp("db").join("test.db")
     create_db(db_path.strpath)
 
-    flask_app = create_app(db_path=db_path.strpath)
+    flask_app = create_app(db_path=db_path.strpath, debug=True)
 
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.

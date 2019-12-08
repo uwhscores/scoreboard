@@ -115,3 +115,5 @@ CREATE TABLE rosters (
 	coach_title TEXT,
 	PRIMARY KEY(tid, player_id)
 );
+
+ALTER TABLE players ADD COLUMN date_updated timestamp;
