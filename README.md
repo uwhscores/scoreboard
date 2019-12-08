@@ -1,12 +1,12 @@
 # Welcome to Scoreboard
-Welcome to Scoreboard, the software behind UWHScores.com. Scoreboard is a Python project
-using the Flask framework and a SQLite backend. Below are the very rough steps to
+Welcome to Scoreboard, the software behind UWHScores.com. Scoreboard is a Python3 project
+using the Flask framework and a SQLite database. Below are the very rough steps to
 setup an instance and run it. These steps are likely not complete.
 
 ## Setup
-1. Start by installing virtualenv if you have not already:
+1. Start by installing virtualenv if you have not already, Python 3.6:
 
-    `sudo pip install virtualenv`
+    `sudo pip3 install virtualenv`
 
 2. Clone the repository:
 
@@ -18,13 +18,13 @@ setup an instance and run it. These steps are likely not complete.
 
 3. Create a new virtualenv:
 
-    `cd scoreboard; virtualenv venv`
+    `cd scoreboard; virtualenv -p $( which python3.6) venv`
 
 4. Step into your virtualenv:
 
     `. venv/bin/activate`
 
-5. Install Flask and dependancies. 
+5. Install Flask and dependancies.
 
     `pip install -r requirements.txt`
 
