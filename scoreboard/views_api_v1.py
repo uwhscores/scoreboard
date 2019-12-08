@@ -1,11 +1,14 @@
-from functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
-from app import app, global_limiter
-from app import audit_logger
+from flask import current_app as app
+from base64 import b64encode
 from flask import jsonify, request, make_response, g
 from flask_httpauth import HTTPBasicAuth
-from base64 import b64encode
 from os import urandom
-import urlparse
+import urllib.parse
+import sqlite3
+
+from scoreboard import global_limiter, audit_logger
+from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
+from scoreboard.exceptions import UserAuthError
 
 auth = HTTPBasicAuth()
 
@@ -28,11 +31,11 @@ class InvalidUsage(Exception):
 
 @auth.verify_password
 def verify_pw(email, password_try):
+    audit_logger.info("Attempting auth for user/token %s" % email)
 
     # first assume its a token for speed
     token = email
     user_id = authenticate_token(token)
-
     if user_id:
         g.user_id = user_id
         return True
@@ -42,10 +45,15 @@ def verify_pw(email, password_try):
         return False
 
     # it wasn't a token, so lets try it as a username/password pair
-    user_id = authenticate_user(email, password_try, silent=True)
+    user_id = None
+    try:
+        user_id = authenticate_user(email, password_try)
+    except UserAuthError:
+        return False
 
     if user_id:
         g.user_id = user_id
+        audit_logger.info("Succesful authentication for %s" % user_id)
         return True
 
     # doesn't seem to be anybody we know
@@ -59,6 +67,7 @@ def authenticate_token(token):
     u = cur.fetchone()
 
     if u:
+        audit_logger.info("Verified token auth for %s" % u['user_id'])
         return u['user_id']
     else:
         return None
@@ -75,12 +84,12 @@ def genToken(user_name):
         return None
 
     user_id = u['user_id']
-    token = b64encode(urandom(32))
+    token = b64encode(urandom(32)).decode('utf-8')
 
     try:
         cur = db.execute("INSERT INTO tokens (user_id, token, valid_til) VALUES (?,?, datetime('now', '+1 day'))", (user_id, token))
         db.commit()
-    except Execption as e:
+    except sqlite3.DatabaseError as e:
         db.rollback()
         # do something with the exception?
         return None
@@ -131,7 +140,7 @@ def apiGetTournaments():
 
     response = []
 
-    for t in tournaments.values():
+    for t in list(tournaments.values()):
         response.append(t.serialize())
     return jsonify(tournaments=response)
 
@@ -230,7 +239,7 @@ def apiGetTeamInfo(tid, team_id):
 
     #request.url_root
     if team_info['flag_url']:
-        team_info['flag_url'] = urlparse.urljoin(request.url_root, team_info['flag_url'])
+        team_info['flag_url'] = urllib.parse.urljoin(request.url_root, team_info['flag_url'])
 
     return jsonify(team=team_info)
 
@@ -246,7 +255,7 @@ def apiGetStandings(tid):
         raise InvalidUsage(message, status_code=503)
 
     pods = t.getPodsActive()
-    standings = []
+    standings = None
 
     pod_ask = request.args.get('pod')
     div_ask = request.args.get('div')
@@ -254,10 +263,12 @@ def apiGetStandings(tid):
     if pod_ask and div_ask:
         raise InvalidUsage("Cannot filter by pod and div at same time", status_code=400)
 
-    if not t.isGroup(div_ask):
+    if div_ask and not t.isGroup(div_ask):
         raise InvalidUsage("division not found", status_code=404)
 
     if pod_ask:
+        app.logger.debug("pods = %s" % pods)
+        app.logger.debug("pod_ask = %s" % pod_ask)
         if pod_ask in pods:
             standings = t.getStandings(pod=pod_ask)
         else:
@@ -269,11 +280,12 @@ def apiGetStandings(tid):
         standings = t.getStandings()
 
     answer = []
-    for s in standings:
-        if div_ask and s.div == div_ask:
-            answer.append(s.serialize())
-        elif not div_ask:
-            answer.append(s.serialize())
+    for group in standings:
+        for r in standings[group]:
+            if div_ask and div_ask == r.div:
+                answer.append(r.serialize())
+            elif not div_ask:
+                answer.append(r.serialize())
 
     return jsonify(standings=answer)
 
@@ -317,6 +329,7 @@ def apiGetTimingRules(tid):
 def login_token():
     user_name = request.authorization.username
     response = genToken(user_name)
+    app.logger.debug("API: Token generated %s" % response)
     audit_logger.info("API: Token generated for %s" % user_name)
     return jsonify(response)
 
@@ -333,6 +346,13 @@ def logout_token():
     current_user = getUserByID(g.user_id)
     audit_logger.info("API: Logout for user %s(%s)" % (current_user.short_name, current_user.user_id))
     return jsonify(message='goodbye')
+
+
+@app.route('/api/v1/login/test')
+@auth.login_required
+def login_test():
+    """ Test route for verifying authentcation token is working """
+    return jsonify(message="success")
 
 
 @app.route('/api/v1/tournaments/<tid>/games/<gid>', methods=['POST'])
@@ -414,6 +434,9 @@ def updateGame(tid, gid):
 
     audit_logger.info("API: Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
                       (t.short_name, score['gid'], current_user.short_name, current_user.user_id, score['score_b'], score['score_w']))
+    if score["forfeit_w"] or score["forfeit_b"]:
+        audit_logger.info("API: Forfeit set for game %s: W: %s, B: %s" % (score['gid'], score["forfeit_w"], score["forfeit_b"]))
+
     status = t.updateGame(score)
 
     if not status == 1:

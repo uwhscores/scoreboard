@@ -123,6 +123,8 @@
 									<span class="game-line"> Pod: {{ game.pod }} </span>
 								{% elif game.pod %}
 									<span class="game-line"> Pod: {{ game.pod }} </span>
+								{% elif game.division %}
+									<span class="game-line"> Div: {{ game.division }} </span>
 								{% elif game.type == "CO" %}
 									<span class=game-description>Cross Over</span>
 								{% endif %}
@@ -165,12 +167,16 @@
 					{%- endif %}
 				</div>
 			<div id="standings" class="tab-pane fade">
-			{% for group in grouped_standings|sort -%}
-			{% if group -%}
-			<h4>{{ group }}</h4>
+			{% for group in grouped_standings -%}
+			<h4>
+			{% if group and group in group_names -%}
+			{{ group_names[group] }}
+			{% elif group %}
+			{{ group }}
 			{%- else %}
-			<h4>Standings</h4>
+			Standings
 			{%- endif %}
+			</h4>
 			<table class="table table-striped standings-table">
 				<thead>
 					<tr>
@@ -273,7 +279,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{%- for player in team_info.roster|sort %}
+						{%- for player in team_info.roster %}
 						<tr>
 							<td>{{ player.name }}</td>
 							<td>{{ player.number if player.number != None else "" }}</td>
@@ -289,7 +295,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{%- for coach in team_info.coaches|sort %}
+						{%- for coach in team_info.coaches %}
 						<tr>
 							<td>{{ coach.name }}</td>
 							{% if coach.title %}

@@ -1,38 +1,39 @@
-from app import app
-import sqlite3
-import os
+from base64 import b64encode
+from flask import current_app as app
+from jsonschema import validate, ValidationError, RefResolutionError
 import bcrypt
 import json
-from base64 import b64encode
-from flask import g, flash
-from jsonschema import validate, ValidationError, RefResolutionError
+import os
+import sqlite3
 
-from tournament import Tournament
-from models import User
+from scoreboard.tournament import Tournament
+from scoreboard.models import User
+from scoreboard.exceptions import UserAuthError
 
 
 def connectDB():
     """ Connect to DB as configured """
-    with app.app_context():
-        rv = sqlite3.connect(os.environ["SCOREBOARD_DB"])
-        rv.row_factory = sqlite3.Row
-        return rv
+    db = None
+    if app.config['DATABASE']:
+        db = sqlite3.connect(app.config['DATABASE'])
+        db.row_factory = sqlite3.Row
+    return db
 
 
 def getDB():
     """ Should store database object is context, doesn't right now """
     # TODO: Store db to context
-    # if not hasattr(app.g, 'sqlite_db'):
-    #     app.g.sqlite_db = connectDB()
-    # return app.g.sqlite_db
+    # if not hasattr(g, 'sqlite_db'):
+    #     g.sqlite_db = connectDB()
+    # return g.sqlite_db
     return connectDB()
 
 
-@app.teardown_appcontext
-def closeDB(error):
-    """ tear down database connection on exit """
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
+# @app.teardown_appcontext
+# def closeDB(error):
+#     """ tear down database connection on exit """
+#     if hasattr(g, 'sqlite_db'):
+#         g.sqlite_db.close()
 
 
 def getTournaments(filter=None):
@@ -40,11 +41,11 @@ def getTournaments(filter=None):
     db = getDB()
 
     if filter == "past":
-        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE end_date < date('now') ORDER BY start_date DESC")
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE end_date < date('now', '-1 day') ORDER BY start_date DESC")
     elif filter == "future":
         cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE start_date > date('now', '+1 day') ORDER BY start_date DESC")
     elif filter == "live":
-        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE start_date <= date('now','+1 day') AND end_date >= date('now') ORDER BY start_date DESC")
+        cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE start_date <= date('now','+1 day') AND end_date >= date('now', '-1 day') ORDER BY start_date DESC")
     else:
         # all
         cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments ORDER BY start_date DESC")
@@ -131,8 +132,9 @@ def getUserList():
     return users
 
 
-def authenticate_user(email, password_try, silent=False, ip_addr=None):
+def authenticate_user(email, password_try, ip_addr=None):
     """ authenticate user for login """
+    user_id = None
     db = getDB()
 
     cur = db.execute("SELECT user_id, password, failed_logins FROM users WHERE email=? AND active=1", (email,))
@@ -141,43 +143,46 @@ def authenticate_user(email, password_try, silent=False, ip_addr=None):
 
     if row:
         user_id = row['user_id']
-        hashed = str(row['password'])
-        password_try = str(password_try)
+        hashed = row['password']
+        password_try = password_try.encode('utf-8')
+
+        # python2-3 legacy issues, some passwords/users in the db are encoded some aren't
+        try:
+            hashed = hashed.encode('utf-8')
+        except AttributeError:
+            pass
+
         failed_logins = row['failed_logins']
 
         # if too many failed passwords in a row, just block, will require manual intervention
         if failed_logins > 10:
             # should fire off password reset email here once I write that
-            if not silent:
-                flash("Account locked due to too many failed passwords")
-
-            return None
+            raise UserAuthError("LOCKED", message="Account locked due to too many failed passwords")
 
         if bcrypt.hashpw(password_try, hashed) == hashed:
             cur = db.execute("UPDATE users SET last_login=CURRENT_TIMESTAMP, failed_logins=0 WHERE user_id=?", (user_id,))
             db.commit()
-            return user_id
         else:
             failed_logins += 1
             cur = db.execute("UPDATE users SET failed_logins=? WHERE user_id=?", (failed_logins, user_id))
             db.commit()
 
-            if not silent:
-                flash("Incorrect password")
+            raise UserAuthError("FAIL", message="Incorrect password")
 
             return None
 
     else:
-        if not silent:
-            flash("Cannot find account")
-        return None
+        raise UserAuthError("NotFound", message="Cannot find account")
+
+    return user_id
 
 
-def addUser(new_user):
+def addUser(new_user, db=None):
     """ add a new user to the database
     returns dictionary with the results of the add including their password reset reset_token
     always returns dictionary, must check 'success' field for True/False """
-    db = getDB()
+    if not db:
+        db = getDB()
 
     result = {'success': False, 'message': ""}
     # check that email is unique
@@ -192,18 +197,18 @@ def addUser(new_user):
         return result
 
     while True:
-        user_id = b64encode(os.urandom(6), "Aa")
+        user_id = b64encode(os.urandom(6), b"Aa").decode("utf-8")
         cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
         if not cur.fetchone():
             break
 
     while True:
-        token = b64encode(os.urandom(30), "-_")
+        token = b64encode(os.urandom(30), b"-_").decode("utf-8")
         cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
         if not cur.fetchone():
             break
 
-    hashed = bcrypt.hashpw(token, bcrypt.gensalt())
+    hashed = bcrypt.hashpw(token.encode("utf-8"), bcrypt.gensalt())
 
     cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active, reset_token) VALUES (?,?,?,?,1,?)",
                      (user_id, new_user['short_name'], new_user['email'], hashed, token))
@@ -246,7 +251,7 @@ def validateJSONSchema(source, schema_name):
         Returns duple of Pass/Fail boolean and message
     """
     schema_file = schema_name.lower() + ".json"
-    schema_file = os.path.join("app/json_schemas", schema_file)
+    schema_file = os.path.join("scoreboard/json_schemas", schema_file)
 
     if not os.path.isfile(schema_file):
         return (False, "Unable to locate schema file for schema name %s" % schema_name)

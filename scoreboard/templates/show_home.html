@@ -111,7 +111,7 @@
 
 				<h3>Past Tournaments</h3>
 				<div class="list-group">
-					{% for t in past_tournaments|sort -%}
+					{% for t in past_tournaments -%}
 						<a href="/t/{{t.short_name}}" class="list-group-item">
 							{% if t.banner %}
 							<img class=tournament_banner  src=/{{t.banner}}>

@@ -9,7 +9,11 @@ tournaments/*
 *.pyc
 logs/*
 .pytest_cache/*
-app/static/flags/*
+scoreboard/static/flags/*
 .DS_Store
 */.DS_Store
 db_dumps/*
+*.bak
+.tox
+MANIFEST
+scoreboard.egg-info/

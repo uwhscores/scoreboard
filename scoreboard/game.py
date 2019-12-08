@@ -1,9 +1,8 @@
 from datetime import datetime
+from flask import current_app as app
 import re
-from app import app
-#import functions.ordinalize as ordinalize
-#from .functions import ordinalize
-import functions
+
+from scoreboard import functions
 
 def getPodID(a, b):
     """ Leftover function from original Nationals Pod Logic """
@@ -21,7 +20,10 @@ class Game(object):
         #self.day = day
 
         self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
-        self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
+        if self.tournament.use_24hour:
+            self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%H:%M')
+        else:
+            self.start_time = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S').strftime('%I:%M %p')
 
         day_names = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"]
         self.day = "%s-%s" % (day_names[self.start_datetime.weekday()], functions.ordinalize(self.start_datetime.day))
@@ -81,7 +83,7 @@ class Game(object):
         if not isinstance(score_b, int):
             score_b = None
 
-        score_w = self.score_b
+        score_w = self.score_w
         if not isinstance(score_w, int):
             score_w = None
 

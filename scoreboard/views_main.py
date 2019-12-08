@@ -1,6 +1,6 @@
-from app import app
+from flask import current_app as app
 from flask import request, redirect, render_template, flash
-from functions import getTournaments, getTournamentByID, getTournamentID
+from .functions import getTournaments, getTournamentByID, getTournamentID
 import re
 
 @app.route('/')
@@ -47,23 +47,17 @@ def renderTourament(short_name):
 
     pods = t.getPodsActive()
     pod_names = t.getPodNamesActive()
+    group_names = t.getGroups()
 
-    standings = []
-    if pods:
-        for pod in pods:
-            standings += t.getStandings(None, pod)
-    else:
-        standings = t.getStandings()
-
-    grouped_standings = t.splitStandingsByGroup(standings)
+    standings = t.getStandings()
 
     t.genTieFlashes()
     placings = t.getPlacings()
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, placings=placings,
-                           divisions=divisions, team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=standings, group_names=group_names,
+                           placings=placings, divisions=divisions, team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
 
 
 @app.route('/t/<short_name>/div/<div>')
@@ -88,17 +82,12 @@ def renderTDiv(short_name, div):
     divisions = t.getDivisionNames()
     team_list = t.getTeams(div)
 
-    pods = t.getPodsActive(div=div)
     pod_names = t.getPodNamesActive()
 
-    standings = []
-    if pods:
-        for pod in pods:
-            standings += t.getStandings(div, pod)
-    else:
-        standings = t.getStandings(div)
+    standings = t.getStandings(div)
+    grouped_standings = standings
+    group_names = t.getGroups()
 
-    grouped_standings = t.splitStandingsByGroup(standings)
 
     placings = t.getPlacings(div=div)
 
@@ -107,7 +96,7 @@ def renderTDiv(short_name, div):
         division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name, placings=placings)
 
 
@@ -133,6 +122,8 @@ def renderTPod(short_name, pod):
     division = t.getDivisionNames()
     standings = t.getStandings(pod=pod)
     grouped_standings = t.splitStandingsByGroup(standings)
+    group_names = t.getGroups()
+
 
     team_list = t.getTeams(pod=pod)
 
@@ -144,7 +135,7 @@ def renderTPod(short_name, pod):
         pod_name = "%s Pod" % pod
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=division,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=division,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=pod_name)
 
 
@@ -189,12 +180,13 @@ def renderTTeam(short_name, team_id):
         standings = t.getStandings()
 
     grouped_standings = t.splitStandingsByGroup(standings)
+    group_names = t.getGroups()
 
     team = t.getTeam(team_id)
     team_info = t.getTeamInfo(team_id)
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
                            pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True, team_info=team_info)
 
 

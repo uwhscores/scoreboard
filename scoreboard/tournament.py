@@ -1,21 +1,20 @@
 from datetime import datetime
-import re
-import os
+from flask import current_app as app
+from flask import flash
+from flask import g as flask_g
 import json
-from game import Game
-from models import Stats, Ranking, Params
-#from functions import *
-import functions
-from flask import g, flash
-from string import split
-from app import app
+import os
+import re
+
+from scoreboard import functions
+from scoreboard.game import Game
+from scoreboard.models import Stats, Ranking, Params
+
 
 # main struction for a tournament
-
-
 class Tournament(object):
 
-    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db):
+    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db, context=None):
         self.tid = tid
         self.name = name
         self.short_name = short_name
@@ -24,6 +23,10 @@ class Tournament(object):
         self.location = location
         self.is_active = active
         self.db = db
+        if context:
+            self.context = context
+        else:
+            self.context = flask_g
 
         self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
         self.end_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -58,12 +61,18 @@ class Tournament(object):
         else:
             self.POINTS_FORFEIT = 2
 
+        self.use_24hour = False
+        if params.getParam('use_24hour') == 1:
+            self.use_24hour = True
+
         self.sm_logo = None
-        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "sm_logo.png")):
+        if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "sm_logo.png")):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
         self.banner = None
-        if os.path.isfile(os.path.join("app/static/flags", self.short_name, "banner.png")):
+        if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner_sm.png")):
+            self.banner = os.path.join("static/flags", self.short_name, "banner_sm.png")
+        elif os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner.png")):
             self.banner = os.path.join("static/flags", self.short_name, "banner.png")
 
     def __repr__(self):
@@ -74,6 +83,10 @@ class Tournament(object):
         """ sort compare based on start_date """
         delta = other.start_date - self.start_date
         return delta.days
+
+    def __lt__(self, other):
+        """ sort compare based on start_date """
+        return other.start_date < self.start_date
 
     def serialize(self, verbose=False):
         if verbose:
@@ -155,6 +168,7 @@ class Tournament(object):
                 "short_name": team['short_name'],
                 "division": team['division'],
                 "flag_url": team['flag_file'],
+                # TODO: sort rosters and coaches since jinja isn't sorting
                 "roster": self.getTeamRoster(team_id),
                 "coaches": self.getTeamCoaches(team_id)
             }
@@ -228,6 +242,7 @@ class Tournament(object):
                              (pod, self.tid))
 
         teams = []
+        # TODO: standardize flag url format
         for team in cur.fetchall():
             teams.append({'team_id': team['team_id'], 'name': team['name'], 'division': team['division'], 'flag_url': team['flag_file']})
 
@@ -406,6 +421,8 @@ class Tournament(object):
         div_names = []
         for div in divs:
             name = self.expandGroupAbbr(div)
+            if not name:
+                name = div
             div_names.append({'id': div, 'name': name})
 
         return div_names
@@ -429,14 +446,19 @@ class Tournament(object):
         else:
             cur = db.execute('SELECT DISTINCT g.pod FROM games g WHERE g.tid=? ORDER BY g.pod + 0 ASC', (self.tid,))
 
-        pods = []
-        for r in cur.fetchall():
-            pods.append(r['pod'])
+        rows = cur.fetchall()
+        if rows:
+            pods = []
+            for r in rows:
+                pods.append(r['pod'])
 
-        return pods
+            return pods
+        else:
+            return None
 
     def getPodsActive(self, div=None, team=None):
         """ return list of all pod IDs that have team (aka active), can be filtered by division or team """
+
         db = self.db
         if team:
             cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? AND p.team_id=? ORDER BY p.pod + 0 ASC', (self.tid, team))
@@ -446,20 +468,27 @@ class Tournament(object):
         else:
             cur = db.execute('SELECT DISTINCT p.pod FROM pods p WHERE p.tid=? ORDER BY p.pod + 0 ASC', (self.tid,))
 
-        pods = []
-        for r in cur.fetchall():
-            pods.append(r['pod'])
+        rows = cur.fetchall()
+        if rows:
+            pods = []
+            for r in rows:
+                pods.append(r['pod'])
 
-        return pods
+            return pods
+        else:
+            return None
 
     def getPodNamesActive(self, div=None, team=None):
         """ return list of pod names (human readable) that have team assigned, filtered by division or team """
         pods = self.getPodsActive(div=div, team=team)
-
-        pod_names = []
-        for pod in pods:
-            name = self.expandGroupAbbr(pod)
-            pod_names.append({'id': pod, 'name': name})
+        pod_names = None
+        if pods:
+            pod_names = []
+            for pod in pods:
+                name = self.expandGroupAbbr(pod)
+                if not name:
+                    name = pod
+                pod_names.append({'id': pod, 'name': name})
 
         return pod_names
 
@@ -474,6 +503,17 @@ class Tournament(object):
                 pools.append(r['pool'])
 
         return pools
+
+    def getGroups(self):
+        """ get full list of groups indexed by ID """
+        cur = self.db.execute("SELECT group_id, name FROM groups WHERE tid=?", (self.tid,))
+        rows = cur.fetchall()
+
+        groups = {}
+        for row in rows:
+            groups[row['group_id']] = row['name']
+
+        return groups
 
     def expandGroupAbbr(self, group):
         """ takes short name for division or pod and returns expanded human readable name """
@@ -535,7 +575,6 @@ class Tournament(object):
         else:
             return None
 
-
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
         returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
@@ -543,14 +582,23 @@ class Tournament(object):
             standings = self.getStandings(division, pod)
             if len(standings) < 1:
                 return -1
+            # BUG: used to check pods standings for ties but the pod get lots when net wins gets run so if the teams see eachother again
+            # in a later pod then it can get a false positive on a tie in an older pod. This way avoids that but means that no pod can be seeded
+            # if any pod has ties
             if self.checkForTies(standings):
                 return -1
             seed = int(seed) - 1
-            if seed < len(standings):
-                return standings[seed].team.team_id
-            else:
+
+            try:
+                if pod:
+                    team_id = standings[pod][seed].team.team_id
+                else:
+                    team_id = standings[division][seed].team.team_id
+            except IndexError:
                 app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
                 return -1
+
+            return team_id
         else:
             return -1
 
@@ -559,7 +607,7 @@ class Tournament(object):
         returns list place dictionaries
         """
         db = self.db
-        if (div):
+        if div:
             cur = db.execute("SELECT division, place, game FROM rankings WHERE division=? AND tid=? ORDER BY CAST(place AS INTEGER)", (div, self.tid))
         else:
             cur = db.execute("SELECT division, place, game FROM rankings WHERE tid=? ORDER BY CAST(place AS INTEGER)", (self.tid,))
@@ -608,21 +656,25 @@ class Tournament(object):
 
             # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
             # TODO: this doesn't look right anymore, need to check this still works
-            match = re.search('^S([\w])(\d+)$', game)
+            match = re.search(r"^S([\w])(\d+)$", game)
             if match:
                 group = match.group(1)
                 seed = match.group(2)
 
                 if group in self.getPods():
                     team_id = self.getSeed(seed, None, group)
-                elif group in self.getDivision():
+                elif group in self.getDivisions():
                     team_id = self.getSeed(seed, group, None)
                 else:
                     team_id = -1
 
-                # # TODO: check if this logic is broken, shouldn't be "Pod" all the time
+                # TODO: check if this logic is broken, shouldn't be "Pod" all the time
                 if (team_id < 0):
-                    game = "Pod " + pod + " seed " + seed
+                    group_name = self.expandGroupAbbr(group)
+                    if group_name:
+                        game = "%s seed %s" % (group_name, seed)
+                    else:
+                        game = "%s seed %s" % (group, seed)
                     style = "soft"
                 else:
                     team = self.getTeam(team_id)
@@ -651,12 +703,19 @@ class Tournament(object):
     def getParams(self):
         """ retrieve parameters for the tournament
         Keeps them stashed in the gloabl store for performance"""
-        if g:
-            if not hasattr(g, 'params'):
-                g.params = Params(self)
-            return g.params
-        else:
-            return Params(self)
+        # if not self.context:
+        #     context = g
+        # if g:
+        #     if not hasattr(g, 'params'):
+        #         g.params = Params(self)
+        #     return g.params
+        # else:
+        #     return Params(self)
+
+        if not hasattr(self.context, 'params'):
+            self.context.params = Params(self)
+
+        return self.context.params
 
     def getCoinFlip(self, tid_a, tid_b):
         """ Gets winner of coin flip, returns team ID for winner of -1 if no coin flip found """
@@ -665,9 +724,9 @@ class Tournament(object):
         # tid_b))
 
         if params.getParam('coin_flips'):
-            flips = split(params.getParam('coin_flips'), ";")
+            flips = params.getParam('coin_flips').split(";")
             for i in flips:
-                (a, b, coin) = split(i, ",")
+                (a, b, coin) = i.split(",")
                 a = int(a)
                 b = int(b)
                 if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b):
@@ -681,7 +740,7 @@ class Tournament(object):
         Doesn't test that ties required action, e.g. all teams would be tied at start of tournament
         """
         # TODO: Definitely need test case for tournament.getTies, function shouldn't have worked before adding self to getTeam calls
-        if not hasattr(g, 'ties'):
+        if not hasattr(self.context, 'ties'):
             return None
 
         ties = g.ties
@@ -726,32 +785,32 @@ class Tournament(object):
             # TODO:  code to add divisional check goes here
 
         if tid_c:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_a, tid_b, tid_c))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_a, tid_b, tid_c))
             else:
-                g.ties.append((tid_a, tid_b, tid_c))
+                self.context.ties.append((tid_a, tid_b, tid_c))
 
         if tid_a < tid_b:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_a, tid_b))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_a, tid_b))
             else:
-                g.ties.append((tid_a, tid_b))
+                self.context.ties.append((tid_a, tid_b))
         else:
-            if not hasattr(g, 'ties'):
-                g.ties = []
-                g.ties.append((tid_b, tid_a))
+            if not hasattr(self.context, 'ties'):
+                self.context.ties = []
+                self.context.ties.append((tid_b, tid_a))
             else:
-                g.ties.append((tid_b, tid_a))
+                self.context.ties.append((tid_b, tid_a))
 
         return 0
 
     def genTieFlashes(self):
-        if not hasattr(g, 'ties'):
+        if not hasattr(self.context, 'ties'):
             return 0
 
-        ties = g.ties
+        ties = self.context.ties
 
         seen = set()
         list = [x for x in ties if x not in seen and not seen.add(x)]
@@ -963,6 +1022,7 @@ class Tournament(object):
         """ boolean test to check standings for ties """
         x = 0
         last = 0
+
         while x < len(standings) - 1:
             if self.cmpTeamsSort(standings[x].team, standings[x + 1].team) == 0:
                 if last == 1:
@@ -987,6 +1047,7 @@ class Tournament(object):
         Returns ordered list of ranking objects, ranking object contains original team stat object along with division, pod and place
         Place field should be used whenever standings are displayed, multiple teams can be displayed as in the same place when ties are present
         Do not try to use the index of the list as the place """
+
         # # TODO: scrub tournaments.sortStandings()
         # if not pod:
         #    app.logger.debug("sorting standings without pod")
@@ -996,25 +1057,25 @@ class Tournament(object):
         for team in team_stats:
             # team = team_stats[place]
             if team.pod != pod:
+                # TODO: maybe raise an exception?
                 app.logger.debug("I have standings that aren't for my pod")
 
         # pre-sort required for three-way ties
-        ordered = sorted(team_stats, cmp=self.cmpTeamsSort)
-        ordered = sorted(ordered, cmp=self.cmpTeams)
+        #ordered = sorted(team_stats, cmp=self.cmpTeamsSort)
+        #ordered = sorted(ordered, cmp=self.cmpTeams)
+        # TODO: this is gonna need sorting fixing from the 2->3 converstion
+        ordered = sorted(team_stats)
 
         # first go through the list and assign a place to everybody based on only points
         # doesn't settle tie breakers yet
         i = 1
         standings = []
-        lastDiv = None
-        lastPod = None
         last = None
         skipped = 0
         for team in ordered:
             # reset rank number of its a new division or pod
-            if team.pod != lastPod or (team.division != lastDiv and lastPod is None):
+            if not last:
                 i = 1
-                skipped = 0
             elif team != last and skipped > 0:
                 i = i + skipped + 1
                 skipped = 0
@@ -1026,111 +1087,102 @@ class Tournament(object):
             rank = i
             standings.append(Ranking(team.division, team.pod, rank, team))
 
-            lastDiv = team.division
-            lastPod = team.pod
             last = team
 
-        divisions = self.getDivisions()
-        pods = self.getPodsActive()
-        is_pods = False
-        if pods:
-            divisions = pods
-            is_pods = True
+        # use list Comprehensions to find all the tied teams
 
-        # use list Comprehensions to find all the tied teams, have to iterate over divisions
-        # to keep 1st in the A from being confused with 1st in the B
-        for div in divisions:
-            if is_pods:
-                # app.logger.debug("-- working on pod %s" % div)
-                div_standings = [x for x in standings if x.team.pod == div]
-            else:
-                div_standings = [x for x in standings if x.team.division == div]
-
-            places = len(div_standings)
-            place = 1
-            while place <= places:
-                place_teams = [x for x in div_standings if x.place == place]
-                count = len(place_teams)
-                # app.logger.debug("place_teams =  %s" % place_teams)
-                # nobody is in this place, probably do to ties, move on
-                if count == 0:
-                    place += 1
-                elif count == 1:  # one team alone, nothing to do
-                    place += 1
-                # head to head tie, break based on head-to-head first
-                elif count == 2:
-                    place += 1
-                    a = place_teams[0].team
-                    b = place_teams[1].team
-                    if self.cmpTeams(a, b, div) < 0:
-                        place_teams[1].place += 1
-                    elif self.cmpTeams(a, b, div) > 0:
-                        place_teams[0].place += 1
-                    else:
-                        # Tied, no coin clip, and that's ok for now
-                        continue
-                elif count == 3:
-                    # app.logger.debug("working a three-way in %s" % div)
-
-                    # unlikely, but if one team beat both others, then win
-                    if self.netWins(place_teams[0].team, place_teams[1].team) > 0 and self.netWins(place_teams[0].team, place_teams[2].team) > 0:
-                        place_teams[1].place += 1
-                        place_teams[2].place += 1
-                        continue
-                    elif self.netWins(place_teams[1].team, place_teams[0].team) > 0 and self.netWins(place_teams[1].team, place_teams[2].team) > 0:
-                        place_teams[0].place += 1
-                        place_teams[2].place += 1
-                        continue
-                    elif self.netWins(place_teams[2].team, place_teams[0].team) > 0 and self.netWins(place_teams[2].team, place_teams[1].team) > 0:
-                        place_teams[0].place += 1
-                        place_teams[1].place += 1
-                        continue
-
-                    # Check if all the tie breakers are ties
-                    if place_teams[1:] == place_teams[:-1]:
-                        app.logger.debug("three way tie all equal in %s" % div)
-                        place += 1
-                        if is_pods and self.endRoundRobin(None, div):
-                            app.logger.debug("end of round robin and three-way tie")
-                            self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
-                        elif not is_pods and self.endRoundRobin(div):
-                            app.logger.debug("end of round robin and three-way tie")
-                            self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
-
-                        continue
-                    else:
-                        # sort teams based on rules w/o head-to-head
-                        place_teams = sorted(place_teams, cmp=self.cmpRankSort)
-
-                        last = place_teams[-1].team
-                        second_last = place_teams[-2].team
-                        # don't use head-to-head cmp even though its two because its the 3-way
-                        # tie braker
-                        result = self.cmpTeamsSort(last, second_last)
-
-                        if result == 0:
-                            place_teams[-1].place += 1
-                            place_teams[-2].place += 1
-                        elif result < 0:
-                            place_teams[-2].place += 2
-                        else:
-                            place_teams[-1].place += 2
-
-                # more than three teams in place
+        places = len(standings)
+        place = 1
+        while place <= places:
+            place_teams = [x for x in standings if x.place == place]
+            count = len(place_teams)
+            # app.logger.debug("place_teams =  %s" % place_teams)
+            # nobody is in this place, probably do to ties, move on
+            if count == 0:
+                place += 1
+            elif count == 1:  # one team alone, nothing to do
+                place += 1
+            # head to head tie, break based on head-to-head first
+            elif count == 2:
+                place += 1
+                a = place_teams[0].team
+                b = place_teams[1].team
+                if self.cmpTeams(a, b, pod) < 0:
+                    place_teams[1].place += 1
+                elif self.cmpTeams(a, b, pod) > 0:
+                    place_teams[0].place += 1
                 else:
-                    app.logger.debug("%s teams tied in pod %s" % (count, pod))
+                    # Tied, no coin clip, and that's ok for now
+                    continue
+            elif count == 3:
+                app.logger.debug("working a three-way in %s" % pod)
+                app.logger.debug(place_teams)
 
-                    place_teams = sorted(place_teams, cmp=self.cmpRankSort)
+                # unlikely, but if one team beat both others, then win
+                if self.netWins(place_teams[0].team, place_teams[1].team) > 0 and self.netWins(place_teams[0].team, place_teams[2].team) > 0:
+                    place_teams[1].place += 1
+                    place_teams[2].place += 1
+                    continue
+                elif self.netWins(place_teams[1].team, place_teams[0].team) > 0 and self.netWins(place_teams[1].team, place_teams[2].team) > 0:
+                    place_teams[0].place += 1
+                    place_teams[2].place += 1
+                    continue
+                elif self.netWins(place_teams[2].team, place_teams[0].team) > 0 and self.netWins(place_teams[2].team, place_teams[1].team) > 0:
+                    place_teams[0].place += 1
+                    place_teams[1].place += 1
+                    continue
 
-                    most_goals = place_teams[-1].team.goals_allowed
-                    tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
-                    # if pod=="4P":
-                    #    b
-                    if len(tied) == len(place_teams):
-                        place += 1
+                # Check if all the tie breakers are ties
+                if place_teams[1:] == place_teams[:-1]:
+                    app.logger.debug("three way tie all equal in %s" % pod)
+                    place += 1
+                    if pod and self.endRoundRobin(pod=pod):
+                        app.logger.debug("end of round robin and three-way tie")
+                        self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
                     else:
-                        for r in tied:
-                            r.place += len(place_teams) - len(tied)
+                        ## TODO: need to get division somehow
+                        b
+                        if self.endRoundRobin(div=div):
+                            app.logger.debug("end of round robin and three-way tie")
+                            self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
+
+                    continue
+                else:
+                    # sort teams based on rules w/o head-to-head
+                    # TODO: 2->3 needs to be fixed
+                    place_teams = sorted(place_teams)
+
+                    last = place_teams[-1].team
+                    second_last = place_teams[-2].team
+                    # don't use head-to-head cmp even though its two because its the 3-way
+                    # tie braker
+                    result = self.cmpTeamsSort(last, second_last)
+
+                    if result == 0:
+                        place_teams[-1].place += 1
+                        place_teams[-2].place += 1
+                    elif result < 0:
+                        place_teams[-2].place += 2
+                    else:
+                        place_teams[-1].place += 2
+
+            # more than three teams in place
+            else:
+                app.logger.debug("%s teams tied in pod %s" % (count, pod))
+
+                # TODO: Fix 2->3 compare
+                # place_teams = sorted(place_teams, cmp=self.cmpRankSort)
+                place_teams = sorted(place_teams)
+
+                most_goals = place_teams[-1].team.goals_allowed
+                tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
+                # if pod=="4P":
+                #    b
+                if len(tied) == len(place_teams):
+                    place += 1
+                else:
+                    for r in tied:
+                        r.place += len(place_teams) - len(tied)
 
         # resort to make sure in order by place, pod and division
         tmp = sorted(standings, key=lambda x: x.place)
@@ -1142,51 +1194,60 @@ class Tournament(object):
     # master function for calculating standings of all teams
     # shouldn't be called directly, use getStandings() to avoid
     # recalculating multiple times per load
-    def calcStandings(self, pod=None):
+    def calcStandings(self):
         """ worker function to calculate the standings of all the teams
         Do not call directly, use getStandings() wrapper to avoid recalculating """
         # app.logger.debug("calculating standings, pod = %s" , (pod,))
 
-        standings = []
+        standings = {}
 
-        db = self.db
-        if (pod is None):
-            cur = db.execute(
-                'SELECT team_id FROM teams WHERE tid=?', (self.tid,))
+        active_pods = self.getPodsActive()
+        if active_pods:
+            for pod in active_pods:
+                team_stats = []
+                group_teams = self.getTeams(pod=pod)
+                for team in group_teams:
+                    team_stats.append(Stats(self, team, pod))
+                standings[pod] = self.sortStandings(team_stats, pod)
         else:
-            cur = db.execute(
-                'SELECT team_id FROM pods WHERE tid=? AND pod=?', (self.tid, pod))
+            for div in self.getDivisions():
+                team_stats = []
+                group_teams = self.getTeams(div=div)
+                for team in group_teams:
+                    team_stats.append(Stats(self, team))
+                standings[div] = self.sortStandings(team_stats)
 
-        team_ids = cur.fetchall()
-
-        for team in team_ids:
-            team_id = team['team_id']
-            standings.append(Stats(self, team_id, pod))
-
-        return self.sortStandings(standings, pod)
+        return standings
 
     def getStandings(self, div=None, pod=None):
         """ wrapper function for standings, currently doesn't do anything other than call calcStandings
         # TODO: make tournament.getStandings() cache standings for performance
         """
-        # if not hasattr(g, 'standings'):
-        #    g.standings = calcStandings()
+
+        if not hasattr(self.context, 'standings'):
+            app.logger.debug("Calculating standings")
+            self.context.standings = self.calcStandings()
 
         # filter for pod and div
-        # if pod:
-        #    standings = [x for x in g.standings if x.pod == pod]
-        # elif div:
-        #    standings = [x for x in g.standings if x.div == div]
-        # else:
-        #    standings = g.standings
-
+        standings = {}
         if pod:
-            standings = self.calcStandings(pod)
+            if pod in self.context.standings:
+                standings[pod] = self.context.standings[pod]
+            else:
+                standings = None
         elif div:
-            standings = self.calcStandings()
-            standings = [x for x in standings if x.div == div]
+            if div in self.context.standings:
+                standings[div] = self.context.standings[div]
+            else:
+                div_pods = self.getPodsActive(div=div)
+                if not div_pods:
+                    # pod has no division, so the best we can do is return everything
+                    standings = self.context.standings
+                else:
+                    for pod in div_pods:
+                        standings[pod] = self.context.standings[pod]
         else:
-            standings = self.calcStandings()
+            standings = self.context.standings
 
         return standings
 
@@ -1194,6 +1255,7 @@ class Tournament(object):
         """ Helper function that takes in a standings list and groups them into a dictionary
         by group (aka div or div and pod together)
         """
+        return standings
 
         grouped_standings = {}
 
@@ -1458,7 +1520,7 @@ class Tournament(object):
 
         app.logger.debug("popSeededPods: checking if roundrobin is complete")
 
-        round1 = pod_matrix.keys()
+        round1 = list(pod_matrix.keys())
 
         # test if all pods are done, list of endRoundRobin booleans
         pods_done = []
@@ -1518,7 +1580,7 @@ class Tournament(object):
         if "DirectRules" in pod_matrix:
             # direct placement rules, directionary of key pairs liks  {"W23": "A", "L23": "B"} indicating that the Winnder of game 23
             # goes to the A pod and the loser goes to the B pod
-            for rule, new_pod in pod_matrix["DirectRules"].iteritems():
+            for rule, new_pod in pod_matrix["DirectRules"].items():
                 # parse the game
                 team_id = None
 

@@ -1,0 +1,44 @@
+{
+  "teams": [
+    {
+      "division": "A",
+      "flag_url": null,
+      "name": "Team A",
+      "team_id": 1
+    },
+    {
+      "division": "A",
+      "flag_url": null,
+      "name": "Team B",
+      "team_id": 2
+    },
+    {
+      "division": "A",
+      "flag_url": null,
+      "name": "Team C",
+      "team_id": 3
+    },
+    {
+      "division": "A",
+      "flag_url": null,
+      "name": "Team D",
+      "team_id": 4
+    }
+  ],
+  "games": [
+    {"game_id": 1, "black": "T1", "white": "T2", "div": "A", "type": "RR"},
+    {"game_id": 2, "black": "T1", "white": "T3", "div": "A", "type": "RR"},
+    {"game_id": 3, "black": "T1", "white": "T4", "div": "A", "type": "RR"},
+    {"game_id": 4, "black": "T2", "white": "T3", "div": "A", "type": "RR"},
+    {"game_id": 5, "black": "T2", "white": "T4", "div": "A", "type": "RR"},
+    {"game_id": 6, "black": "T3", "white": "T4", "div": "A", "type": "RR"}
+  ],
+  "scores": [
+    {"game_id": 1, "black_tid": 1, "white_tid": 2, "score_b": 1, "score_w": 0, "pod": null},
+    {"game_id": 2, "black_tid": 1, "white_tid": 3, "score_b": 1, "score_w": 0, "pod": null},
+    {"game_id": 3, "black_tid": 1, "white_tid": 4, "score_b": 1, "score_w": 0, "pod": null},
+    {"game_id": 4, "black_tid": 2, "white_tid": 3, "score_b": 1, "score_w": 1, "pod": null},
+    {"game_id": 5, "black_tid": 2, "white_tid": 4, "score_b": 1, "score_w": 0, "pod": null},
+    {"game_id": 6, "black_tid": 3, "white_tid": 4, "score_b": 1, "score_w": 0, "pod": null}
+  ]
+}

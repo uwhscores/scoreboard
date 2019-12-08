@@ -1,40 +1,47 @@
-from string import split
-from app import app
-import re
-from datetime import datetime
 from base64 import b64encode
+from datetime import datetime
+from flask import current_app as app
 from os import urandom
 import bcrypt
+import re
 
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 
 
 class Stats(object):
-    def __init__(self, tournament, team_id, pod=None):
+    """ Class to hold all the stats for a given team in a given group (division or pod) a single team may have multiple stats
+    instances based on how many groups the team is in. Stats include all the numarical values that would be used in calculating
+    a teams standings but does not include head-to-head.
 
-        self.team_id = team_id
+    :param tournament: {tournament} tournament object
+    :param team_id: {int} team to calculate stats for
+    :param pod: {str or None} Pod to use for Inner Group Play
 
-        tid = tournament.tid
-        db = tournament.db
+    """
 
-        cur = db.execute('SELECT t.name, t.division, t.flag_file FROM teams t WHERE tid=? and team_id=?', (tid, team_id))
-        team = cur.fetchone()
+    def __init__(self, tournament, team, pod=None, unittest=False):
+        self.tournament = tournament
+        self.tid = tournament.tid
+        self.db = tournament.db
 
+        self.team_id = team['team_id']
         self.name = team['name']
         self.division = team['division']
-        if team['flag_file']:
-            self.flag_url = {'full_res': team['flag_file'], 'thumb': team['flag_file']}
+
+        self.pod = pod
+
+        # TODO:  standardize flag url format
+        if team['flag_url']:
+            self.flag_url = {'full_res': team['flag_url'], 'thumb': team['flag_url']}
         else:
             self.flag_url = None
 
-        if pod:
-            self.pod = pod
-            no_pod = False
+        # define who to count for inner group play in calculating stats.
+        if self.pod:
+            self.inner_group = self.pod
         else:
-            self.pod = team['division']
-            pod = team['division']
-            no_pod = True
+            self.inner_group = self.division
 
         # stats
         self.points = 0
@@ -46,128 +53,146 @@ class Stats(object):
         self.wins_t = 0
         self.losses_t = 0
         self.ties_t = 0
-        cur = db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g\
-                          WHERE g.gid=s.gid AND g.tid=s.tid AND (white_tid=? or black_tid=?) AND s.tid=?', (team_id, team_id, tid))
+
+        # initialize all the stat values from the database
+        if not unittest:
+            self.load_stats()
+
+
+    def __repr__(self):
+        return '{}({}): {} {}-{}-{}'.format(self.name, self.team_id, self.points, self.wins, self.losses, self.ties)
+
+    def __eq__(self, other):
+        """ Compares two teams stat objects to see if the teams should be considered "equal" in standings or not
+        only checks points as tie breakers are handled elese where
+        """
+        if self.division.lower() != other.division.lower():
+            return False
+        elif self.pod and self.pod != other.pod:
+            return False
+        elif self.points != other.points:
+            return False
+        else:
+            return True
+
+    def __ne__(self, other):
+        if self.division.lower() != other.division.lower():
+            return True
+        elif self.pod and self.pod != other.pod:
+            return True
+        elif self.points != other.points:
+            return True
+        else:
+            return False
+
+    def __lt__(self, other):
+        """ Enforce underwater hockey tie breakers that can be enforce numerically so only points, wins, loses and goals allowed
+        head-to-head tie-breakers has to be enforced else where
+        """
+        if self.points != other.points:
+            return (self.points > other.points)
+        elif self.wins != other.wins:
+            return (self.wins > other.wins)
+        elif self.losses != other.losses:
+            return (self.losses < other.losses)
+        elif self.goals_allowed != other.goals_allowed:
+            return (self.goals_allowed < other.goals_allowed)
+        else:
+            return (self.name < other.name)
+
+    def load_stats(self):
+        """ Load all the games in for the team and calaculate their inner group stats
+        """
+        cur = self.db.execute('SELECT s.black_tid, s.white_tid, s.score_b, s.score_w, s.forfeit, g.type, g.pod  FROM scores s, games g\
+                          WHERE g.gid=s.gid AND g.tid=s.tid AND (white_tid=? or black_tid=?) AND s.tid=?', (self.team_id, self.team_id, self.tid))
 
         games = cur.fetchall()
-
         for game in games:
             black_tid = game['black_tid']
             white_tid = game['white_tid']
             score_b = game['score_b']
             score_w = game['score_w']
             forfeit = game['forfeit']
+            if self.team_id == black_tid:
+                opponent_id = white_tid
+            elif self.team_id == white_tid:
+                opponent_id = black_tid
+            else:
+                app.logger("Got game back that I'm not in processing stats, very bad")
+                continue
 
-            game_pod = None
-            if game['pod']:
-                game_pod = game['pod']
-            elif re.match(r"RR", game['type']):
-                app.logger.debug("RR game and no pod using divisoin")
-                game_pod = self.pod
+            # is inner group play
+            is_igp = False
 
-            if game['type'] and not re.match(r"^RR.*", game['type']):
-                game_pod = None
+            if not game['type']:
+                # must be a RR type game to even be considered for IGP
+                is_igp = False
+            elif re.match(r"^RR.*", game["type"]):
+                if game["pod"] and game["pod"] == self.inner_group:
+                    is_igp = True
+                elif not game["pod"] and self.division == self.tournament.getDivision(opponent_id):
+                    is_igp = True
 
-            if game_pod == pod:
+            if is_igp:
                 self.games_played += 1
+                if white_tid == self.team_id:
+                    self.goals_allowed += score_b
+                elif black_tid == self.team_id:
+                    self.goals_allowed += score_w
 
             # forfeit
-            if forfeit == "b" and black_tid == team_id:
-                if game_pod == pod:
+            if forfeit == "b" and black_tid == self.team_id:
+                if is_igp:
                     self.losses += 1
-                    self.points -= tournament.POINTS_FORFEIT
+                    self.points -= self.tournament.POINTS_FORFEIT
                 self.losses_t += 1
 
-            if forfeit == "b" and white_tid == team_id:
-                if game_pod == pod:
+            if forfeit == "b" and white_tid == self.team_id:
+                if is_igp:
                     self.wins += 1
-                    self.points += tournament.POINTS_WIN
+                    self.points += self.tournament.POINTS_WIN
                 self.wins_t += 1
 
-            if forfeit == "w" and white_tid == team_id:
-                if game_pod == pod:
+            if forfeit == "w" and white_tid == self.team_id:
+                if is_igp:
                     self.losses += 1
-                    self.points -= tournament.POINTS_FORFEIT
+                    self.points -= self.tournament.POINTS_FORFEIT
                 self.losses_t += 1
 
-            if forfeit == "w" and black_tid == team_id:
-                if game_pod == pod:
+            if forfeit == "w" and black_tid == self.team_id:
+                if is_igp:
                     self.wins += 1
-                    self.points += tournament.POINTS_WIN
+                    self.points += self.tournament.POINTS_WIN
                 self.wins_t += 1
 
             # black won
-            if score_b > score_w and black_tid == team_id:
-                if game_pod == pod:
+            if score_b > score_w and black_tid == self.team_id:
+                if is_igp:
                     self.wins += 1
-                    self.points += tournament.POINTS_WIN
+                    self.points += self.tournament.POINTS_WIN
                 self.wins_t += 1
-            elif score_b > score_w and white_tid == team_id:
-                if game_pod == pod:
+            elif score_b > score_w and white_tid == self.team_id:
+                if is_igp:
                     self.losses += 1
                 self.losses_t += 1
 
             # white won
-            if score_b < score_w and white_tid == team_id:
-                if game_pod == pod:
+            if score_b < score_w and white_tid == self.team_id:
+                if is_igp:
                     self.wins += 1
-                    self.points += tournament.POINTS_WIN
+                    self.points += self.tournament.POINTS_WIN
                 self.wins_t += 1
-            elif score_b < score_w and black_tid == team_id:
-                if game_pod == pod:
+            elif score_b < score_w and black_tid == self.team_id:
+                if is_igp:
                     self.losses += 1
                 self.losses_t += 1
 
             if score_w == score_b and forfeit is None:
-                if game_pod == pod:
+                if is_igp:
                     self.ties += 1
                     self.points += 1
                 self.ties_t += 1
 
-            #if game['type'] != "RR":
-            if game['type'] and not re.match(r"^RR.*", game['type']):
-                continue
-
-            if not no_pod and pod and game['pod'] != pod:
-                continue
-
-            if white_tid == team_id:
-                self.goals_allowed += score_b
-            elif black_tid == team_id:
-                self.goals_allowed += score_w
-
-
-        # end for game in games
-        #print self
-
-    def __repr__(self):
-        return '{}({}): {} {}-{}-{}'.format(self.name,self.team_id, self.points, self.wins, self.losses, self.ties)
-
-    def __cmp__(self, other):
-        if hasattr(other, 'points'):
-            return other.points.__cmp__(self.points)
-
-    def __eq__(self, other):
-        if self.cmpTeamPoints(self, other) == 0:
-            return True
-        else:
-            return False
-
-    # Compares teams only on points, checks division and pod first to make sure they aren't
-    # in the same division, used for pre-sorting rank before applying tie breakers
-    # used by __cmp__ function for Stats struct
-    def cmpTeamPoints(self, team_b, team_a):
-        #if (team_a.division.lower() != team_b.division.lower()):
-        #    return divToInt(team_a.division) - divToInt(team_b.division)
-        #elif (team_a.pod != team_b.pod):
-        #    return podToInt(team_a.pod) - podToInt(team_b.pod)
-        if (team_a.points != team_b.points):
-            return team_a.points - team_b.points
-        else:
-            return 0
-
-    def goalsAllowed(self, other):
-        return self.goals_allowed
 
 class Ranking(object):
     def __init__(self, div, pod, place, team):
@@ -193,6 +218,12 @@ class Ranking(object):
             return False
         else:
             return True
+
+    def __lt__(self, other):
+        return (self.place < other.place)
+
+    def __gt__(self, other):
+        return (self.place > other.place)
 
     def serialize(self):
 
@@ -224,6 +255,7 @@ class Ranking(object):
                 'ties_total': self.team.ties_t
             }
         }
+
 
 class Params(object):
     # loads in all the rows from the config table for the tournament ID
@@ -316,7 +348,7 @@ class User(object):
         return False
 
     def get_id(self):
-        return unicode(self.user_id)
+        return str(self.user_id)
 
     def setPassword(self, password):
         db = self.db
@@ -340,10 +372,10 @@ class User(object):
 
         hashed = bcrypt.hashpw(token, bcrypt.gensalt())
 
-        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token, self.user_id))
+        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token.decode('utf-8'), self.user_id))
         db.commit()
 
-        return token
+        return token.decode("utf-8")
 
     def setActive(self, active):
         db = self.db
@@ -363,10 +395,8 @@ class User(object):
             cur = db.execute("UPDATE users SET admin=0 WHERE user_id=?", (self.user_id,))
             db.commit()
 
-
-
     def __genUserKey(self):
-        return b64encode(urandom(9),"Aa")
+        return b64encode(urandom(9), b"Aa")
 
     def __genResetToken(self):
-        return b64encode(urandom(30),"-_")
+        return b64encode(urandom(30), b"-_")

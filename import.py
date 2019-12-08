@@ -209,7 +209,7 @@ class Import(object):
         m = re.match("^(\w+)\s*[sS]eed\s*(\d+)", game_string)
         if m:
             pod = m.group(1)
-            pod = pod[:1] # nations 2019, you should remove this
+            #pod = pod[:1] # nations 2019, you should remove this
             seed = m.group(2)
             return "S%s%s" % (pod, seed)
 
@@ -315,7 +315,7 @@ class Import(object):
 
                 country = string.join(team_name.split(" ")[1:], " ")
                 country = country.lower().replace(" ", "_")
-                flag_file = "/static/flags/%s/%s.png" % (short_name, country)
+                flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
                                       (tid, row['team_id'], team_name, row['short_name'], row['div'], flag_file))
@@ -426,12 +426,17 @@ class Import(object):
 
                 if not 'player_name' in row or not row['player_name']:
                     continue
+                # if not 'first' in row or not row['first']:
+                #     continue
 
                 if not team_id:
                     print("I forgot me team")
                     raise(Exception("I sucks"))
 
                 player_name = row['player_name'].strip()
+                # player_name = "%s %s" % (row['first'].strip().title(), row['last'].strip().title())
+                # player_name = player_name.strip()
+
                 # strpint non-unicode characters, can't actually do this when I get real names with accents and what not, will need to fix
                 # player_name = ''.join([x for x in player_name if ord(x) < 128])
                 # name_parts = player_name.split(" ")
@@ -499,7 +504,7 @@ if __name__ == "__main__":
         print "Directory doesn't exist %s" % src_folder
         sys.exit(1)
 
-    db_file = os.path.join('app/scores.db')
+    db_file = os.path.join('scoreboard/scores.db')
 
     importer = Import(db_file)
     importer.setSource(src_folder)
