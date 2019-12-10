@@ -5,8 +5,8 @@ import json
 import re
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema
-from scoreboard.exceptions import UserAuthError
+from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema, getPlayerByID
+from scoreboard.exceptions import UserAuthError, UpdateError
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -655,3 +655,48 @@ def doUpdateUser(user_id):
             flash("You're screwing with me")
 
     return redirect(request.referrer)
+
+
+@app.route('/admin/player/<player_id>', methods=["GET", "POST"])
+@login_required
+def adminPlayer(player_id):
+    if not (current_user.admin or current_user.site_admin):
+        flash("You are not authorized to edit players")
+        return redirect("/admin")
+
+    player = getPlayerByID(player_id)
+
+    if not player:
+        # TODO: implement propper 404
+        flash("Player not found")
+        return redirect("/admin")
+
+    if request.method == 'GET':
+        return render_template('admin/show_player_admin.html', player=player)
+    elif request.method == "POST":
+        form = request.form
+
+        if "player_id" not in form:
+            flash("You're doing something wrong")
+            return redirect(request.referrer)
+
+        if "display_name" not in form:
+            flash("You're doing something wrong")
+            return redirect(request.referrer)
+
+        if form['player_id'] != player_id:
+            # got the wrong form
+            flash("You're doing something wrong")
+            return redirect(request.referrer)
+
+        audit_logger.info("User %s updating name for player %s (%s)" % (current_user.user_id, player.display_name, player.player_id))
+        try:
+            player.updateDisplayName(form["display_name"])
+            flash("Display name updated")
+        except UpdateError as e:
+            flash(e.message)
+            return redirect(request.referrer)
+
+        player = getPlayerByID(player_id)
+
+        return render_template('admin/show_player_admin.html', player=player)

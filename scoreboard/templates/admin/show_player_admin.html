@@ -1,0 +1,125 @@
+{% extends "/admin/admin_layout.html" %}
+
+{% block nav %}
+	{% include "admin/nav_admin.html" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<script>
+jQuery(document).ready(function(){
+	$("#show-edit").click(function(){
+	  $(".view-player").hide();
+		$(".edit-player").show();
+	});
+
+	$("#hide-edit").click(function(){
+		$(".view-player").show();
+		$(".edit-player").hide();
+	});
+});
+</script>
+
+<div id="page_body" class="container">
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="page-header tournament-header">
+			<h1 class="tournament-title">Player Details</h1>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-lg-12">
+		{% with messages = get_flashed_messages() -%}
+			{% if messages %}
+				{% set last="" -%}
+				<div class="alert alert-danger" role="alert">
+				{% for message in messages %}
+					{% if message != last -%}
+						{{ message }}</br>
+					{%- endif %}
+					{% set last=message %}
+				{% endfor %}
+				</div>
+			{% endif %}
+		{%- endwith %}
+		</div>
+	</div>
+
+
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<h3>{{ player.display_name}}</h3>
+					<div class="view-player">
+						<div class="table-respnsive">
+							<table class=table>
+								<tbody>
+									<tr>
+										<th scope="row"> Display Name</th>
+										<td>{{ player.display_name}} <span class="glyphicon glyphicon-pencil pull-right" id="show-edit"></span></td>
+									</tr>
+									<tr>
+										<th scope="row"> Created On</th>
+										<td>{{ player.date_created}}</td>
+									</tr>
+									<tr>
+										<th scope="row"> Updated On</th>
+										<td>{{ player.date_updated}}</td>
+									</tr>
+									<tr>
+										<th scope="row"> Player ID</th>
+										<td><tt>{{ player.player_id}}</tt></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<div class="edit-player" style="display: none;">
+						<form class="form-inline" method=post name=update>
+							<input type="hidden" id="player_id" name="player_id" value="{{ player.player_id }}">
+							<div class="table-respnsive">
+								<table class=table>
+									<tbody>
+										<tr>
+											<th scope="row"> Display Name</th>
+										  <td>
+												<input type="text" class="form-control" id="display_name" name="display_name" value="{{ player.display_name}}">
+											</td>
+										</tr>
+										<tr>
+											<th scope="row"> Created On</th>
+											<td>{{ player.date_created}}</td>
+										</tr>
+										<tr>
+											<th scope="row"> Updated On</th>
+											<td>{{ player.date_updated}}</td>
+										</tr>
+										<tr>
+											<th scope="row"> Player ID</th>
+											<td><tt>{{ player.player_id}}</tt></td>
+										</tr>
+									</tbody>
+								</table>
+								<button type="submit" class="btn btn-primary">Submit</button>
+								<button type="button" class="btn btn-default" id="hide-edit">Cancel</button>
+							</div>
+						</form>
+
+					</div>
+
+					<h3> Teams </h3>
+					<ul class="list-group">
+					{% for team in player.teams %}
+						<li class="list-group-item"> <a href="/t/{{ team.t_short_name }}">{{ team.tournament }}</a> - <a href="/t/{{ team.t_short_name }}/team/{{team.team_id}}"> {{ team.name }} </a> </li>
+					{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock main %}

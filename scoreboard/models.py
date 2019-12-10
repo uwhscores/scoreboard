@@ -9,6 +9,7 @@ import re
 # for the things standings are calculator against
 
 from scoreboard.exceptions import UpdateError
+from scoreboard import audit_logger
 
 class Stats(object):
     """ Class to hold all the stats for a given team in a given group (division or pod) a single team may have multiple stats
@@ -409,6 +410,8 @@ class Player(object):
 
     def __init__(self, db, display_name, player_id=None):
         self.db = db
+        self.date_created = None
+        self.date_updated = None
 
         if not player_id:
             # generate a player ID and make sure its unique in the DB
@@ -419,6 +422,15 @@ class Player(object):
                 if exists:
                     player_id = None
             app.logger.info("Generated new player ID %s for player %s" % (player_id, display_name))
+        else:
+            cur = self.db.execute("SELECT display_name, date_created, date_updated FROM players WHERE player_id=?", (player_id,))
+            row = cur.fetchone()
+            display_name = row['display_name']
+            self.date_created = datetime.strptime(row['date_created'], "%Y-%m-%d %H:%M:%S")
+            if row['date_updated']:
+                self.date_updated = datetime.strptime(row['date_updated'], "%Y-%m-%d %H:%M:%S")
+            else:
+                self.date_updated = self.date_created
 
         self.player_id = player_id
         self.display_name = display_name
@@ -432,6 +444,8 @@ class Player(object):
         return {
             'player_id': self.player_id,
             'display_name': self.display_name,
+            'date_created': self.date_created.isoformat(),
+            'date_updated': self.date_updated.isoformat(),
             'teams': self.teams
         }
 
@@ -479,6 +493,7 @@ class Player(object):
         if len(new_display_name) > 48:
             raise UpdateError("NameToLong", "Display name cannot be greater than 48 characters")
 
+        audit_logger.info("Display name updated for player %s (%s) to %s" % (self.display_name, self.player_id, new_display_name))
         self.display_name = new_display_name
         self.commit()
 
