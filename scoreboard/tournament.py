@@ -199,7 +199,7 @@ class Tournament(object):
         roster = None
 
         db = self.db
-        cur = db.execute("SELECT p.display_name, r.cap_number FROM players p, rosters r WHERE r.player_id = p.player_id AND r.is_coach=0 AND r.team_id = ? AND r.tid=?",
+        cur = db.execute("SELECT p.player_id, p.display_name, r.cap_number FROM players p, rosters r WHERE r.player_id = p.player_id AND r.is_coach=0 AND r.team_id = ? AND r.tid=?",
                          (team_id, self.tid))
 
         roster_table = cur.fetchall()
@@ -207,7 +207,7 @@ class Tournament(object):
         if len(roster_table) > 0:
             roster = []
             for row in roster_table:
-                roster.append({"name": row['display_name'], "number": row['cap_number']})
+                roster.append({"name": row['display_name'], "number": row['cap_number'], "player_id": row['player_id']})
 
         return roster
 
@@ -216,7 +216,7 @@ class Tournament(object):
         coaches = None
 
         db = self.db
-        cur = db.execute("SELECT p.display_name, r.coach_title FROM players p, rosters r WHERE r.player_id=p.player_id AND r.is_coach=1\
+        cur = db.execute("SELECT p.player_id, p.display_name, r.coach_title FROM players p, rosters r WHERE r.player_id=p.player_id AND r.is_coach=1\
                          AND r.team_id=? AND r.tid=?", (team_id, self.tid))
 
         coaches_table = cur.fetchall()
@@ -224,7 +224,7 @@ class Tournament(object):
         if len(coaches_table) > 0:
             coaches = []
             for row in coaches_table:
-                coaches.append({"name": row['display_name'], "title": row['coach_title']})
+                coaches.append({"name": row['display_name'], "title": row['coach_title'], "player_id": row['player_id']})
 
         return coaches
 

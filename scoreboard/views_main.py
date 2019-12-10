@@ -1,6 +1,7 @@
 from flask import current_app as app
-from flask import request, redirect, render_template, flash
-from .functions import getTournaments, getTournamentByID, getTournamentID
+from flask import request, redirect, render_template, flash, abort
+from flask_login import current_user
+from .functions import getTournaments, getTournamentByID, getTournamentID, getPlayerByID
 import re
 
 @app.route('/')
@@ -252,6 +253,24 @@ def renderTGroup(short_name, group):
 
 
 #######################################
+# Player Pages
+#######################################
+@app.route('/player/<player_id>')
+def renderPlayerInfo(player_id):
+    player = getPlayerByID(player_id)
+
+    if not player:
+        abort(404)
+
+    show_admin_link = False
+    if current_user.is_authenticated and (current_user.admin or current_user.site_admin):
+        show_admin_link = True
+
+    return render_template("show_player.html", player=player, show_admin_link=show_admin_link)
+
+
+
+#######################################
 # Special pages
 #######################################
 @app.route('/t/<short_name>/tv')
@@ -345,3 +364,11 @@ def renderTouramentPrint(short_name):
 @app.route('/faq')
 def renderFAQ():
     return render_template('faq.html')
+
+
+#######################################
+# Error pages
+#######################################
+@app.errorhandler(404)
+def page_not_found(message):
+    return render_template("errors/404.html", title='404', message=message), 404
