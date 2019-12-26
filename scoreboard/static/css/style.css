@@ -1,3 +1,24 @@
+html, body {
+  height: 100%;
+}
+
+#wrap {
+  min-height: 100%;
+}
+
+#page_body {
+  overflow:auto;
+  padding-bottom: 3em;
+}
+
+.footer {
+  position: relative;
+  margin-top: -3em; /* negative value of footer height */
+  height: 2em;
+  clear:both;
+  padding-top: 1em;
+}
+
 .tournament-header {
 	margin-top: 0px;
 }
@@ -141,6 +162,14 @@ img.flag-thumb {
 	color: #333;
 }
 
+#player-search {
+	padding-left: 3em;
+}
+
+.search-list  {
+	display: inline-block;
+}
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
@@ -154,6 +183,15 @@ img.flag-thumb {
 	#tabNav li a {
 		padding-left: 8px;
 		padding-right: 8px;
+	}
+
+	#player-search {
+		max-width: 80%;
+		margin-left: 1em;
+	}
+	#player-search i {
+		display: none;
+		visibility: hidden;
 	}
 
 	h1 {
@@ -191,6 +229,10 @@ img.flag-thumb {
 	table.standing-table {
 		max-width: 90%;
 	}
+
+  .footer-text {
+    font-size: .5em;
+  }
 }
 
 @media screen and (max-width: 600px) {

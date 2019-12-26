@@ -255,20 +255,24 @@ def renderTGroup(short_name, group):
 #######################################
 # Player Pages
 #######################################
-@app.route('/player/<player_id>')
-def renderPlayerInfo(player_id):
-    player = getPlayerByID(player_id)
-
-    if not player:
-        abort(404)
-
+@app.route('/players')
+@app.route('/p/<player_id>')
+def renderPlayerInfo(player_id=None):
     show_admin_link = False
-    if current_user.is_authenticated and (current_user.admin or current_user.site_admin):
-        show_admin_link = True
+
+    if player_id:
+        player = getPlayerByID(player_id)
+
+        if not player:
+            abort(404)
+
+        if current_user.is_authenticated and (current_user.admin or current_user.site_admin):
+            show_admin_link = True
+    else:
+        # no player ID asked for, we'll just return the page for search
+        player = None
 
     return render_template("show_player.html", player=player, show_admin_link=show_admin_link)
-
-
 
 #######################################
 # Special pages

@@ -36,24 +36,20 @@
 </head>
 
 <body>
+  <div id="wrap">
+    {% autoescape false %}
+    {% block nav %}{% endblock %}
 
+    {% block main %}{% endblock %}
+    {% endautoescape %}
 
-  	{% autoescape false %}
-  	{% block nav %}{% endblock %}
-
-      <!-- Page Content -->
-  	{% block main %}{% endblock %}
-  	<!-- /.container -->
-  	{% endautoescape %}
-
-
-            <footer class="footer">
-              <div class="container">
-                <p class="text-muted">&copy; 2016 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
-              </div>
-            </footer>
-        </div>
-        <!-- /#page-wrapper -->
+  </div>
+  <footer class="footer">
+    <div class="container">
+      <p class="text-muted footer-text">&copy; 2016 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+    </div>
+  </footer>
+  </div>
 </body>
 
 </html>

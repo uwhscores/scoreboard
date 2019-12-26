@@ -36,5 +36,5 @@ def create_app(db_path=None, debug=False):
     app.config.update(config)
 
     with app.app_context():
-        from scoreboard import views_main, views_admin, views_api_v1
+        from scoreboard import views_main, views_admin, views_api_v1, views_cgi
         return app

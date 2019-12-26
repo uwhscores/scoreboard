@@ -8,25 +8,9 @@ import sqlite3
 
 from scoreboard import global_limiter, audit_logger
 from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getPlayerByID, validateJSONSchema, getDB, authenticate_user
-from scoreboard.exceptions import UserAuthError, UpdateError
+from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
 
 auth = HTTPBasicAuth()
-
-
-class InvalidUsage(Exception):
-    status_code = 400
-
-    def __init__(self, message, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        if status_code is not None:
-            self.status_code = status_code
-        self.payload = payload
-
-    def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        return rv
 
 
 @auth.verify_password

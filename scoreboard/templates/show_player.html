@@ -1,13 +1,54 @@
 {% extends "layout.html" %}
 
 {% block nav %}
-	{% include "nav_bar.html" with context %}
+  {% include "nav_bar.html" with context %}
 {% endblock nav %}
 
 {% block main %}
-<div id="page_body" class="container">
-	<div class="row">
-		<div class="col-md-8">
+<script>
+  jQuery(document).ready(function() {
+    $("#search").submit(function() {
+      event.preventDefault();
+      if ($("#search-box").val().length > 2) {
+        $("#players").html("")
+        $.get("/cgi/search", {
+            entity: "players",
+            like: $("#search-box").val()
+          },
+          function(response) {}).done(function(response) {
+          $(function() {
+            var trHTML = "";
+            if (response['results'].length > 0) {
+              $.each(response['results'], function(i, item) {
+                trHTML += '<a href=/p/' + item.player_id + ' class="list-group-item list-group-item-action">' + item.display_name + '</a>';
+              });
+              $("#players").append(trHTML);
+            } else {
+              $("#players").append('<li class="list-group-item disabled">No results</li>')
+            };
+          });
+        });
+      };
+    });
+  });
+</script>
+
+<div id="page_body" class="container page-container">
+  <div class="row">
+    <div class="col-md-4 col-md-push-8" id="player-search">
+      <div class="row">
+        <form class="form-inline" id="search">
+          <input id=search-box class="form-control form-control-sm ml-3 w-75" type="text" placeholder="Search Players" aria-label="Search">
+          <i class="fas fa-search" aria-hidden="true"></i>
+        </form>
+        <div id=results>
+          <ul id=players class="list-group search-list">
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8 col-md-pull-4">
+      {% if player %}
       {% if show_admin_link %}
       <a href="/admin/player/{{ player.player_id}}">
         <button type="button" class="btn btn-default pull-right">
@@ -15,28 +56,32 @@
         </button>
       </a>
       {% endif %}
-
       <h1 class="player_name">{{ player.display_name }}</h1>
-
       <table class="table player-table">
         <theader>
           <tr>
             <th>Tournament</th>
-						<th></th>
+            <th></th>
             <th>Team</th>
           <tr>
         </theader>
         <tbody>
-        {% for team in player.teams %}
+          {% for team in player.teams %}
           <tr>
             <td> <a href="/t/{{team.t_short_name }}">{{ team.tournament }}</a></td>
-						<td> {{ team.tournament_date }} </td>
-	          <td> <a href="/t/{{team.t_short_name }}/team/{{ team.team_id }}">{{ team.name }}</a></td>
+            <td> {{ team.tournament_date }} </td>
+            <td> <a href="/t/{{team.t_short_name }}/team/{{ team.team_id }}">{{ team.name }}</a></td>
           </tr>
-        {% endfor %}
+          {% endfor %}
         </tbody>
       </table>
+      {% else %}
+      <h1 class="player_name">Players</h1>
+      <div class="well">
+        No player selected, find players using the search.
+      </div>
+      {% endif %}
     </div>
-  </div> <!-- row -->
-</div> <!-- container -->
+  </div>
+</div>
 {%endblock main %}

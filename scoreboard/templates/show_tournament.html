@@ -281,7 +281,7 @@
 					<tbody>
 						{%- for player in team_info.roster %}
 						<tr>
-							<td><a href="/player/{{ player.player_id }}">{{ player.name }}</a></td>
+							<td><a href="/p/{{ player.player_id }}">{{ player.name }}</a></td>
 							<td>{{ player.number if player.number != None else "" }}</td>
 						</tr>
 						{% endfor -%}
@@ -297,7 +297,7 @@
 					<tbody>
 						{%- for coach in team_info.coaches %}
 						<tr>
-							<td><a href="/player/{{ coach.player_id }}">{{ coach.name }}</a></td>
+							<td><a href="/p/{{ coach.player_id }}">{{ coach.name }}</a></td>
 							{% if coach.title %}
 							<td>{{ coach.title }}</td>
 							{% endif %}

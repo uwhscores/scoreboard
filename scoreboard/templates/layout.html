@@ -75,7 +75,7 @@
 
 </head>
 <body>
-
+  <div id="wrap">
 	{% autoescape false %}
 	{% block nav %}{% endblock %}
 
@@ -83,11 +83,12 @@
 	{% block main %}{% endblock %}
 	<!-- /.container -->
 	{% endautoescape %}
-
+  </div>
 	<footer class="footer">
 		<div class="container">
-			<p class="text-muted">&copy; 2019 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+			<p class="text-muted footer-text">&copy; 2019 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
 		</div>
 	</footer>
+
 </body>
 </html>

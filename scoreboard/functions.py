@@ -146,6 +146,23 @@ def getUserList():
     return users
 
 
+""" Search functions, all search functions return raw dictionaries not objects. get* functions return objects """
+def searchPlayers(search_like):
+    """ search for players with display_name LIKE search_like
+    returns list of player names and IDs in display_name alpha order
+    """
+    db = getDB()
+
+    results = []
+    cur = db.execute("SELECT p.player_id, p.display_name FROM players p WHERE p.display_name LIKE ? ORDER BY p.display_name", ("%"+search_like+"%",))
+    found = cur.fetchall()
+    for p in found:
+        results.append({"display_name": p['display_name'], "player_id": p['player_id']})
+
+    return results
+
+
+""" User and authentication functions """
 def authenticate_user(email, password_try, ip_addr=None):
     """ authenticate user for login """
     user_id = None
