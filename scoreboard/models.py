@@ -480,7 +480,10 @@ class Player(object):
             team['name'] = t.getTeam(team_id)
             team['team_id'] = team_id
             team['placing'] = t.getPlacingForTeam(team_id)
-            teams.append(team)
+
+            if team not in teams:
+                # some players are also coaches which cause teams to show up twice
+                teams.append(team)
 
         return teams
 
