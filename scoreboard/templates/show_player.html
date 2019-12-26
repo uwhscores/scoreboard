@@ -63,6 +63,7 @@
             <th>Tournament</th>
             <th></th>
             <th>Team</th>
+            <th>Placing</th>
           <tr>
         </theader>
         <tbody>
@@ -71,6 +72,9 @@
             <td> <a href="/t/{{team.t_short_name }}">{{ team.tournament }}</a></td>
             <td> {{ team.tournament_date }} </td>
             <td> <a href="/t/{{team.t_short_name }}/team/{{ team.team_id }}">{{ team.name }}</a></td>
+            {% if team.placing %}
+            <td> {{ team.placing.place }} in {{ team.placing.div }} </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

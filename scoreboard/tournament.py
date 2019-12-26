@@ -689,6 +689,7 @@ class Tournament(object):
                 entry['div'] = div
             entry['place'] = functions.ordinalize(place)
             if team_id > 0:
+                entry['team_id'] = team_id
                 entry['name'] = self.getTeam(team_id)
                 entry['flag_url'] = self.getTeamFlag(team_id)
             else:
@@ -699,6 +700,21 @@ class Tournament(object):
             final.append(entry)
 
         return sorted(final, key=lambda k: k['div'])
+
+    def getPlacingForTeam(self, team_id):
+        """ get the final placing for a team if it has been determined
+
+        return place diectionary
+        """
+        place = None
+        all_placings = self.getPlacings()
+
+        for p in all_placings:
+            if p["team_id"] == team_id:
+                place = p
+                break
+
+        return place
 
     def getParams(self):
         """ retrieve parameters for the tournament

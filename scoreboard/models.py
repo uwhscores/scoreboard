@@ -479,6 +479,7 @@ class Player(object):
             team['t_short_name'] = t.short_name
             team['name'] = t.getTeam(team_id)
             team['team_id'] = team_id
+            team['placing'] = t.getPlacingForTeam(team_id)
             teams.append(team)
 
         return teams
