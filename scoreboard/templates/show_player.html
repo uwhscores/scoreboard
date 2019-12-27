@@ -69,7 +69,7 @@
         <tbody>
           {% for team in player.teams %}
           <tr>
-            <td> <a href="/t/{{team.t_short_name }}">{{ team.tournament }}</a></td>
+            <td> <a href="/t/{{team.t_short_name }}/team/{{team.team_id}}">{{ team.tournament }}</a></td>
             <td> {{ team.tournament_date }} </td>
             <td> <a href="/t/{{team.t_short_name }}/team/{{ team.team_id }}">{{ team.name }}</a></td>
             {% if team.placing %}
