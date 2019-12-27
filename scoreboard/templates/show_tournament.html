@@ -64,6 +64,7 @@
 			<li role="presentation" class="btn-lg"><a href="#standings" data-toggle="tab">Standings</a></li>
 			{% if placings %}<li role="presentation" class="btn-lg"><a href="#places" data-toggle="tab">Placings</a></li>{% endif %}
 			{% if team_info and team_info.roster %}<li role="presentation" class="btn-lg"><a href="#roster" data-toggle="tab">Roster</a></li>{% endif %}
+      {% if team_infos %}<li role="presentation" class="btn-lg"><a href="#rosters" data-toggle="tab">Rosters</a></li>{% endif %}
 		</ul>
 
 		<div id="tabContents" class="tab-content">
@@ -308,8 +309,11 @@
 				{%- endif %}
 			</div>
 			{%- endif %}
-	</div> <!-- tabContent -->
 
+      {% block rosters %}
+        {% include "include_tournament_rosters.html" with context %}
+      {% endblock rosters %}
+	   </div> <!-- tabContent -->
 	</div>
 
 	</div> <!-- row -->

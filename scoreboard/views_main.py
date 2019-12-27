@@ -46,7 +46,13 @@ def renderTourament(short_name):
     divisions = t.getDivisionNames()
     team_list = t.getTeams()
 
-    pods = t.getPodsActive()
+    team_infos = {}
+    for team in team_list:
+        team_id = team["team_id"]
+        team_info = t.getTeamInfo(team_id)
+        if team_info["roster"]:
+            team_infos[team_id] = team_info
+
     pod_names = t.getPodNamesActive()
     group_names = t.getGroups()
 
@@ -58,7 +64,7 @@ def renderTourament(short_name):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=standings, group_names=group_names,
-                           placings=placings, divisions=divisions, team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
+                           placings=placings, team_infos=team_infos, divisions=divisions, team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
 
 
 @app.route('/t/<short_name>/div/<div>')
@@ -82,6 +88,12 @@ def renderTDiv(short_name, div):
     games = t.getGames(div)
     divisions = t.getDivisionNames()
     team_list = t.getTeams(div)
+    team_infos = {}
+    for team in team_list:
+        team_id = team["team_id"]
+        team_info = t.getTeamInfo(team_id)
+        if team_info["roster"]:
+            team_infos[team_id] = team_info
 
     pod_names = t.getPodNamesActive()
 
@@ -98,7 +110,7 @@ def renderTDiv(short_name, div):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
-                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=division_name, placings=placings)
+                           pods=pod_names, team_list=team_list, team_infos=team_infos, site_message=site_message, title_text=division_name, placings=placings)
 
 
 @app.route('/t/<short_name>/pod/<pod>')
@@ -125,8 +137,13 @@ def renderTPod(short_name, pod):
     grouped_standings = t.splitStandingsByGroup(standings)
     group_names = t.getGroups()
 
-
     team_list = t.getTeams(pod=pod)
+    team_infos = {}
+    for team in team_list:
+        team_id = team["team_id"]
+        team_info = t.getTeamInfo(team_id)
+        if team_info["roster"]:
+            team_infos[team_id] = team_info
 
     pods = t.getPodsActive()
     pod_names = t.getPodNamesActive()
@@ -137,7 +154,7 @@ def renderTPod(short_name, pod):
     site_message = t.getSiteMessage()
 
     return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=division,
-                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=pod_name)
+                           pods=pod_names, team_list=team_list, team_infos=team_infos, site_message=site_message, title_text=pod_name)
 
 
 @app.route('/t/<short_name>/team/<team_id>')

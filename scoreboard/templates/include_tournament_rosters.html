@@ -1,0 +1,56 @@
+<div id="rosters" class="tab-pane fade">
+  <h1> Rosters </h1>
+
+  <div>
+    {% for team_id in team_infos %}
+    {% set team = team_infos[team_id] %}
+      {% if team.roster %}
+        <div class=row>
+        {% if team.flag_url %}
+          <img class="team-flag pull-right" src="{{ team.flag_url }}">
+        {% endif %}
+        <h3>{{ team.name }}</h3>
+        {% if team.division %}
+          <strong>
+          {% if team.division in group_names %}
+            {{ group_names[team.division] }}
+          {% else %}
+            {{ team.division }}
+          {% endif %}
+          </strong>
+        {% endif %}
+
+          <table id="rosters_tbl" class="table table-striped roster-table">
+            <thead class="roster-divider">
+              <tr>
+                <th>Player</th>
+                <th>Cap Number<th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for player in team.roster %}
+                <tr>
+                  <td><a href="/p/{{ player.player_id }}">{{ player.name }}</a></td>
+                  <td>{{ player.number if player.number != None else "" }}</td>
+                </tr>
+            {% endfor %}
+            {% if team.coaches %}
+                <thead>
+                  <tr>
+                    <th colspan=2> Coaches and Staff
+                  </tr>
+                </thead>
+              {% for coach in team.coaches %}
+                <tr>
+                  <td colspan=2><a href="/p/{{ coach.player_id }}">{{ coach.name }}</a></td>
+                </tr>
+              {% endfor %}
+            {% endif %}
+            </tbody>
+          </table>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+</div>

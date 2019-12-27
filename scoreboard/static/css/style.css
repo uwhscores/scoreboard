@@ -162,6 +162,12 @@ img.flag-thumb {
 	color: #333;
 }
 
+.roster-divider {
+  border: 2px;
+  border-color: black;
+  border-top-style: solid;
+}
+
 #player-search {
 	padding-left: 3em;
 }
@@ -204,6 +210,7 @@ img.flag-thumb {
 
 	.team-flag {
 		max-width: 160px;
+    padding-right: 1em;
 	}
 
 	img.flag-thumb {
