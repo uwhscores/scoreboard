@@ -120,7 +120,7 @@ tr.odd {
 }
 
 .team-flag {
-	padding: 0em 0em 1em 1em;
+	padding: 0em 1em 1em 1em;
 }
 
 .team-fag:after {
@@ -210,7 +210,6 @@ img.flag-thumb {
 
 	.team-flag {
 		max-width: 160px;
-    padding-right: 1em;
 	}
 
 	img.flag-thumb {

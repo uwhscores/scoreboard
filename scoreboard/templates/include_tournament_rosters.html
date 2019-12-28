@@ -1,15 +1,12 @@
 <div id="rosters" class="tab-pane fade">
-  <h1> Rosters </h1>
-
   <div>
     {% for team_id in team_infos %}
     {% set team = team_infos[team_id] %}
       {% if team.roster %}
-        <div class=row>
         {% if team.flag_url %}
-          <img class="team-flag pull-right" src="{{ team.flag_url }}">
+          <img class="team-flag pull-left" src="{{ team.flag_url }}">
         {% endif %}
-        <h3>{{ team.name }}</h3>
+        <h2>{{ team.name }}</h2>
         {% if team.division %}
           <strong>
           {% if team.division in group_names %}
@@ -20,7 +17,7 @@
           </strong>
         {% endif %}
 
-          <table id="rosters_tbl" class="table table-striped roster-table">
+          <table class="table table-striped roster-table">
             <thead class="roster-divider">
               <tr>
                 <th>Player</th>
@@ -48,7 +45,6 @@
             {% endif %}
             </tbody>
           </table>
-      </div>
       {% endif %}
     {% endfor %}
   </div>
