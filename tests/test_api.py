@@ -1,10 +1,4 @@
-import requests
-import json
 import base64
-
-from base64 import b64encode
-from os import urandom
-
 
 from scoreboard import functions
 from scoreboard.models import Player
