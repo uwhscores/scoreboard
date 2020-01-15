@@ -7,7 +7,7 @@ import os
 import sqlite3
 
 from scoreboard.tournament import Tournament
-from scoreboard.models import User
+from scoreboard.models import User, Player
 from scoreboard.exceptions import UserAuthError
 
 
@@ -83,6 +83,20 @@ def getTournamentByID(tid):
         return None
 
 
+def getPlayerByID(player_id):
+    """ get information about a player including past teams """
+    db = getDB()
+
+    player = None
+
+    cur = db.execute("SELECT p.player_id, p.display_name, p.date_created FROM players p WHERE p.player_id = ?", (player_id,))
+    p = cur.fetchone()
+    if p:
+        player = Player(db, p['display_name'], player_id=p['player_id'])
+
+    return player
+
+
 def getUserID(email):
     """ get user ID string from email """
     db = getDB()
@@ -132,6 +146,23 @@ def getUserList():
     return users
 
 
+""" Search functions, all search functions return raw dictionaries not objects. get* functions return objects """
+def searchPlayers(search_like):
+    """ search for players with display_name LIKE search_like
+    returns list of player names and IDs in display_name alpha order
+    """
+    db = getDB()
+
+    results = []
+    cur = db.execute("SELECT p.player_id, p.display_name FROM players p WHERE p.display_name LIKE ? ORDER BY p.display_name", ("%"+search_like+"%",))
+    found = cur.fetchall()
+    for p in found:
+        results.append({"display_name": p['display_name'], "player_id": p['player_id']})
+
+    return results
+
+
+""" User and authentication functions """
 def authenticate_user(email, password_try, ip_addr=None):
     """ authenticate user for login """
     user_id = None
@@ -257,7 +288,11 @@ def validateJSONSchema(source, schema_name):
         return (False, "Unable to locate schema file for schema name %s" % schema_name)
 
     with open(schema_file) as f:
-        schema = json.load(f)
+        try:
+            schema = json.load(f)
+        except json.decoder.JSONDecodeError:
+            app.logger.error("Error: Unable to validate json because schema file isn't valid: %s" % schema_file)
+            return (False, "Schema file isn't valid JSON")
 
     if not schema:
         return (False, "Schema file failed to load, unable to validate")

@@ -8,6 +8,8 @@ import re
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 
+from scoreboard.exceptions import UpdateError
+from scoreboard import audit_logger
 
 class Stats(object):
     """ Class to hold all the stats for a given team in a given group (division or pod) a single team may have multiple stats
@@ -400,3 +402,103 @@ class User(object):
 
     def __genResetToken(self):
         return b64encode(urandom(30), b"-_")
+
+
+class Player(object):
+    """ Class object for players, this is the object used to represent players on teams as part of rosters. It is distinct from "users" which represent
+    users of the Scoreboard system for administration purposes """
+
+    def __init__(self, db, display_name, player_id=None):
+        self.db = db
+        self.date_created = None
+        self.date_updated = None
+
+        if not player_id:
+            # generate a player ID and make sure its unique in the DB
+            while player_id is None:
+                player_id = b64encode(urandom(6), b"Aa").decode("utf-8")
+                cur = self.db.execute("SELECT player_id FROM players WHERE player_id=?", (player_id,))
+                exists = cur.fetchone()
+                if exists:
+                    player_id = None
+            app.logger.info("Generated new player ID %s for player %s" % (player_id, display_name))
+        else:
+            cur = self.db.execute("SELECT display_name, date_created, date_updated FROM players WHERE player_id=?", (player_id,))
+            row = cur.fetchone()
+            display_name = row['display_name']
+            self.date_created = datetime.strptime(row['date_created'], "%Y-%m-%d %H:%M:%S")
+            if row['date_updated']:
+                self.date_updated = datetime.strptime(row['date_updated'], "%Y-%m-%d %H:%M:%S")
+            else:
+                self.date_updated = self.date_created
+
+        self.player_id = player_id
+        self.display_name = display_name
+
+        self.teams = self.findTeams()
+
+    def __repr__(self):
+        return '{}: {} - {}'.format(self.player_id, self.display_name, self.teams)
+
+    def serialize(self):
+        return {
+            'player_id': self.player_id,
+            'display_name': self.display_name,
+            'date_created': self.date_created.isoformat(),
+            'date_updated': self.date_updated.isoformat(),
+            'teams': self.teams
+        }
+
+    def commit(self):
+
+        cur = self.db.execute("SELECT player_id FROM players WHERE player_id=?", (self.player_id,))
+        existing = cur.fetchone()
+
+        if existing:
+            self.db.execute("UPDATE players SET display_name=?, date_updated=datetime('now') WHERE player_id=?", (self.display_name, self.player_id))
+        else:
+            self.db.execute("INSERT INTO players (player_id, display_name) VALUES (?,?)", (self.player_id, self.display_name))
+        self.db.commit()
+
+        return True
+
+    def findTeams(self):
+        from scoreboard.functions import getTournamentByID
+
+        teams = []
+        cur = self.db.execute("SELECT tid, team_id, cap_number, is_coach, coach_title FROM rosters WHERE player_id=?", (self.player_id,))
+
+        rows = cur.fetchall()
+        for row in rows:
+            team = {}
+            tid = row['tid']
+            team_id = row['team_id']
+
+            t = getTournamentByID(tid)
+            team['tournament'] = t.name
+            team['t_short_name'] = t.short_name
+            team['name'] = t.getTeam(team_id)
+            team['team_id'] = team_id
+            team['placing'] = t.getPlacingForTeam(team_id)
+
+            if team not in teams:
+                # some players are also coaches which cause teams to show up twice
+                teams.append(team)
+
+        return teams
+
+    def updateDisplayName(self, new_display_name):
+        try:
+            new_display_name = str(new_display_name)
+            new_display_name = new_display_name.strip()
+        except TypeError:
+            raise UpdateError("NotString", "Display name cannot be converted to string")
+
+        if len(new_display_name) > 48:
+            raise UpdateError("NameToLong", "Display name cannot be greater than 48 characters")
+
+        audit_logger.info("Display name updated for player %s (%s) to %s" % (self.display_name, self.player_id, new_display_name))
+        self.display_name = new_display_name
+        self.commit()
+
+        return True

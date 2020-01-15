@@ -1,8 +1,7 @@
-import requests
-import json
 import base64
 
 from scoreboard import functions
+from scoreboard.models import Player
 from common_functions import connect_db, add_tournament, load_schedule
 
 
@@ -92,6 +91,7 @@ def test_api_auth(test_client):
     valid_credentials = base64.b64encode(b'%b:' % token.encode('utf-8')).decode('utf-8')
     response = test_client.get("/api/v1/login/test", headers={'Authorization': 'Basic ' + valid_credentials})
     assert response.status_code == 401
+
 
 def test_update_score(test_client):
     db = connect_db(test_client.application.config['DATABASE'])
@@ -209,3 +209,63 @@ def test_update_score(test_client):
     assert game["score_w"] == 0
     assert game["score_b"] == 0
     assert game["forfeit"] == "w"
+
+
+def test_get_player(test_client):
+    db = connect_db(test_client.application.config['DATABASE'])
+    print(test_client.application.config['DATABASE'])
+
+    response = test_client.get("/api/v1")
+    assert response.status_code == 200
+
+    response = test_client.get(f"/api/v1/players/lskdjffj")
+    assert response.status_code == 404
+
+    player_1 = Player(db, "John Doe")
+    player_1.commit()
+    player_1_id = player_1.player_id
+
+    response = test_client.get(f"/api/v1/players/{player_1_id}")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "player" in response.json
+    player_data = response.json["player"]
+    assert player_data["display_name"] == "John Doe"
+
+    # lets try to set a new name
+    player_data["display_name"] = "Bob Dole"
+
+    # first test rejected without login
+    response = test_client.post(f"/api/v1/players/{player_1_id}", json=player_data)
+    assert response.status_code == 401
+
+    # get a valid token so we can do authenticated POST
+    valid_credentials = base64.b64encode(b'test_user@pytest.com:temp123!@#').decode('utf-8')
+    response = test_client.get("/api/v1/login", headers={'Authorization': 'Basic ' + valid_credentials})
+    assert response.status_code == 200
+    assert response.is_json
+    assert "token" in response.json
+    token = response.json["token"]
+    valid_credentials = base64.b64encode(b'%b:' % token.encode('utf-8')).decode('utf-8')
+
+    # try updating now that it has a token
+    response = test_client.post(f"/api/v1/players/{player_1_id}", headers={'Authorization': 'Basic ' + valid_credentials}, json={"player": player_data})
+    assert response.status_code == 200
+    assert response.is_json
+    assert "player" in response.json
+    player_data = response.json["player"]
+    assert player_data["display_name"] == "Bob Dole"
+
+    # validate that jsob body ID must match URL ID
+    player_data["player_id"] = "alkjsadflkj"
+    player_data["display_name"] = "Shouldn't Have Updated"
+    response = test_client.post(f"/api/v1/players/{player_1_id}", headers={'Authorization': 'Basic ' + valid_credentials}, json={"player": player_data})
+    assert response.status_code == 400
+
+    # get again and just make sure we still get the answer
+    response = test_client.get(f"/api/v1/players/{player_1_id}")
+    assert response.status_code == 200
+    assert response.is_json
+    assert "player" in response.json
+    player_data = response.json["player"]
+    assert player_data["display_name"] == "Bob Dole"

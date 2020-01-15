@@ -24,17 +24,18 @@ global_limiter = Limiter(
 )
 
 
-def create_app(db_path=None, debug=False):
+def create_app(db_path=None, debug=False, testing=False):
     app = Flask(__name__)
     app.config.from_object(__name__)
 
     config = dict(
         DATABASE=db_path,
         DEBUG=debug,
+        TESTING=testing,
         SECRET_KEY="ojgMXp6Rv4n9qKaiAfC48yieA2m-UThR1v6Fuk3d"
     )
     app.config.update(config)
 
     with app.app_context():
-        from scoreboard import views_main, views_admin, views_api_v1
+        from scoreboard import views_main, views_admin, views_api_v1, views_cgi
         return app

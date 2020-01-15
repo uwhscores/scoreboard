@@ -7,31 +7,19 @@ import urllib.parse
 import sqlite3
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, validateJSONSchema, getDB, authenticate_user
-from scoreboard.exceptions import UserAuthError
+from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getPlayerByID, validateJSONSchema, getDB, authenticate_user
+from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
 
 auth = HTTPBasicAuth()
 
 
-class InvalidUsage(Exception):
-    status_code = 400
-
-    def __init__(self, message, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        if status_code is not None:
-            self.status_code = status_code
-        self.payload = payload
-
-    def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        return rv
-
-
 @auth.verify_password
 def verify_pw(email, password_try):
-    audit_logger.info("Attempting auth for user/token %s" % email)
+    if not email:
+        audit_logger.info("API: Auth attempted without user/token")
+        return False
+
+    audit_logger.info("API: Attempting auth for user/token %s" % email)
 
     # first assume its a token for speed
     token = email
@@ -320,6 +308,15 @@ def apiGetTimingRules(tid):
     return jsonify(timing_rule_set=rules)
 
 
+@app.route('/api/v1/players/<player_id>')
+def apiGetPlayerByID(player_id):
+    player = getPlayerByID(player_id)
+
+    if not player:
+        raise InvalidUsage("Unkown player", status_code=404)
+
+    return jsonify(player=player.serialize())
+
 ################################################################################
 # Private APIs
 ################################################################################
@@ -493,3 +490,46 @@ def updateGameTiming(tid):
         #response = {'timing_rule_set': {'tid': tid}}
         #response['timing_rule_set'].update(rules)
         return jsonify(rules)
+
+
+@app.route('/api/v1/players/<player_id>', methods=['POST'])
+@auth.login_required
+def updatePlayerByID(player_id):
+    player = getPlayerByID(player_id)
+
+    if not player:
+        raise InvalidUsage("Unkown player", status_code=404)
+
+    current_user = getUserByID(g.user_id)
+    if not current_user.admin:
+        raise InvalidUsage("Not authorized", status_code=403)
+
+    post_data = request.get_json()
+    if not isinstance(post_data, dict):
+        message = "POST data must be JSON format"
+        raise InvalidUsage(message, status_code=400)
+
+    (valid, message) = validateJSONSchema(post_data, "player")
+    if not valid:
+        raise InvalidUsage(message, status_code=400)
+
+    player_update = post_data.get("player")
+
+    if player_update["player_id"] != player_id:
+        raise InvalidUsage("Player ID Mismatch", status_code=400)
+
+    if player.display_name != player_update["display_name"]:
+        audit_logger.info("API: Update player ID %s name from %s to %s" % (player_id, player.display_name,  player_update["display_name"]))
+        try:
+            player.updateDisplayName(player_update["display_name"])
+        except UpdateError as e:
+            if e.message:
+                message = e.message
+            else:
+                message = e.error
+            raise InvalidUsage(message, status_code=500)
+
+    # get updated player object and return
+    player = getPlayerByID(player_id)
+
+    return jsonify(player=player.serialize())
