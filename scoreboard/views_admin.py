@@ -1,5 +1,5 @@
 from flask import current_app as app
-from flask import request, redirect, render_template, flash
+from flask import request, redirect, render_template, flash, abort
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 import json
 import re
@@ -667,9 +667,7 @@ def adminPlayer(player_id):
     player = getPlayerByID(player_id)
 
     if not player:
-        # TODO: implement propper 404
-        flash("Player not found")
-        return redirect("/admin")
+        abort(404, "Player not found")
 
     if request.method == 'GET':
         return render_template('admin/show_player_admin.html', player=player)

@@ -291,7 +291,7 @@ def validateJSONSchema(source, schema_name):
         try:
             schema = json.load(f)
         except json.decoder.JSONDecodeError:
-            app.logger.error("Error: Unable to valide json because schema file isn't valid: %s" % schema_file)
+            app.logger.error("Error: Unable to validate json because schema file isn't valid: %s" % schema_file)
             return (False, "Schema file isn't valid JSON")
 
     if not schema:
