@@ -1,9 +1,9 @@
 {% block nav %}
 <!-- Navigation -->
     {% if request.host_url != "http://uwhscores.com/" -%}
-    <nav class="navbar navbar-default navbar-inverse" role="navigation" style="background-color: #8A0808;">
+    <nav class="navbar navbar-default" role="navigation" style="background-color: #8A0808;" >
     {% else %}
-    <nav class="navbar navbar-default navbar-inverse" role="navigation">
+    <nav class="navbar navbar-default" role="navigation">
         {%- endif %}
         <div id="nav_bar" class="container">
             <!-- Brand and toggle get grouped for better mobile display -->
@@ -14,7 +14,10 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="/">Underwater Hockey Scores</a>
+                {% if request.path != "/" %}
+                <!-- <a class="navbar-brand" href="/">Underwater Hockey Scores</a> -->
+                <a href="/"><img class="navbar-brand" src="/static/images/logo_banner.png"></a>
+                {% endif %}
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="navbar-collapse-1">
@@ -62,6 +65,8 @@
                         </ul>
                     </li>
                     {%- endif %}
+
+                    {% if tournament %}
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages<b class=caret></b></a>
                         <ul class="dropdown-menu">
@@ -75,7 +80,17 @@
                             {%- endif %}
                         </ul>
                     </li>
-
+                    {% else %}
+                    <li>
+                        <a href="/faq">FAQ</a>
+                    </li>
+                    <li>
+                        <a href="/players">Players</a>
+                    </li>
+                    <li>
+                        <a href="/admin">Admin</a>
+                    </li>
+                    {% endif %}
             </div>
             <!-- /.navbar-collapse -->
         </div>
