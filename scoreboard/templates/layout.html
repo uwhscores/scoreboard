@@ -11,9 +11,12 @@
     <meta property="og:image" content="https://uwhscores.com{{ team_info.flag_url }}" />
     {% elif tournament.sm_logo -%}
     <meta property="og:image" content="https://uwhscores.com{{ tournament.sm_logo }}" />
+    {% else -%}
+    <meta property="og:image" content="https://uwhscores.com/static/images/logo_og.png" />
     {%- endif %}
     {% else %}
     <meta name="description" content="UWHScores for tournaments - Follow game results and check updated standings throughout the day.">
+    <meta property="og:image" content="https://uwhscores.com/static/images/logo_og.png" />
     {% endif %}
 
     <meta name="author" content="">
