@@ -74,6 +74,8 @@
             <td> <a href="/t/{{team.t_short_name }}/team/{{ team.team_id }}">{{ team.name }}</a></td>
             {% if team.placing %}
             <td> {{ team.placing.place }} in {{ team.placing.div }} </td>
+            {% else %}
+            <td> --- </td>
             {% endif %}
           </tr>
           {% endfor %}

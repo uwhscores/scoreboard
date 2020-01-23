@@ -710,7 +710,7 @@ class Tournament(object):
         all_placings = self.getPlacings()
 
         for p in all_placings:
-            if p["team_id"] == team_id:
+            if "team_id" in p and p["team_id"] == team_id:
                 place = p
                 break
 
