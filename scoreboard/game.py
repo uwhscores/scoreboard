@@ -195,9 +195,9 @@ class Game(object):
             #app.logger.debug("Seed notation: group= %s, seed= %s" % (group_abriviation, seed))
 
             if group_abriviation in t.getPods():
-                team_id = t.getSeed(seed, None, group_abriviation)
+                team_id = t.getSeed(seed, pod=group_abriviation)
             elif group_abriviation in t.getDivisions():
-                team_id = t.getSeed(seed, group_abriviation, None)
+                team_id = t.getSeed(seed, division=group_abriviation)
             else:
                 team_id = -1
 

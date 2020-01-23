@@ -759,7 +759,7 @@ class Tournament(object):
         if not hasattr(self.context, 'ties'):
             return None
 
-        ties = g.ties
+        ties = flask_g.ties
         seen = set()
         list = [x for x in ties if x not in seen and not seen.add(x)]
 
@@ -1038,23 +1038,24 @@ class Tournament(object):
         """ boolean test to check standings for ties """
         x = 0
         last = 0
-
-        while x < len(standings) - 1:
-            if self.cmpTeamsSort(standings[x].team, standings[x + 1].team) == 0:
-                if last == 1:
-                    # flash("You need a three sided die, give up and go home")
-                    return True
+        for group in standings.keys():
+            group_standings = standings[group]
+            while x < len(group_standings) - 1:
+                if self.cmpTeamsSort(group_standings[x].team, group_standings[x + 1].team) == 0:
+                    if last == 1:
+                        app.logger.debug("You need a three sided die, give up and go home")
+                        return True
+                    else:
+                        last = 1
                 else:
-                    last = 1
-            else:
-                last = 0
-            x = x + 1
+                    last = 0
+                x = x + 1
 
-        x = 0
-        while x < len(standings) - 1:
-            if self.cmpTeams(standings[x].team, standings[x + 1].team) == 0:
-                return True
-            x = x + 1
+            x = 0
+            while x < len(group_standings) - 1:
+                if self.cmpTeams(group_standings[x].team, group_standings[x + 1].team) == 0:
+                    return True
+                x = x + 1
 
         return False
 
@@ -1150,15 +1151,16 @@ class Tournament(object):
 
                 # Check if all the tie breakers are ties
                 if place_teams[1:] == place_teams[:-1]:
-                    app.logger.debug("three way tie all equal in %s" % pod)
                     place += 1
                     if pod and self.endRoundRobin(pod=pod):
+                        app.logger.debug("three way tie all equal in %s" % pod)
                         app.logger.debug("end of round robin and three-way tie")
                         self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
                     else:
-                        ## TODO: need to get division somehow
-                        b
-                        if self.endRoundRobin(div=div):
+                        # TODO: probably should verify everybody is the same division
+                        div = place_teams[0].div
+                        if self.endRoundRobin(division=div):
+                            app.logger.debug("three way tie all equal in %s" % div)
                             app.logger.debug("end of round robin and three-way tie")
                             self.addTie(place_teams[0].team.team_id, place_teams[1].team.team_id, place_teams[2].team.team_id)
 
