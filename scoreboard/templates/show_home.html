@@ -115,8 +115,8 @@
 				<div class="list-group">
 					{% for t in past_tournaments -%}
 						<a href="/t/{{t.short_name}}" class="list-group-item">
-							{% if t.banner %}
-							<img class=tournament_banner  src=/{{t.banner}}>
+							{% if t.banner_sm %}
+							<img class=tournament_banner  src=/{{t.banner_sm}}>
 							{% endif %}
 							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
 						</a>

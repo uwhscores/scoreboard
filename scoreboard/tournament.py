@@ -70,9 +70,10 @@ class Tournament(object):
             self.sm_logo = os.path.join("static/flags", self.short_name, "sm_logo.png")
 
         self.banner = None
+        self.banner_sm = None
         if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner_sm.png")):
-            self.banner = os.path.join("static/flags", self.short_name, "banner_sm.png")
-        elif os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner.png")):
+            self.banner_sm = os.path.join("static/flags", self.short_name, "banner_sm.png")
+        if os.path.isfile(os.path.join("scoreboard/static/flags", self.short_name, "banner.png")):
             self.banner = os.path.join("static/flags", self.short_name, "banner.png")
 
     def __repr__(self):
