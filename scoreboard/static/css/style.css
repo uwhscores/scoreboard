@@ -19,8 +19,12 @@ html, body {
   padding-top: 1em;
 }
 
+.page-header {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
 .tournament-header {
-	margin-top: 0px;
+	padding-top: 1em;
 }
 
 .tournament-title {
@@ -31,9 +35,6 @@ html, body {
 	color: gray;
 }
 
-.tournament_banner {
-	max-width: 100%;
-}
 #dayPager {
 	margin: 0px;
 }
@@ -239,6 +240,11 @@ img.flag-thumb {
   .footer-text {
     font-size: .5em;
   }
+
+  .tournament-header-banner {
+    visibility: hidden;
+    display: none;
+  }
 }
 
 @media screen and (max-width: 600px) {
@@ -289,6 +295,12 @@ img.flag-thumb {
 		visibility: hidden;
 		display: none;
 	}
+
+  .tournament-header-banner {
+    visibility: hidden;
+    display: none;
+  }
+
 }
 
 

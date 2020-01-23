@@ -6,13 +6,20 @@
 
 {% block main %}
 <div id="page_body" class="container">
-	<div class="row">
-		<div class="col-md-12">
-			<div class="page-header tournament-header">
+	<div class="row page-header">
+		<div class="col-md-8">
+			<div class="tournament-header">
 				<h1 class="tournament-title">{{ tournament.name }}</h1>
 				<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
 			</div>
 		</div>
+		{% if tournament.banner_sm %}
+		<div class="col-md-4 tournament-header-banner">
+			<img class=" pull-right" src="/{{ tournament.banner_sm }}">
+		</div>
+		{% endif %}
+	</div>
+	<div class="row">
 		{% if site_message -%}
 		<div class="col-md-8">
 			<div class="alert alert-info" role="alert">

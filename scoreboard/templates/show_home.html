@@ -26,7 +26,7 @@
 						{% for t in live_tournaments %}
 					  <div class="panel-body">
 							{% if t.banner %}
-							<a href="/t/{{t.short_name}}"><img class=tournament_banner src="/{{t.banner}}"></a>
+							<a href="/t/{{t.short_name}}"><img class=tournament-banner src="/{{t.banner}}"></a>
 							{% endif %}
 							<h4><a href="/t/{{t.short_name}}">{{t.name}} <i class="fa fa-chevron-right"></i></a></h4>
 							<strong>{{ t.location }}, {{ t.date_string}}</strong>
@@ -103,9 +103,9 @@
 					{% for t in future_tournaments|sort -%}
 						<a href="/t/{{t.short_name}}" class="list-group-item">
 							{% if t.banner_sm %}
-							<img class=tournament_banner  src=/{{t.banner_sm}}>
-                            {% elif t.banner %}
-                            <img class=tournament_banner  src=/{{t.banner}}>
+							<img class=tournament-banner  src=/{{t.banner_sm}}>
+              {% elif t.banner %}
+              <img class=tournament-banner  src=/{{t.banner}}>
 							{% endif %}
 							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
 						</a>
@@ -118,9 +118,9 @@
 					{% for t in past_tournaments -%}
 						<a href="/t/{{t.short_name}}" class="list-group-item">
 							{% if t.banner_sm %}
-							<img class=tournament_banner  src=/{{t.banner_sm}}>
-                            {% elif t.banner %}
-                            <img class=tournament_banner  src=/{{t.banner}}>
+							<img class=tournament-banner  src=/{{t.banner_sm}}>
+              {% elif t.banner %}
+              <img class=tournament-banner  src=/{{t.banner}}>
 							{% endif %}
 							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
 						</a>
