@@ -102,8 +102,10 @@
 				<div class="list-group">
 					{% for t in future_tournaments|sort -%}
 						<a href="/t/{{t.short_name}}" class="list-group-item">
-							{% if t.banner %}
-							<img class=tournament_banner  src=/{{t.banner}}>
+							{% if t.banner_sm %}
+							<img class=tournament_banner  src=/{{t.banner_sm}}>
+                            {% elif t.banner %}
+                            <img class=tournament_banner  src=/{{t.banner}}>
 							{% endif %}
 							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
 						</a>
@@ -117,6 +119,8 @@
 						<a href="/t/{{t.short_name}}" class="list-group-item">
 							{% if t.banner_sm %}
 							<img class=tournament_banner  src=/{{t.banner_sm}}>
+                            {% elif t.banner %}
+                            <img class=tournament_banner  src=/{{t.banner}}>
 							{% endif %}
 							<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
 						</a>
