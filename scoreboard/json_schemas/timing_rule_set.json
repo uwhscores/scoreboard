@@ -68,8 +68,8 @@
                     }
                 }
             },
-            "required": ["tid", "default_rules"],
-             "additionalProperties": false
+            "required": ["default_rules"],
+            "additionalProperties": false
         }
     },
     "required": ["timing_rule_set"],
