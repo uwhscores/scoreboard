@@ -23,7 +23,7 @@ html, body {
   margin-top: 0;
   margin-bottom: 1em;
 }
-.tournament-header {
+.tournament-header .tournament-hearder-banner {
 	padding-top: 1em;
 }
 
@@ -241,9 +241,8 @@ img.flag-thumb {
     font-size: .5em;
   }
 
-  .tournament-header-banner {
-    visibility: hidden;
-    display: none;
+  .tournament-header-banner img {
+    width: 200px;
   }
 }
 
@@ -257,6 +256,14 @@ img.flag-thumb {
 		display: inline-block;
 		width: 80px;
 	}
+
+  .tournament-header-banner  img {
+    max-width: 100px;
+  }
+
+  #tabNav li a {
+    font-size: .75em;
+  }
 }
 
 @media print {

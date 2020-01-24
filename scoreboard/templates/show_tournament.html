@@ -7,14 +7,14 @@
 {% block main %}
 <div id="page_body" class="container">
 	<div class="row page-header">
-		<div class="col-md-8">
+		<div class="col-md-8 col-sm-8 col-xs-8">
 			<div class="tournament-header">
 				<h1 class="tournament-title">{{ tournament.name }}</h1>
 				<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
 			</div>
 		</div>
 		{% if tournament.banner_sm %}
-		<div class="col-md-4 tournament-header-banner">
+		<div class="col-md-4 col-sm-4 col-xs-4 tournament-header-banner">
 			<img class=" pull-right" src="/{{ tournament.banner_sm }}">
 		</div>
 		{% endif %}
