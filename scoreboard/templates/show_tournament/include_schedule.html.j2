@@ -1,0 +1,93 @@
+<div id="schedule" class="tab-pane fade active in">
+  <div>
+    {%- if team_info and team_info.flag_url %}
+    <img class="team-flag pull-right" src="{{ team_info.flag_url }}" alt="Team Flag">
+    {% endif -%}
+    <h1>{{ title_text }} Schedule </h1>
+  </div>
+  <div>
+    <nav id="dayPagerNav2">
+      <ul id="dayPager" class="pagination pagination-sm">
+        <li class="active toggleDay" day="All"><span>All</span></li>
+        {% for day in tournament.days -%}
+        <li class="toggleDay" day="{{day}}"><span>{{day}}</span></li>
+        {%- endfor %}
+      </ul>
+    </nav>
+    <table id="games" class="table table-sm">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Time/Pool</th>
+          <th>Teams</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for game in games -%}
+        <tr class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
+          <td rowspan=3>{{ game.gid }}</td>
+        </tr>
+        <tr class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
+          <td class="game-time">
+            <span class="game-line">{{ game.day | replace("-", " ") }} </span>
+            <span class="game-line"> {{ game.start_time }}</span>
+          </td>
+          <td>
+            <div class="color-box" style="background-color: #FFFFFF;"></div><span class="{{game.style_w}}">{{ game.white }}</span>
+            {% if game.white_flag -%}
+            <img src="{{ game.white_flag.thumb }}" class="flag-thumb pull-right">
+            {%- endif %}
+          </td>
+          <td>
+            {{game.score_w}}
+            {% if game.note_w -%}
+            <span style="padding-left: 1em">{{ game.note_w }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr class="{{ loop.cycle('odd', 'even') }} {{ game.day}}">
+          <td>
+            <span class="game-line">Pool: {{ game.pool }}</span>
+            {% if game.pod_color and game.pod -%}
+            <!-- Pod: <span class="game-line" style="background-color:{{ game.pod_color }}; padding:0.5em">{{ game.pod }}</span> -->
+            <span class="game-line"> Pod: {{ game.pod }} </span>
+            {% elif game.pod %}
+            <span class="game-line"> Pod: {{ game.pod }} </span>
+            {% elif game.division %}
+            <span class="game-line"> Div: {{ game.division }} </span>
+            {% elif game.type == "CO" %}
+            <span class=game-description>Cross Over</span>
+            {% endif %}
+            {% if game.description -%}
+            <span class=game-description>{{ game.description }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <i class="fas fa-square-full stick-color stick-black"></i><span class="{{game.style_b}}">{{ game.black }}</span>
+            {% if game.black_flag -%}
+            <img src="{{ game.black_flag.thumb }}" class="flag-thumb pull-right">
+            {%- endif %}
+          </td>
+          <td>
+            {{game.score_b}}
+            {% if game.note_b -%}
+            <span style="padding-left: 1em">{{ game.note_b }}</span>
+            {%- endif %}
+          </td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if "team" in request.url -%}
+  <div class="alert alert-info" role="alert">
+    <h3> NOTICE </h3>
+    <p><strong> Team schedule view only shows confirmed games! </strong></p>
+    <p> Games for later pods or brackets that haven't been decided will not
+      show here until teams are assigned.</p>
+    <p> Check back regularly to confirm future games.</p>
+  </div>
+  {%- endif %}
+</div>

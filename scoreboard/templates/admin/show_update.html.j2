@@ -1,7 +1,7 @@
-{% extends "/admin/admin_layout.html" %}
+{% extends "/admin/admin_layout.html.j2" %}
 
 {% block nav %}
-	{% include "admin/nav_admin.html" with context %}
+	{% include "admin/nav_admin.html.j2" with context %}
 {% endblock nav %}
 
 {% block main %}
@@ -57,7 +57,7 @@ jQuery(document).ready(function($) {
 	</div>
 
 	<button id="toggleComplete" type="button" class="btn btn-default" value="on">
-		<span id="toggleComplete-glyph" class="glyphicon glyphicon-plus" aria-hidden="true"></span> Show Completed  
+		<span id="toggleComplete-glyph" class="glyphicon glyphicon-plus" aria-hidden="true"></span> Show Completed
 	</button>
 
 	<table id=games class="table table-striped">

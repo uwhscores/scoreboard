@@ -1,3 +1,43 @@
+{% if team_info and team_info.roster -%}
+<div id="roster" class="tab-pane fade">
+  <h1>{{ title_text }} Roster</h1>
+  <table id=roster_tbl class="table table-striped roster-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Cap Number</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for player in team_info.roster %}
+      <tr>
+        <td><a href="/p/{{ player.player_id }}">{{ player.name }}</a></td>
+        <td>{{ player.number if player.number != None else "" }}</td>
+      </tr>
+      {% endfor -%}
+    </tbody>
+  </table>
+  {%- if team_info.coaches %}
+  <table id=coaches_tbl class="table table-striped roster-table">
+    <thead>
+      <tr>
+        <th>Coaches and Staff</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for coach in team_info.coaches %}
+      <tr>
+        <td><a href="/p/{{ coach.player_id }}">{{ coach.name }}</a></td>
+        {% if coach.title %}
+        <td>{{ coach.title }}</td>
+        {% endif %}
+      </tr>
+      {% endfor -%}
+    </tbody>
+  </table>
+  {%- endif %}
+</div>
+{%- elif team_infos %}
 <div id="rosters" class="tab-pane fade">
   <div>
     {% for team_id in team_infos %}
@@ -48,5 +88,5 @@
       {% endif %}
     {% endfor %}
   </div>
-
 </div>
+{% endif %}

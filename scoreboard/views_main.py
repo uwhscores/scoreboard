@@ -1,5 +1,5 @@
 from flask import current_app as app
-from flask import request, redirect, render_template, flash, abort
+from flask import request, redirect, render_template, flash, abort, make_response, jsonify
 from flask_login import current_user
 from .functions import getTournaments, getTournamentByID, getTournamentID, getPlayerByID
 import re
@@ -22,7 +22,7 @@ def renderHome():
     for t in ts_live:
         live_tournaments.append(ts_live[t])
 
-    return render_template('show_home.html', past_tournaments=past_tournaments, future_tournaments=future_tournaments, live_tournaments=live_tournaments)
+    return render_template('show_home.html.j2', past_tournaments=past_tournaments, future_tournaments=future_tournaments, live_tournaments=live_tournaments)
 
 
 @app.route('/t/<short_name>')
@@ -37,11 +37,11 @@ def renderTourament(short_name):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     games = t.getGames()
     if not games or len(games) == 0:
-        return render_template('show_coming_soon.html', tournament=t)
+        return render_template('show_coming_soon.html.j2', tournament=t)
 
     divisions = t.getDivisionNames()
     team_list = t.getTeams()
@@ -63,7 +63,7 @@ def renderTourament(short_name):
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=standings, group_names=group_names,
+    return render_template('show_tournament.html.j2', tournament=t, games=games, standings=standings, grouped_standings=standings, group_names=group_names,
                            placings=placings, team_infos=team_infos, divisions=divisions, team_list=team_list, pods=pod_names, site_message=site_message, print_friendly=True)
 
 
@@ -78,7 +78,7 @@ def renderTDiv(short_name, div):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     if not t.isGroup(div):
         flash("Invalid division")
@@ -109,7 +109,7 @@ def renderTDiv(short_name, div):
         division_name = "%s Division" % div
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
+    return render_template('show_tournament.html.j2', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
                            pods=pod_names, team_list=team_list, team_infos=team_infos, site_message=site_message, title_text=division_name, placings=placings)
 
 
@@ -124,7 +124,7 @@ def renderTPod(short_name, pod):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     if not t.isGroup(pod):
         flash("Invalid Pod")
@@ -153,7 +153,7 @@ def renderTPod(short_name, pod):
         pod_name = "%s Pod" % pod
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=division,
+    return render_template('show_tournament.html.j2', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=division,
                            pods=pod_names, team_list=team_list, team_infos=team_infos, site_message=site_message, title_text=pod_name)
 
 
@@ -168,7 +168,7 @@ def renderTTeam(short_name, team_id):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     if not team_id.isdigit():
         flash("Invalid team ID, must be integer")
@@ -204,8 +204,8 @@ def renderTTeam(short_name, team_id):
     team_info = t.getTeamInfo(team_id)
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
-                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_warning=True, team_info=team_info)
+    return render_template('show_tournament.html.j2', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, group_names=group_names, divisions=divisions,
+                           pods=pod_names, team_list=team_list, site_message=site_message, title_text=team, team_info=team_info)
 
 
 @app.route('/t/<short_name>/multi/<group>')
@@ -219,7 +219,7 @@ def renderTGroup(short_name, group):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     games = []
     team_list = None
@@ -265,7 +265,7 @@ def renderTGroup(short_name, group):
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_tournament.html', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
+    return render_template('show_tournament.html.j2', tournament=t, games=games, standings=standings, grouped_standings=grouped_standings, divisions=divisions,
                        pods=pod_names, team_list=team_list, site_message=site_message, title_text="Combined")
 
 
@@ -289,7 +289,7 @@ def renderPlayerInfo(player_id=None):
         # no player ID asked for, we'll just return the page for search
         player = None
 
-    return render_template("show_player.html", player=player, show_admin_link=show_admin_link)
+    return render_template("show_player.html.j2", player=player, show_admin_link=show_admin_link)
 
 #######################################
 # Special pages
@@ -305,7 +305,7 @@ def renderTouramentTV(short_name):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     next_page = None
     if request.args.get('offset'):
@@ -339,7 +339,7 @@ def renderTouramentTV(short_name):
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_tv.html', tournament=t, games=games, standings=standings, placings=placings, divisions=division, team_list=team_list,
+    return render_template('show_tv.html.j2', tournament=t, games=games, standings=standings, placings=placings, divisions=division, team_list=team_list,
                            pods=pod_names, site_message=site_message, next_page=next_page)
 
 
@@ -354,7 +354,7 @@ def renderTouramentPrint(short_name):
 
     message = t.getDisableMessage()
     if message:
-        return render_template('site_down.html', message=message)
+        return render_template('site_down.html.j2', message=message)
 
     games = t.getGames()
     division = t.getDivisionNames()
@@ -375,7 +375,7 @@ def renderTouramentPrint(short_name):
 
     site_message = t.getSiteMessage()
 
-    return render_template('show_print.html', tournament=t, games=games, standings=standings, placings=placings, divisions=division, team_list=team_list,
+    return render_template('show_print.html.j2', tournament=t, games=games, standings=standings, placings=placings, divisions=division, team_list=team_list,
                            pods=pod_names, site_message=site_message)
 
 
@@ -384,7 +384,7 @@ def renderTouramentPrint(short_name):
 #######################################
 @app.route('/faq')
 def renderFAQ():
-    return render_template('faq.html')
+    return render_template('faq.html.j2')
 
 
 #######################################
@@ -392,4 +392,7 @@ def renderFAQ():
 #######################################
 @app.errorhandler(404)
 def page_not_found(message):
-    return render_template("errors/404.html", title='404', message=message), 404
+    if request.path.startswith("/api"):
+        return jsonify(message="These aren't the droids you're looking for", code=404), 404
+    else:
+        return render_template("errors/404.html.j2", title='404', message=message), 404

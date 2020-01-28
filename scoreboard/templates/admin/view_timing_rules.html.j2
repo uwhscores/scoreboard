@@ -1,7 +1,7 @@
-{% extends "/admin/admin_layout.html" %}
+{% extends "/admin/admin_layout.html.j2" %}
 
 {% block nav %}
-	{% include "admin/nav_admin.html" with context %}
+	{% include "admin/nav_admin.html.j2" with context %}
 {% endblock nav %}
 
 {% block main %}
@@ -43,13 +43,13 @@
 			<h4> Default Game Rules</h4>
 			<p>These are the default timing rules used for game types that aren't in the special rules below</p>
 			{% set r = timing_rules.default_rules %}
-			{% include 'admin/timing_rule_table.html' %}
+			{% include 'admin/timing_rule_table.html.j2' %}
 		</div>
 		<div class="col-lg-12">
 			{% for game_type in timing_rules.game_types %}
 			<h4> Rules for game type {{ game_type.game_type }}</h4>
 			{% set r = game_type.timing_rules %}
-			{% include 'admin/timing_rule_table.html' %}
+			{% include 'admin/timing_rule_table.html.j2' %}
 			{% endfor %}
 		</div>
 		{% else %}

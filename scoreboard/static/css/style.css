@@ -163,6 +163,10 @@ img.flag-thumb {
 	color: #333;
 }
 
+.standings-table a {
+	color: #333;
+}
+
 .roster-divider {
   border: 2px;
   border-color: black;
@@ -221,20 +225,9 @@ img.flag-thumb {
 		padding: 4px;
 	}
 
-	/* .standings-table>thead>tr>th:nth-child(2),
-	.standings-table>tbody>tr>td:nth-child(2),
-	.standings-table>thead>tr>th:nth-child(3),
-	.standings-table>tbody>tr>td:nth-child(3) {
-		display: block;
-	} */
-
 	.standings-table>thead>tr>th {
 		padding-left: 2px;
 		padding-right: 4px;
-	}
-
-	table.standing-table {
-		max-width: 90%;
 	}
 
   .footer-text {

@@ -1,4 +1,4 @@
-{% extends "printable_layout.html" %}
+{% extends "printable_layout.html.j2" %}
 
 {% block games %}
 
@@ -26,7 +26,7 @@
 					<tr>
 						<td>{{ game.gid }}</td>
 						<td>{{ game.day }} {{ game.start_time }}</td>
-						<td>{{ game.pool }}</td> 
+						<td>{{ game.pool }}</td>
 						{% if game.pod_color %}
 							<td style="background-color:{{ game.pod_color }}">{{ game.pod }}</td>
 						{% else %}

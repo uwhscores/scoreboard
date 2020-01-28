@@ -34,7 +34,7 @@ def renderAdmin():
 
     tournaments = sorted(tournaments)
 
-    return render_template('/admin/show_admin.html', tournaments=tournaments, user=current_user)
+    return render_template('/admin/show_admin.html.j2', tournaments=tournaments, user=current_user)
 
 
 @app.route("/admin/t/<short_name>")
@@ -101,7 +101,7 @@ def renderTAdmin(short_name):
                 continue
             unauthorized_users.append(u)
 
-    return render_template('admin/tournament_admin.html', tournament=t, ties=ties, disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),
+    return render_template('admin/tournament_admin.html.j2', tournament=t, ties=ties, disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),
                            redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 @app.route('/admin/t/<short_name>/scores', methods=['GET'])
@@ -119,7 +119,7 @@ def renderScores(short_name):
         return redirect("/admin")
 
     games = t.getGames()
-    return render_template('/admin/show_update.html', games=games, tournament=t)
+    return render_template('/admin/show_update.html.j2', games=games, tournament=t)
 
 
 @app.route('/admin/t/<short_name>/scores/<game_id>', methods=['GET'])
@@ -138,7 +138,7 @@ def renderScoreInput(short_name, game_id):
 
     game = t.getGame(game_id)
     if not game:
-        return render_template('show_error.html', error_message="404: Unknown Game ID"), 404
+        return render_template('show_error.html.j2', error_message="404: Unknown Game ID"), 404
     if (game.score_b == "--"):
         game.score_b = "0"
     if (game.score_w == "--"):
@@ -148,7 +148,7 @@ def renderScoreInput(short_name, game_id):
         flash('Team(s) not determined yet. Cannot set score')
         return redirect("/admin/t/%s" % t.short_name)
 
-    return render_template('/admin/update_single.html', tournament=t, game=game)
+    return render_template('/admin/update_single.html.j2', tournament=t, game=game)
 
 
 @app.route('/admin/t/<short_name>/scores', methods=['POST'])
@@ -200,7 +200,7 @@ def view_gametimerules(short_name):
 
     timing_rules = t.getTimingRuleSet()
 
-    return render_template('/admin/view_timing_rules.html', tournament=t, timing_rules=timing_rules)
+    return render_template('/admin/view_timing_rules.html.j2', tournament=t, timing_rules=timing_rules)
 
 
 @app.route('/admin/t/<short_name>/editgametiming')
@@ -219,7 +219,7 @@ def edit_gametimerules(short_name):
 
     timing_rules = t.getTimingRuleSet()
 
-    return render_template('/admin/edit_timing_json.html', tournament=t, timing_rules=timing_rules)
+    return render_template('/admin/edit_timing_json.html.j2', tournament=t, timing_rules=timing_rules)
 
 
 @app.route('/admin/t/<short_name>/update/updategametiming', methods=['POST'])
@@ -287,7 +287,7 @@ def redraw(short_name, group=None):
         if not group_name:
             group_name = "%s Group" % group
 
-        return render_template('/admin/redraw.html', tournament=t, group=group, group_name=group_name, teams=team_list)
+        return render_template('/admin/redraw.html.j2', tournament=t, group=group, group_name=group_name, teams=team_list)
 
     if request.method == 'POST':
         tid = getTournamentID(short_name)
@@ -409,7 +409,7 @@ def doUdateTournamentLogins(short_name):
 #######################################
 @app.route('/login', methods=['GET'])
 def show_login():
-    return render_template('admin/show_login.html')
+    return render_template('admin/show_login.html.j2')
 
 
 @app.route('/login', methods=['POST'])
@@ -435,7 +435,7 @@ def do_login():
             audit_logger.info("Successful login by %s(%s)" % (current_user.short_name, current_user.user_id))
             return redirect("/admin")
     else:
-        return render_template('show_error.html', error_message="You are not a person")
+        return render_template('show_error.html.j2', error_message="You are not a person")
 
     audit_logger.info("Failed login attempt w/ email: %s" % email)
     return redirect("/login")
@@ -460,9 +460,9 @@ def pw_reset():
 
     # token wasn't supplied or doesn't belong to a user
     if not token or not user_id:
-        return render_template('show_error.html', error_message="Invalid or missing token")
+        return render_template('show_error.html.j2', error_message="Invalid or missing token")
 
-    return render_template('admin/show_pwreset.html', token=token)
+    return render_template('admin/show_pwreset.html.j2', token=token)
 
 
 @app.route('/login/reset', methods=['POST'])
@@ -472,10 +472,10 @@ def set_password():
         token = form.get('token')
         user_id = validateResetToken(token)
     else:
-        return render_template('show_error.html', error_message="You go away now")
+        return render_template('show_error.html.j2', error_message="You go away now")
 
     if not user_id:
-        return render_template('show_error.html', error_message="You go away now")
+        return render_template('show_error.html.j2', error_message="You go away now")
 
     if form.get('password1') and form.get('password2'):
         password1 = form.get('password1')
@@ -513,7 +513,7 @@ def renderShowUsers():
         return redirect("/admin")
 
     users = getUserList()
-    return render_template('admin/show_users.html', users=users)
+    return render_template('admin/show_users.html.j2', users=users)
 
 
 @app.route('/admin/user/add',  methods=['GET'])
@@ -523,7 +523,7 @@ def renderAddUser():
         flash("You are not authorized for user management")
         return redirect("/admin")
 
-    return render_template('admin/user_add.html')
+    return render_template('admin/user_add.html.j2')
 
 
 @app.route('/admin/user/add',  methods=['POST'])
@@ -572,7 +572,7 @@ def doAddUser():
 
     # ideally here is where you would email out the reset token
 
-    return render_template("/admin/show_new_user.html", email=new_user['email'], token=res['token'], user_id=res['user_id'])
+    return render_template("/admin/show_new_user.html.j2", email=new_user['email'], token=res['token'], user_id=res['user_id'])
 
 
 @app.route("/admin/user/<user_id>")
@@ -595,7 +595,7 @@ def renderUserManager(user_id):
 
     tournaments = sorted(tournaments)
 
-    return render_template("/admin/show_user_admin.html", user=user, tournaments=tournaments)
+    return render_template("/admin/show_user_admin.html.j2", user=user, tournaments=tournaments)
 
 
 @app.route('/admin/user/<user_id>/reset')
@@ -614,7 +614,7 @@ def renderResetUserPass(user_id):
         flash("That's not a real user")
         return redirect("/admin/users")
 
-    return render_template('admin/show_passwd_reset.html', user=user, token=token)
+    return render_template('admin/show_passwd_reset.html.j2', user=user, token=token)
 
 
 @app.route('/admin/user/<user_id>/update')
@@ -670,7 +670,7 @@ def adminPlayer(player_id):
         abort(404, "Player not found")
 
     if request.method == 'GET':
-        return render_template('admin/show_player_admin.html', player=player)
+        return render_template('admin/show_player_admin.html.j2', player=player)
     elif request.method == "POST":
         form = request.form
 
@@ -697,4 +697,4 @@ def adminPlayer(player_id):
 
         player = getPlayerByID(player_id)
 
-        return render_template('admin/show_player_admin.html', player=player)
+        return render_template('admin/show_player_admin.html.j2', player=player)
