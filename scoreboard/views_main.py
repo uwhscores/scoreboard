@@ -396,3 +396,11 @@ def page_not_found(message):
         return jsonify(message="These aren't the droids you're looking for", code=404), 404
     else:
         return render_template("errors/404.html.j2", title='404', message=message), 404
+
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    if request.path.startswith("/api"):
+        return jsonify(message="ratelimit exceeded %s" % e.description, code=429), 429
+    else:
+        return render_template("errors/error.html.j2", error_code="429", message=e.name), 429

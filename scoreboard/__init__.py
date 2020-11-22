@@ -18,9 +18,8 @@ handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -
 audit_logger.addHandler(handler)
 
 global_limiter = Limiter(
-    current_app,
     key_func=get_remote_address,
-    global_limits=["1000 per day", "100 per hour"]
+    default_limits=["200000 per day", "10000 per hour"]
 )
 
 
@@ -35,6 +34,7 @@ def create_app(db_path=None, debug=False, testing=False):
         SECRET_KEY="ojgMXp6Rv4n9qKaiAfC48yieA2m-UThR1v6Fuk3d"
     )
     app.config.update(config)
+    global_limiter.init_app(app)
 
     with app.app_context():
         from scoreboard import views_main, views_admin, views_api_v1, views_cgi

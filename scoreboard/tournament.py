@@ -6,9 +6,10 @@ import json
 import os
 import re
 
-from scoreboard import functions
+from scoreboard import functions, audit_logger
 from scoreboard.game import Game
 from scoreboard.models import Stats, Ranking, Params
+from scoreboard.exceptions import UpdateError
 
 
 # main struction for a tournament
@@ -1625,38 +1626,40 @@ class Tournament(object):
 
         return True
 
-    def updateConfig(self, form):
-        """ update a given config ID to a new value in params, uses input from config form """
-        # # TODO: parse form first and make update generic
-        if "config_id" not in form:
-            flash("You didn't give me an ID, go away")
-            return 0
+    def updateConfig(self, config_id, config_options):
+        """ update a tournament configuration state. config_id keys the config that is changing, config_optoins is
+        a dictionary with the optional necessary paraemters """
 
-        config_id = form.get('config_id')
         if config_id == "site_active":
-            switch = form.get('active_toggle')
-            message = form.get('message')
-            if (switch == "on"):
-                self.updateSiteStatus(False, message)
+            switch = None
+            if "active_toggle" in config_options:
+                switch = config_options['active_toggle']
+            message = config_options['message']
+            if switch == "on":
+                self.updateSiteStatus(active=False, message=message)
             else:
-                self.updateSiteStatus(True)
+                self.updateSiteStatus(active=True)
         elif config_id == "coin_flip":
-            id_a = form.get('id_a')
-            id_b = form.get('id_b')
-            winner = form.get('winner')
-
+            id_a = config_options['id_a']
+            id_b = config_options['id_b']
+            winner = config_options['winner']
             self.addCoinFlip(id_a, id_b, winner)
         elif config_id == "site_message":
-            switch = form.get('active_toggle')
-            message = form.get('message')
-            if (switch == "on"):
-                self.updateSiteMessage(message)
+            switch = None
+            if "active_toggle" in config_options:
+                switch = config_options['active_toggle']
+            message = config_options['message']
+            if switch == "on":
+                self.updateSiteMessage(message=message)
             else:
-                self.updateSiteMessage(None)
+                self.updateSiteMessage(message=None)
+        elif config_id == "finalize":
+            audit_logger.info("Finalizing %s" % self.name)
+            self.finalize()
         else:
-            flash("I don't understand that config option, nothing changed")
+            raise UpdateError("Unknown config_id", message="I don't understand that config option, nothing changed")
 
-        return 0
+        return
 
     def addCoinFlip(self, tid_a, tid_b, winner):
         """ add outcome of coin flip """
@@ -1684,7 +1687,7 @@ class Tournament(object):
         params.clearParam("site_disabled")
 
         if not active:
-            if message == "":
+            if not message:
                 message = "Site disabled temporarily, please check back later."
 
             params.addParam("site_disabled", message)
@@ -1717,6 +1720,14 @@ class Tournament(object):
         params = self.getParams()
 
         return params.getParam("site_message")
+
+    def finalize(self):
+        """ Finalize the tournament by setting active to 0 which should stop any updates to the tournament """
+        db = self.db
+        db.execute("UPDATE tournaments SET active=0 WHERE tid=?", (self.tid,))
+        db.commit()
+
+        return True
 
     ###########################################################################
     # Functions for handling tournaments with replacement roundrobins

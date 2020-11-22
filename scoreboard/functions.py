@@ -83,6 +83,18 @@ def getTournamentByID(tid):
         return None
 
 
+def getTournamentByShortName(short_name):
+    """ get tournament object from short name string """
+    db = getDB()
+
+    cur = db.execute("SELECT tid, name, short_name, start_date, end_date, location, active FROM tournaments WHERE short_name=?", (short_name,))
+    t = cur.fetchone()
+    if (t):
+        return Tournament(t['tid'], t['name'], t['short_name'], t['start_date'], t['end_date'], t['location'], t['active'], db)
+    else:
+        return None
+
+
 def getPlayerByID(player_id):
     """ get information about a player including past teams """
     db = getDB()

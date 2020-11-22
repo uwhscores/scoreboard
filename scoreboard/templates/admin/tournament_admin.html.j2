@@ -9,7 +9,7 @@
 <div id="page_body" class="container">
 
 	<div class="row">
-		<div class="col-lg-12">
+		<div class="col-lg-12 col-md-12 col-sm-12">
 			<div class="page-header tournament-header">
 			<h1 class="tournament-title">{{ tournament.name }}</h1>
 			<h4 class="tournament-info">{{ tournament.location }} - {{ tournament.date_string }}</h4>
@@ -18,7 +18,7 @@
 	</div>
 
 	<div class="row">
-		<div class="col-lg-12">
+		<div class="col-lg-12 col-md-12 col-sm-12">
 		{% with messages = get_flashed_messages() -%}
 			{% if messages %}
 				{% set last="" -%}
@@ -36,7 +36,7 @@
 	</div>
 
 	<div class="row">
-		<div class="col-lg-8">
+		<div class="col-lg-8 col-md-8 col-sm-8">
 			<div class="panel panel-default">
 				<div class="panel-heading">
 					<h3 class="panel-title"><i class="fa fa-fw fa-edit"></i>Update Scores</h3>
@@ -58,7 +58,7 @@
 						<p>{{ site_message }}</p>
 					</div>
 					{%- endif %}
-					<form name="site_message" action="/admin/update_config" method="POST">
+					<form name="site_message" action="/admin/t/{{tournament.short_name}}/update_config" method="POST">
 					<div class="input-group">
 						<input type="hidden" name="config_id" value="site_message"/>
 						<input type="hidden" name="tid" value="{{ tournament.tid }}"/>
@@ -92,7 +92,7 @@
 						<p>Site is currently disabled!</p>
 					</div>
 					{%- endif %}
-					<form name="site-active" action="/admin/update_config" method="POST">
+					<form name="site-active" action="/admin/t/{{tournament.short_name}}/update_config" method="POST">
 					<div class="input-group">
 						<input type="hidden" name="config_id" value="site_active"/>
 						<input type="hidden" name="tid" value="{{ tournament.tid }}"/>
@@ -150,7 +150,7 @@
 						Check the box next to the team that won the coinflip, enter them one at a time.
 					</div>
 						{% for tie in ties -%}
-						<form name="site-active" action="/admin/update_config" method="POST" class="coin-flip">
+						<form name="site-active" action="/admin/t/{{tournament.short_name}}/update_config" method="POST" class="coin-flip">
 							<input type="hidden" name="tid" value="{{tournament.tid}}"/>
 							<input type="hidden" name="config_id" value="coin_flip"/>
 							<input type="hidden" name="id_a" value="{{tie.id_a}}"/>
@@ -173,9 +173,31 @@
 				</div>
 			</div>
 			{%- endif %}
+
+			{% if current_user.site_admin -%}
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-fw fa-wrench"></i> Admin Actions</h3>
+				</div>
+
+				<div class="panel-body">
+					<h4>Finalize Tournament</h4>
+					<a id="show-finalize" class="btn btn-warning" role="button"><i class="fa fa-fw fa-chevron-down"></i>Seal Tournament</a>
+					<div id="finalize" style="display: none;">
+						<div class="alert alert-warning" role="alert">This action cannot be undone without backend intervention</div>
+						<form name="site-active" action="/admin/t/{{tournament.short_name}}/update_config" method="POST">
+							<input type="hidden" name="tid" value="{{tournament.tid}}"/>
+							<input type="hidden" name="config_id" value="finalize"/>
+							<button class="btn btn-warning" type="submit"><i class="fa fa-fw fa-check"></i> Do It!</button>
+							<a id="hide-finalize" class="btn btn-info" role="button"><i class="fa fa-fw fa-times"></i> Cancel</a>
+						</form>
+					</div>
+				</div>
+			</div>
+			{%- endif %}
 		</div>
 
-		<div class="col-lg-4">
+		<div class="col-lg-4 col-md-4 col-sm-4">
 			<!--
 			<div class="panel panel-default">
 				<div class="panel-heading">
@@ -221,4 +243,22 @@
 		</div>
 	</div>
 </div>
+
+<script>
+  jQuery(document).ready(function() {
+    $("#show-finalize").click(function() {
+      $("#finalize").show();
+      $("#show-finalize").hide();
+    });
+
+    $("#hide-finalize").click(function() {
+			$("#finalize").hide();
+      $("#show-finalize").show();
+    });
+
+		$("#do-finalize").click(function() {
+			$.post("/admin/t/{{ tournament.short_name}}/finalze", {"tid": {{ tournament.tid }}})
+		});
+  });
+</script>
 {% endblock main %}

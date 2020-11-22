@@ -105,15 +105,6 @@ def handle_invalid_usage(error):
     return response
 
 
-# json response for rate limit exceeded
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    return make_response(
-            jsonify(error="ratelimit exceeded %s" % e.description)
-            , 429
-    )
-
-
 ################################################################################
 # Public APIs
 ################################################################################

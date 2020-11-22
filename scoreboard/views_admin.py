@@ -5,7 +5,7 @@ import json
 import re
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByID, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema, getPlayerByID
+from scoreboard.functions import getTournaments, getTournamentByID, getTournamentByShortName, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema, getPlayerByID
 from scoreboard.exceptions import UserAuthError, UpdateError
 
 login_manager = LoginManager()
@@ -338,31 +338,33 @@ def redraw(short_name, group=None):
             return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
 
 
-@app.route('/admin/update_config', methods=['POST', 'GET'])
+@app.route('/admin/t/<short_name>/update_config', methods=['POST'])
 @login_required
-def updateConfigPost():
-    if request.method == 'GET':
-        flash("You're not supposed to do that")
-        return redirect("/admin")
-    elif request.method == 'POST':
-        t = None
-        if request.form.get('tid'):
-            tid = request.form.get('tid')
-            t = getTournamentByID(tid)
-        if not t:
-            flash("Invalid tournament ID")
-            return redirect('/admin')
-    else:
-        return redirect('/admin')
+def updateConfigPost(short_name):
+    t = getTournamentByShortName(short_name)
+    if not t:
+        abort(404, "Tournament not found")
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
         return redirect("/admin")
 
-    audit_logger.info("Some sort of config update by %s(%s) - you should really log this better" % (current_user.short_name, current_user.user_id))
-    t.updateConfig(request.form)
+    # get the action that is being requested, poorly named "config_id"
+    if request.form.get('config_id'):
+        config_id = request.form.get('config_id')
 
-    return redirect("/admin/t/%s" % t.short_name)
+    config_options = request.form.to_dict()
+    audit_logger.info("Config update for %s:%s by %s(%s)" % (short_name, config_id, current_user.short_name, current_user.user_id))
+    try:
+        t.updateConfig(config_id, config_options)
+    except UpdateError as e:
+        flash("Update failed: %s" % e.message)
+
+    if config_id == "finalize":
+        # action was to finalize the tournament, can't redirect to it
+        return redirect("/admin")
+    else:
+        return redirect("/admin/t/%s" % t.short_name)
 
 
 @app.route('/admin/t/<short_name>/update_admins')
