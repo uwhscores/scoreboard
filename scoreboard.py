@@ -1,5 +1,5 @@
 from scoreboard import create_app
-from werkzeug.contrib.fixers import ProxyFix
+#from werkzeug.contrib.fixers import ProxyFix
 import os
 import sys
 
@@ -22,6 +22,6 @@ if __name__ == '__main__':
         db_path = os.path.join("scoreboard/", 'scores.db')
 
     app = create_app(db_path, debug=True)
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    #app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run(host='0.0.0.0')
     # app.run()
