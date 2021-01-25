@@ -179,7 +179,12 @@ def updateScore(short_name):
 
     audit_logger.info("Score for game %s:%s being updated by %s(%s): black: %s, white:%s" %
                       (t.short_name, game['gid'], current_user.short_name, current_user.user_id, game['score_b'], game['score_w']))
-    t.updateGame(game)
+
+    try:
+        t.updateGame(game)
+    except UpdateError as e:
+        app.logger.debug(f"Error updating game: {e}")
+        flash(f"Error updating game: {e.message}")
 
     return redirect("/admin/t/%s/scores" % short_name)
 

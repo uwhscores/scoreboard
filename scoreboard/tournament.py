@@ -183,7 +183,7 @@ class Tournament(object):
 
         try:
             team_id = int(team_id)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
         db = self.db
@@ -579,18 +579,18 @@ class Tournament(object):
 
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
-        returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
+        returns team ID or None if not seeded yet, e.g. round-robin isn't finished """
         if (self.endRoundRobin(division, pod)):
             standings = self.getStandings(division, pod)
             if len(standings) < 1:
-                return -1
+                return None
             # BUG: used to check pods standings for ties but the pod get lots when net wins gets run so if the teams see eachother again
             # in a later pod then it can get a false positive on a tie in an older pod. This way avoids that but means that no pod can be seeded
             # if any pod has ties
             if self.checkForTies(standings):
-                return -1
-            seed = int(seed) - 1
+                return None
 
+            seed = int(seed) - 1
             try:
                 if pod:
                     team_id = standings[pod][seed].team.team_id
@@ -598,11 +598,11 @@ class Tournament(object):
                     team_id = standings[division][seed].team.team_id
             except IndexError:
                 app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
-                return -1
+                return None
 
             return team_id
         else:
-            return -1
+            return None
 
     def getPlacings(self, div=None):
         """ get list of placings, will be populated with teams if outcome can be determined
@@ -619,85 +619,59 @@ class Tournament(object):
         final = []
         for r in placings:
             entry = {}
-            style = ""
             div = r['division']
             place = r['place']
             match = re.match(r"^\w+?(\d+)$", place)
             if match:
                 place = match.group(1)
-            game = r['game']
+
+            game = json.loads(r['game'])
+            placing_type = game['type']
 
             team_id = 0
-            # Winner of
-            match = re.search('^W(\d+)$', game)
-            if match:
-                gid = match.group(1)
-                team_id = self.getWinner(gid)
-                if (team_id == -1):
-                    game = "Winner of " + gid
-                    style = "soft"
-                elif (team_id == -2):
-                    game = "TIE IN GAME %s!!" % gid
-                else:
+            if placing_type == "winner":
+                team_id = self.getWinner(game['game'])
+                game_text = f"Winner of {game['game']}"
+            elif placing_type == "loser":
+                team_id = self.getLoser(game['game'])
+                game_text = f"Loser of {game['game']}"
+            elif placing_type == "seed":
+                group_abriviation = game['group']
+                seed = game['seed']
+                if group_abriviation in self.getPods():
+                    team_id = self.getSeed(seed, pod=group_abriviation)
+                elif group_abriviation in self.getDivisions():
+                    team_id = self.getSeed(seed, division=group_abriviation)
+
+                group = self.expandGroupAbbr(group_abriviation)
+                if not group:
+                    group = group_abriviation
+
+                if team_id:
                     team = self.getTeam(team_id)
-                    # game = team
-
-            # Loser of
-            match = re.search('^L(\d+)$', game)
-            if match:
-                gid = match.group(1)
-                team_id = self.getLoser(gid)
-                if (team_id == -1):
-                    game = "Loser of " + gid
-                    style = "soft"
-                elif (team_id == -2):
-                    game = "TIE IN GAME %s!!" % gid
+                    if group:
+                        game_text = f"{team} ({group}-{seed})"
                 else:
-                    team = self.getTeam(team_id)
-                    #game = team
+                    game_text = f"{group} Seed {seed}"
 
-            # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
-            # TODO: this doesn't look right anymore, need to check this still works
-            match = re.search(r"^S([\w])(\d+)$", game)
-            if match:
-                group = match.group(1)
-                seed = match.group(2)
-
-                if group in self.getPods():
-                    team_id = self.getSeed(seed, None, group)
-                elif group in self.getDivisions():
-                    team_id = self.getSeed(seed, group, None)
-                else:
-                    team_id = -1
-
-                # TODO: check if this logic is broken, shouldn't be "Pod" all the time
-                if (team_id < 0):
-                    group_name = self.expandGroupAbbr(group)
-                    if group_name:
-                        game = "%s seed %s" % (group_name, seed)
-                    else:
-                        game = "%s seed %s" % (group, seed)
-                    style = "soft"
-                else:
-                    team = self.getTeam(team_id)
-                    #game = name
-            # broken logic
-            # else:
-            #    app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
+            if team_id and team_id < 0:
+                # temp hack while changing from using -1 for return values all over the place
+                team_id = None
 
             if self.expandGroupAbbr(div):
                 entry['div'] = self.expandGroupAbbr(div)
             else:
                 entry['div'] = div
+
             entry['place'] = functions.ordinalize(place)
-            if team_id > 0:
+            if team_id:
                 entry['team_id'] = team_id
                 entry['name'] = self.getTeam(team_id)
                 entry['flag_url'] = self.getTeamFlag(team_id)
             else:
-                entry['name'] = game
+                entry['name'] = game_text
                 entry['flag_url'] = None
-            entry['style'] = style
+                entry['style'] = "soft"
 
             final.append(entry)
 
@@ -1471,13 +1445,13 @@ class Tournament(object):
             forfeit = None
 
         if not isinstance(score_b, int):
-            return -1
-
-        if not isinstance(score_w, int):
-            return -1
-
-        if not (white_tid > 0 and black_tid > 0):
-            return -3
+            raise UpdateError("Black score is not an integer")
+        elif not isinstance(score_w, int):
+            raise UpdateError("White score is not an integer")
+        elif not black_tid:
+            raise UpdateError("Missing black team ID")
+        elif not white_tid:
+            raise UpdateError("Missing white team ID")
 
         cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)",
                          (black_tid, white_tid, score_w, score_b, self.tid, gid, pod, forfeit))

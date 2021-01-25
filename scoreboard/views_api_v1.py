@@ -425,10 +425,11 @@ def updateGame(tid, gid):
     if score["forfeit_w"] or score["forfeit_b"]:
         audit_logger.info("API: Forfeit set for game %s: W: %s, B: %s" % (score['gid'], score["forfeit_w"], score["forfeit_b"]))
 
-    status = t.updateGame(score)
-
-    if not status == 1:
-        return jsonify(answer="Something went wrong")
+    try:
+        t.updateGame(score)
+    except UpdateError as e:
+        app.logger.debug(f"Error updating game: {e}")
+        return jsonify(answer=f"Error updating game: {e.message}")
     else:
         res = t.getGame(gid)
         return jsonify(res.serialize())

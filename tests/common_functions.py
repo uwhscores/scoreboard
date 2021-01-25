@@ -83,7 +83,7 @@ def add_game(db, tid, game):
         game['pod'] = None
 
     db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-               (tid, game['game_id'], game['day'], game['start_time'], game['pool'], game['black'], game['white'], game['div'], game['pod'], game['type'], None))
+               (tid, game['game_id'], game['day'], game['start_time'], game['pool'], json.dumps(game['black']), json.dumps(game['white']), game['div'], game['pod'], game['type'], None))
     db.commit()
 
 
