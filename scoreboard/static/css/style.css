@@ -181,6 +181,14 @@ img.flag-thumb {
 	display: inline-block;
 }
 
+.error-page {
+  text-align: center;
+}
+
+.error-page h1 {
+  font-size: 8em;
+}
+
 @media screen and (max-width: 1000px) {
 	#team_nav{
 		visibility: hidden;
