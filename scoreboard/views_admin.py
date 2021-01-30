@@ -74,17 +74,6 @@ def renderTAdmin(short_name):
     ties = t.getTies()
 
     divisions = t.getDivisions()
-    redraws = []
-    for div in divisions:
-        l = t.getRedraw(div)
-        if l:
-            redraws.append(div)
-    pods = t.getPodsActive()
-    if pods:
-        for pod in pods:
-            l = t.getRedraw(None, pod=pod)
-            if l:
-                redraws.append(pod)
 
     # stats = getTournamentStats()
 
@@ -102,7 +91,7 @@ def renderTAdmin(short_name):
             unauthorized_users.append(u)
 
     return render_template('admin/tournament_admin.html.j2', tournament=t, ties=ties, disable_message=t.getDisableMessage(), site_message=t.getSiteMessage(),
-                           redraws=redraws, authorized_users=authorized_users, unauthorized_users=unauthorized_users)
+                           authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 @app.route('/admin/t/<short_name>/scores', methods=['GET'])
 @login_required
@@ -260,87 +249,6 @@ def update_gametimerules(short_name):
         return redirect("/admin/t/%s/editgametiming" % t.short_name)
     else:
         return redirect("/admin/t/%s/gametiming" % t.short_name)
-
-
-@app.route('/admin/t/<short_name>/redraw', methods=['POST'])
-@app.route('/admin/t/<short_name>/redraw/<group>', methods=['GET'])
-@login_required
-def redraw(short_name, group=None):
-    if request.method == 'GET':
-        tid = getTournamentID(short_name)
-        if tid < 1:
-            flash("Unkown Tournament Name")
-            return redirect("/admin")
-
-        t = getTournamentByID(tid)
-
-        if not t.isAuthorized(current_user):
-            flash("You are not authorized for this tournament")
-            return redirect("/admin")
-
-        if not t.isGroup(group):
-            flash("Invalid division or pod on Redraw path")
-            return redirect("/admin/t/%s" % short_name)
-
-        if t.isPod(group):
-            team_list = t.getTeams(None, group)
-        else:
-            team_list = t.getTeams(group, None)
-
-        group_name = t.expandGroupAbbr(group)
-
-        if not group_name:
-            group_name = "%s Group" % group
-
-        return render_template('/admin/redraw.html.j2', tournament=t, group=group, group_name=group_name, teams=team_list)
-
-    if request.method == 'POST':
-        tid = getTournamentID(short_name)
-        if tid < 1:
-            flash("Unkown Tournament Name")
-            return redirect(request.url_root)
-
-        t = getTournamentByID(tid)
-
-        if not t.isAuthorized(current_user):
-            flash("You are not authorized for this tournament")
-            return redirect("/admin")
-
-        group = request.form.get('group')
-        # check group is valid
-
-        # get list of ids that need a redraw
-        if t.isPod(group):
-            redraw_ids = t.getRedraw(None, pod=group)
-        else:
-            redraw_ids = t.getRedraw(group)
-
-        check = []
-        redraws = []
-        for e in request.form:
-            match = re.search('^T(\d+)$', e)
-            if match:
-                team_id = match.group(1)
-                redraw_id = request.form.get(e)
-                check.append(redraw_id)
-                if redraw_id == "":
-                    flash("You missed a team ID")
-                    return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
-                if redraw_id not in redraw_ids:
-                    flash("Invalid ID, can't find in redraws")
-                    return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
-                redraws.append({'team_id': team_id, 'redraw_id': redraw_id})
-
-        # check that each redraw ID is unique
-        if len(check) > len(set(check)):
-            flash("You put a team ID in twice!")
-            return redirect("/admin/t/%s/redraw/%s" % (short_name, group))
-
-        res = t.redrawTeams(group, redraws)
-        if res == 0:
-            return redirect("/admin/t/%s" % short_name)
-        else:
-            return redirect("/admin/t/%s/redraw/%s" % (short_name, res))
 
 
 @app.route('/admin/t/<short_name>/update_config', methods=['POST'])

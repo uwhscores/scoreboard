@@ -156,6 +156,7 @@ class Game(object):
 
         elif game_type == "redraw":
             # redraw place holder in schedule
+            # currently not implimented by leaving parser here
             game_text = f"Redraw {game['group']} - {game['number']}"
             style = "soft"
 
