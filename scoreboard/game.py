@@ -41,6 +41,9 @@ class Game(object):
         if self.pod:
             self.pod_color = tournament.getGroupColor(pod)
 
+        self.pod_name = tournament.expandGroupAbbr(self.pod)
+        self.division_name = tournament.expandGroupAbbr(self.division)
+
         # pull the record from the scores table, if it exists use that data to fill in the game
         db = tournament.db
         cur = db.execute('SELECT black_tid, white_tid, score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?', (self.gid, tournament.tid))

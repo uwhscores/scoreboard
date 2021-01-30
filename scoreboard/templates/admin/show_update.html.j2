@@ -76,7 +76,7 @@ jQuery(document).ready(function($) {
 		<tbody>
 
 		{% for game in games -%}
-			{% if (game.black_tid < 0) or (game.white_tid < 0) -%}
+			{% if not game.black_tid or not game.white_tid -%}
 			<tr class="unplayed">
 			{% else %}
 				{% if game.score_b != "--" -%}
@@ -88,9 +88,9 @@ jQuery(document).ready(function($) {
 				<td>{{ game.gid }}</td>
 				<td>{{ game.day }} {{ game.start_time }}</td>
 				<td class="border-right">{{ game.pool }}</td>
-				<td class={{game.style_w}}>{{ game.white }} <strong>{{ game.note_w }}</strong></td>
+				<td class={{game.style_w}}>{{ game.white }} <strong>{{ game.note_w if game.note_w}}</strong></td>
 				<td>{{game.score_w}}</td>
-				<td class={{game.style_b}}>{{ game.black }} <strong>{{ game.note_b }}</stron></td>
+				<td class={{game.style_b}}>{{ game.black }} <strong>{{ game.note_b if game.note_b }}</strong></td>
 				<td>{{game.score_b}}</td>
 			</tr>
 		{%- endfor %}

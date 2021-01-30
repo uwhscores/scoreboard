@@ -75,18 +75,19 @@
 		<input type=hidden name=pod  value={{ game.pod }}>
 		<table id=games class=table>
 			<thead>
-				<tr><th>Game</th><th>Start Time</th><th>Pool</th><th>Pod</th></tr>
+				<tr><th>Game</th><th>Start Time</th><th>Pool</th><th>Div</th><th>Pod</th></tr>
 			</thead>
 			<tbody>
 				<tr>
 					<td>{{ game.gid}}</td>
 					<td>{{ game.day }} {{ game.start_time }}</td>
 					<td>{{ game.pool }}</td>
-					<td>{{ game.pod }}</td>
+					<td>{{ game.division_name or "--" }}</td>
+					<td>{{ game.pod_name or "--" }}</td
 			</tr>
 			</tbody>
 			<thead>
-				<tr> <th colspan=2><h4>White</h4></td> <th colspan=2><h4>Black</h4></td></tr>
+				<tr> <th colspan=2><h4>White</h4></td> <th colspan=3><h4>Black</h4></td></tr>
 			</thead>
 			<tbody>
 				<tr>
@@ -97,7 +98,7 @@
 						<span id=score_w class=score>{{ game.score_w }}</span>
 						<input type='button' value='+' class='qtyplus btn btn-primary' field='score_w' />
 					</td>
-					<td colspan=2>
+					<td colspan=3>
 						<h4>{{ game.black }}</h4>
 						<input type='button' value='-' class='qtyminus btn btn-primary' field='score_b' />
 						<input type=hidden  name=score_b value='{{ game.score_b }}'>
