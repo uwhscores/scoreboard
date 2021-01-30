@@ -1053,10 +1053,6 @@ class Tournament(object):
                 # TODO: maybe raise an exception?
                 app.logger.debug("I have standings that aren't for my pod")
 
-        # pre-sort required for three-way ties
-        #ordered = sorted(team_stats, cmp=self.cmpTeamsSort)
-        #ordered = sorted(ordered, cmp=self.cmpTeams)
-        # TODO: this is gonna need sorting fixing from the 2->3 converstion
         ordered = sorted(team_stats)
 
         # first go through the list and assign a place to everybody based on only points
@@ -1143,7 +1139,6 @@ class Tournament(object):
                     continue
                 else:
                     # sort teams based on rules w/o head-to-head
-                    # TODO: 2->3 needs to be fixed
                     place_teams = sorted(place_teams)
 
                     last = place_teams[-1].team
@@ -1164,14 +1159,11 @@ class Tournament(object):
             else:
                 app.logger.debug("%s teams tied in pod %s" % (count, pod))
 
-                # TODO: Fix 2->3 compare
-                # place_teams = sorted(place_teams, cmp=self.cmpRankSort)
                 place_teams = sorted(place_teams)
 
                 most_goals = place_teams[-1].team.goals_allowed
                 tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
-                # if pod=="4P":
-                #    b
+
                 if len(tied) == len(place_teams):
                     place += 1
                 else:
