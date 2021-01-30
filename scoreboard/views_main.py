@@ -1,7 +1,7 @@
 from flask import current_app as app
-from flask import request, redirect, render_template, flash, abort, make_response, jsonify
+from flask import request, redirect, render_template, flash, abort, jsonify
 from flask_login import current_user
-from .functions import getTournaments, getTournamentByID, getTournamentID, getPlayerByID
+from .functions import getTournaments, getPlayerByID, getTournamentByShortName
 import re
 
 @app.route('/')
@@ -27,11 +27,9 @@ def renderHome():
 
 @app.route('/t/<short_name>')
 def renderTourament(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -67,11 +65,9 @@ def renderTourament(short_name):
 
 @app.route('/t/<short_name>/div/<div>')
 def renderTDiv(short_name, div):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -110,11 +106,9 @@ def renderTDiv(short_name, div):
 
 @app.route('/t/<short_name>/pod/<pod>')
 def renderTPod(short_name, pod):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -151,11 +145,9 @@ def renderTPod(short_name, pod):
 
 @app.route('/t/<short_name>/team/<team_id>')
 def renderTTeam(short_name, team_id):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -197,11 +189,9 @@ def renderTTeam(short_name, team_id):
 
 @app.route('/t/<short_name>/multi/<group>')
 def renderTGroup(short_name, group):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -282,11 +272,9 @@ def renderPlayerInfo(player_id=None):
 #######################################
 @app.route('/t/<short_name>/tv')
 def renderTouramentTV(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:
@@ -330,11 +318,9 @@ def renderTouramentTV(short_name):
 
 @app.route('/t/<short_name>/print')
 def renderTouramentPrint(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     message = t.getDisableMessage()
     if message:

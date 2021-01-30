@@ -2,10 +2,10 @@ from flask import current_app as app
 from flask import request, redirect, render_template, flash, abort
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 import json
-import re
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByID, getTournamentByShortName, getUserByID, getTournamentID, getUserList, authenticate_user, addUser, validateResetToken, validateJSONSchema, getPlayerByID
+from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, addUser, validateResetToken, \
+                                 validateJSONSchema, getPlayerByID
 from scoreboard.exceptions import UserAuthError, UpdateError
 
 login_manager = LoginManager()
@@ -40,12 +40,9 @@ def renderAdmin():
 @app.route("/admin/t/<short_name>")
 @login_required
 def renderTAdmin(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
-
-    t = getTournamentByID(tid)
+    t = getTournamentByShortName(short_name)
+    if not t:
+        abort(404)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -96,11 +93,9 @@ def renderTAdmin(short_name):
 @app.route('/admin/t/<short_name>/scores', methods=['GET'])
 @login_required
 def renderScores(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -113,11 +108,9 @@ def renderScores(short_name):
 @app.route('/admin/t/<short_name>/scores/<game_id>', methods=['GET'])
 @login_required
 def renderScoreInput(short_name, game_id):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -141,11 +134,9 @@ def renderScoreInput(short_name, game_id):
 @app.route('/admin/t/<short_name>/scores', methods=['POST'])
 @login_required
 def updateScore(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -178,11 +169,9 @@ def updateScore(short_name):
 @app.route('/admin/t/<short_name>/gametiming')
 @login_required
 def view_gametimerules(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -196,11 +185,9 @@ def view_gametimerules(short_name):
 @app.route('/admin/t/<short_name>/editgametiming')
 @login_required
 def edit_gametimerules(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -214,11 +201,9 @@ def edit_gametimerules(short_name):
 @app.route('/admin/t/<short_name>/update/updategametiming', methods=['POST'])
 @login_required
 def update_gametimerules(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")
@@ -277,11 +262,9 @@ def updateConfigPost(short_name):
 @app.route('/admin/t/<short_name>/update_admins')
 @login_required
 def doUdateTournamentLogins(short_name):
-    tid = getTournamentID(short_name)
-    if tid < 1:
+    t = getTournamentByShortName(short_name)
+    if not t:
         abort(404)
-
-    t = getTournamentByID(tid)
 
     if not t.isAuthorized(current_user):
         flash("You are not authorized for this tournament")

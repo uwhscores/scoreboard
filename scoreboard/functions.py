@@ -58,19 +58,6 @@ def getTournaments(filter=None):
     return tournaments
 
 
-def getTournamentID(short_name):
-    """ get tournament ID from short name string """
-    db = getDB()
-
-    cur = db.execute("SELECT tid FROM tournaments where short_name = ?", (short_name,))
-
-    row = cur.fetchone()
-    if (row):
-        return row['tid']
-    else:
-        return -1
-
-
 def getTournamentByID(tid):
     """ get tournament object from ID integer """
     db = getDB()
