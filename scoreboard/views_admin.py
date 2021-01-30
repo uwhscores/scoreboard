@@ -98,8 +98,7 @@ def renderTAdmin(short_name):
 def renderScores(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -116,8 +115,7 @@ def renderScores(short_name):
 def renderScoreInput(short_name, game_id):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -145,8 +143,7 @@ def renderScoreInput(short_name, game_id):
 def updateScore(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -183,8 +180,7 @@ def updateScore(short_name):
 def view_gametimerules(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -202,8 +198,7 @@ def view_gametimerules(short_name):
 def edit_gametimerules(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -221,8 +216,7 @@ def edit_gametimerules(short_name):
 def update_gametimerules(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -285,8 +279,7 @@ def updateConfigPost(short_name):
 def doUdateTournamentLogins(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unkown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 

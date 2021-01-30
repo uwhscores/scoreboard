@@ -29,9 +29,7 @@ def renderHome():
 def renderTourament(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        # TODO: this flashes and redirects you to the main page where there is no flash display
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -71,8 +69,7 @@ def renderTourament(short_name):
 def renderTDiv(short_name, div):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -81,9 +78,7 @@ def renderTDiv(short_name, div):
         return render_template('site_down.html.j2', message=message)
 
     if not t.isGroup(div):
-        flash("Invalid division")
-        rdir_string = "/t/%s" % t.short_name
-        return redirect(rdir_string)
+        abort(404)
 
     games = t.getGames(div)
     divisions = t.getDivisionNames()
@@ -117,8 +112,7 @@ def renderTDiv(short_name, div):
 def renderTPod(short_name, pod):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -127,9 +121,7 @@ def renderTPod(short_name, pod):
         return render_template('site_down.html.j2', message=message)
 
     if not t.isGroup(pod):
-        flash("Invalid Pod")
-        rdir_string = "/t/%s" % t.short_name
-        return redirect(rdir_string)
+        abort(404)
 
     games = t.getGames(pod=pod)
     division = t.getDivisionNames()
@@ -161,8 +153,7 @@ def renderTPod(short_name, pod):
 def renderTTeam(short_name, team_id):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -171,16 +162,12 @@ def renderTTeam(short_name, team_id):
         return render_template('site_down.html.j2', message=message)
 
     if not team_id.isdigit():
-        flash("Invalid team ID, must be integer")
-        rdir_string = "/t/%s" % t.short_name
-        return redirect(rdir_string)
+        abort(404)
 
     team_id = int(team_id)
 
     if t.getTeam(team_id) is None:
-        flash("Team ID %s doesn't exist" % team_id)
-        rdir_string = "/t/%s" % t.short_name
-        return redirect(rdir_string)
+        abort(404)
 
     divisions = t.getDivisionNames()
     div = t.getDivision(team_id)
@@ -212,8 +199,7 @@ def renderTTeam(short_name, team_id):
 def renderTGroup(short_name, group):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -298,8 +284,7 @@ def renderPlayerInfo(player_id=None):
 def renderTouramentTV(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
@@ -347,8 +332,7 @@ def renderTouramentTV(short_name):
 def renderTouramentPrint(short_name):
     tid = getTournamentID(short_name)
     if tid < 1:
-        flash("Unknown Tournament Name")
-        return redirect(request.url_root)
+        abort(404)
 
     t = getTournamentByID(tid)
 
