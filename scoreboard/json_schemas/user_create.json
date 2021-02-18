@@ -1,0 +1,19 @@
+{
+  "title": "User",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "object",
+      "properties": {
+        "short_name": {"type": "string"},
+        "email": {"type": "string"},
+        "site_admin": {"type": "boolean"},
+        "admin": {"type": "boolean"}
+      },
+      "required": ["email", "short_name"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["user"],
+  "additionalProperties": false
+}

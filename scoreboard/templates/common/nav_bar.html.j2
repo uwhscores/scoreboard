@@ -1,0 +1,83 @@
+{% block nav %}
+  {% if request.host_url != "http://uwhscores.com/" -%}
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: #8A0808;" role="navigation">
+  {% else %}
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" role="navigation">
+  {%- endif %}
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <img src="/static/images/logo_banner.png" alt="" height="24">
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+        {% if tournament -%}
+        <li class="nav-item"><a class="nav-link" href="/t/{{ tournament.short_name }}">All</a></li>
+        {%- endif %}
+        {% if divisions -%}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" class="dropdown-toggle" id="dropdowndivs" data-bs-toggle="dropdown" aria-expanded="false">Divisions</a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdowndivs">
+                {% for div in divisions|sort(attribute="name") %}
+                    {% if div.name -%}
+                    <li><a class="dropdown-item" href="/t/{{ tournament.short_name }}/div/{{ div.id }}">{{ div.name }}</a></li>
+                    {% else %}
+                    <li><a class="dropdown-item" href="/t/{{ tournament.short_name }}/div/{{ div.id }}">{{ div.id }} Division</a></li>
+                    {%- endif %}
+                {% endfor %}
+            </ul>
+        </li>
+        {%- endif %}
+
+        {% if pods -%}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" class="dropdown-toggle" id="dropdownpods" data-bs-toggle="dropdown" aria-expanded="false">Pods</a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownpods">
+                {% for pod in pods|sort(attribute="name") -%}
+                    {% if pod.name -%}
+                    <li><a class="dropdown-item" href="/t/{{ tournament.short_name }}/pod/{{ pod.id }}">{{ pod.name }}</a></li>
+                    {% else %}
+                    <li><a class="dropdown-item" href="/t/{{ tournament.short_name }}/pod/{{ pod.id }}">{{ pod.id }} Pod</a></li>
+                    {%- endif %}
+                {%- endfor %}
+            </ul>
+        </li>
+        {%- endif %}
+
+        {% if team_list -%}
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" class="dropdown-toggle" id="dropdownteams" data-bs-toggle="dropdown" aria-expanded="false">Teams</a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownteams">
+                {% for team in team_list|sort(attribute="name") -%}
+                <li><a class="dropdown-item" href="/t/{{ tournament.short_name }}/team/{{ team.team_id  }}">{{ team.name }}</a></li>
+                {%- endfor %}
+            </ul>
+        </li>
+        {%- endif %}
+
+        {% if tournament %}
+        <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle"data-bs-toggle="dropdown" id="dropdownpages" aria-expanded="false">Pages</a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownpages">
+                <li><a class="dropdown-item" href="/">Home</a></li>
+                <li><a class="dropdown-item" href="/faq">FAQ</a></li>
+                <li><a class="dropdown-item" href="/players">Players</a></li>
+                {% if tournament and tournament.is_active -%}
+                <li><a class="dropdown-item" href="/admin/t/{{ tournament.short_name }}">Admin</a></li>
+                {% else %}
+                <li><a class="dropdown-item" href="/admin">Admin</a></li>
+                {%- endif %}
+            </ul>
+        </li>
+        {% else %}
+          <li class="nav-item"><a <a class="nav-link" href="/faq">FAQ</a></li>
+          <li class="nav-item"><a <a class="nav-link" href="/players">Players</a></li>
+          <li class="nav-item"><a <a class="nav-link" href="/admin">Admin</a></li>
+        {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+{% endblock nav %}

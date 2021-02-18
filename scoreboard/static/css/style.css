@@ -1,30 +1,42 @@
-html, body {
-  height: 100%;
+:root {
+  --bs-blue: #337ab7;
+  --bs-primary: #337ab7;
 }
 
-#wrap {
-  min-height: 100%;
+body {
+  min-height: 75rem;
+  padding-top: 4.5rem;
 }
 
-#page_body {
-  overflow:auto;
-  padding-bottom: 3em;
+a {
+  color: #337ab7;
+  text-decoration: none;
 }
 
+#indexLogo {
+  max-width: 90%;
+}
 .footer {
   position: relative;
-  margin-top: -3em; /* negative value of footer height */
+  /* margin-top: -3em; /* negative value of footer height */
   height: 2em;
   clear:both;
   padding-top: 1em;
 }
 
+/* .tournament-header { */
 .page-header {
-  margin-top: 0;
-  margin-bottom: 1em;
+  border-bottom: 2px solid gray;
 }
-.tournament-header .tournament-hearder-banner {
+
+img.tournament-hearder-banner {
 	padding-top: 1em;
+  width: 200px;
+}
+
+.tournament-banner {
+	max-width: 90%;
+  margin: 1rem;
 }
 
 .tournament-title {
@@ -35,106 +47,15 @@ html, body {
 	color: gray;
 }
 
-#dayPager {
-	margin: 0px;
-}
-
-tr.major {
-	border-bottom:1.5pt solid black;
-}
-
-
+/* Style for schedule table */
 tr.odd {
 	background-color: #E6E6E6;
 }
-.soft
-{
-	color: #6E6E6E;
-	font-style:italic;
-}
-
-.strong
-{
-	font-weight:bold;
-}
-
-.score {
-	font-size: 3em;
-	padding-left: 6px;
-	padding-right: 6px;
-	vertical-align: middle;
-}
-
-.border-right {
-	border-right: 1px solid #ddd;
-}
-
-.color-box {
-    width: 1em;
-    height: 1em;
-    display: inline-block;
-	vertical-align: text-top;
-    background-color: #FFFFFF;
-    margin-right: 4px;
-    border-style: solid;
-    border-width: 1px;
-}
-
-#dayPagerNav{
-	position: absolute;
-	left: 0;
-	right: 0;
-	text-align: right;
-}
-
-#dayPagerNav2 {
-	clear: right;
-}
-
-.coin-flip {
-	line-height:2.4em;
-}
-
-.coin-flip input {
-	margin: 1em;
-}
-.team-name-coin{
-	margin-left: 1em;
-	font-size: 1.25em;
-}
-
-.feature-item {
-	text-align: center;
-}
-
-.feature-circle {
-	color: #eee;
-}
-
-.login-btn {
-	margin-top: 1em;
-	margin-bottom: 2em;
-}
-
-.bottom-buffer {
-	margin-bottom: 2em;
-}
-
-.team-flag {
-	padding: 0em 1em 1em 1em;
-}
-
-.team-fag:after {
-	clear: both;
-}
-
-img.flag-thumb {
-	height: 24px;
-	padding-right: .5em;
-}
 
 .game-description {
-	 background-color: #ccc;
+	 /* background-color: #ccc; */
+   font-weight: bold;
+   display: block;
 	 padding: 0.2em;
 	 font-size: 0.9em;
 }
@@ -151,124 +72,184 @@ img.flag-thumb {
 	padding-right: 4px;
 }
 
-.stick-white {
-	background-color: #FFFFFF;
+.soft
+{
+	color: #6E6E6E;
+	font-style:italic;
 }
 
-.tournament-banner {
-	max-width: 100%;
+.strong
+{
+	font-weight:bold;
 }
 
-.roster-table a {
-	color: #333;
+.score {
+	font-size: 4em;
+	padding-left: 6px;
+	padding-right: 6px;
+	vertical-align: middle;
 }
 
-.standings-table a {
-	color: #333;
+.score-input-button {
+ font-size: 1.25rem;
 }
 
-.roster-divider {
-  border: 2px;
-  border-color: black;
-  border-top-style: solid;
+.forfeit-check[type=checkbox] {
+  float: none;
+  transform: scale(1.5);
+  margin-right: 1rem;
+}
+/* Style team flags and banners */
+.team-flag {
+	padding: 0em 1em 1em 1em;
 }
 
-#player-search {
-	padding-left: 3em;
+.team-fag:after {
+	clear: both;
 }
 
-.search-list  {
-	display: inline-block;
+img.flag-thumb {
+	height: 24px;
+	padding-right: .5em;
 }
 
-.error-page {
-  text-align: center;
+/* make links on tables like standings and rosters not blue underline */
+.table a, .list-group-item {
+  color: #333;
+  text-decoration: none;
 }
 
-.error-page h1 {
-  font-size: 8em;
+tr.major {
+	border-bottom:1.5pt solid black;
 }
 
-@media screen and (max-width: 1000px) {
-	#team_nav{
-		visibility: hidden;
-		display: none;
-	}
+.text-nowrap {
+    white-space: nowrap;
+}
 
-	#tabNav li {
-		padding: 10px 0px;
-	}
+/* login page style, from Bootstrap 5 example */
+.form-signin {
+  width: 100%;
+  max-width: 330px;
+  padding: 15px;
+  margin: auto;
+}
+.form-signin .checkbox {
+  font-weight: 400;
+}
+.form-signin .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+.form-signin input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
 
-	#tabNav li a {
-		padding-left: 8px;
-		padding-right: 8px;
-	}
+/* coloring */
+.btn-primary {
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
 
-	#player-search {
-		max-width: 80%;
-		margin-left: 1em;
-	}
-	#player-search i {
-		display: none;
-		visibility: hidden;
-	}
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+  color: #fff;
+  background-color: #337ab7;
+}
 
-	h1 {
-		font-size:20px;
-	}
+.page-link {
+  color: #337ab7;
+}
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #337ab7;
+  border-color: #337ab7;
+}
 
-    .btn-lg {
-        padding: 0px;
-    }
+.score-input h3 {
+  max-width: 90%;
+}
 
-	.team-flag {
+.tie {
+  background-color: #eee;
+  padding: 5px;
+  font-size: calc(1rem + .6vw);
+  min-height: 3rem;
+}
+
+pre.timing-json  {
+  padding: 1rem;
+  background-color: #eee;
+}
+
+#faqAccordian button {
+  text-align: left;
+}
+@media screen and (max-width: 992px) {
+  .team-flag {
 		max-width: 160px;
 	}
 
-	img.flag-thumb {
-		height: 16px;
-	}
-
-	.table>tbody>tr>td {
-		padding: 4px;
-	}
-
-	.standings-table>thead>tr>th {
-		padding-left: 2px;
-		padding-right: 4px;
-	}
-
-  .footer-text {
-    font-size: .5em;
+  img.flag-thumb {
+    height: 16px;
   }
 
-  .tournament-header-banner img {
-    width: 200px;
+  .schedule-table {
+    font-size: .75em;
   }
+
+  #team_nav{
+    visibility: hidden;
+    display: none;
+  }
+
+  .unimportant {
+    display: none;
+  }
+
 }
 
-@media screen and (max-width: 600px) {
-	.game-line {
-		display: inline-block;
-	}
-
-	.game-description {
+@media screen and (max-width: 768px) {
+  .game-description {
 		word-wrap: break-word;
-		display: inline-block;
 		width: 80px;
 	}
 
-  .tournament-header-banner  img {
-    max-width: 100px;
+  img.tournament-header-banner {
+    max-width: 35%
   }
 
-  #tabNav li a {
-    font-size: .75em;
+  .score-input-button {
+   font-size: .8rem;
   }
+
+  .score-input h3 {
+    font-size: calc(1rem + .6vw);
+  }
+
+  .score-input h5 {
+    font-size: 1rem;
+  }
+
+
 }
 
+
 @media print {
-	body {
+  body {
 		font-size: 10px;
 	}
 
@@ -304,15 +285,8 @@ img.flag-thumb {
 		display: none;
 	}
 
-  .tournament-header-banner {
+  .tournament-header-banner img {
     visibility: hidden;
     display: none;
   }
-
 }
-
-
-
-/* #tabContents {
-	padding-left: 1em;
-} */

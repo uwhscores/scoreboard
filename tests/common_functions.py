@@ -46,6 +46,8 @@ def add_tournament(db, tid, name=None, short_name=None, start_date=None, end_dat
     test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, db)
     test_t.commitToDB()
 
+    return test_t
+
 
 def load_schedule(schedule_name, tid, db):
     """ fill in a tournament shedule """

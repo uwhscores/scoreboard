@@ -1,0 +1,98 @@
+{% extends "/admin/common/admin_layout.html.j2" %}
+
+{% block nav %}
+{% include "admin/common/admin_nav.html.j2" with context %}
+{% endblock nav %}
+
+{% block main %}
+<div id="page_body" class="container">
+  <div class="row mb-3">
+    <div class="col-lg-12">
+      <div class="page-header tournament-header">
+        <h1 class="tournament-title">Player Details</h1>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-12">
+      {% with messages = get_flashed_messages() -%}
+      {% if messages %}
+      {% set last="" -%}
+      <div class="alert alert-danger" role="alert">
+        {% for message in messages %}
+        {% if message != last -%}
+        {{ message }}</br>
+        {%- endif %}
+        {% set last=message %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {%- endwith %}
+    </div>
+  </div>
+  <div class="row mb-3">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h3>{{ player.display_name}}</h3>
+        </div>
+        <div class="card-body">
+          <div id="errorMsg" class="alert alert-danger" hidden></div>
+            <div class="table-respnsive">
+              <table class=table>
+                <tbody>
+                  <tr>
+                    <th scope="row"> Display Name</th>
+                    <td class="view-player">
+                      <span id="playerDisplayName">{{ player.display_name}}</span>
+                      <button id="showPlayerEdit" type="button" class="btn btn-light float-end player-edit-toggle">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                    </td>
+                    <td class="edit-player" hidden>
+                      <input type="text" class="form-control" id="inputDisplayName" name="display_name" value="{{ player.display_name}}">
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row"> Created On</th>
+                    <td>{{ player.date_created}}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"> Updated On</th>
+                    <td>{{ player.date_updated}}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"> Player ID</th>
+                    <td><tt>{{ player.player_id}}</tt></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="edit-player float-end" hidden>
+                <button type="button" class="btn btn-secondary player-edit-toggle">Cancel</button>
+                <button id="playerSaveBtn" type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <h3> Teams </h3>
+      <ul class="list-group">
+        {% for team in player.teams %}
+        <li class="list-group-item"> <a href="/t/{{ team.t_short_name }}">{{ team.tournament }}</a> - <a href="/t/{{ team.t_short_name }}/team/{{team.team_id}}"> {{ team.name }} </a> </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+
+</div>
+
+<script>
+  const playerId = "{{ player.player_id }}"
+</script>
+{% endblock main %}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>UWHScores.com - Admin</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <!-- site specific css -->
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=2.0" rel="stylesheet" type="text/css">
+
+     <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
+</head>
+<body>
+  {% autoescape false %}
+  {% block nav %}{% endblock %}
+
+  {% block main %}{% endblock %}
+  {% endautoescape %}
+  <footer class="footer">
+    <div class="container">
+      <p class="text-muted footer-text">&copy; 2021 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+    </div>
+  </footer>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+
+</html>

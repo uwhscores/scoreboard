@@ -300,6 +300,18 @@ class Params(object):
         #g.params = self.loadParams()
         return 0
 
+    def setParam(self, field, val):
+        db = self.t.db
+        tid = self.t.tid
+
+        field = str(field)
+        val = str(val)
+
+        db.execute("INSERT OR IGNORE INTO params VALUES (?,?,?);", (tid, field, val))
+        db.execute("UPDATE params set val=? WHERE tid=? AND field=?;", (val, tid, field))
+
+        db.commit()
+
     def updateParam(self, field, val):
         db = self.t.db
         tid = self.t.tid
@@ -331,14 +343,25 @@ class User(object):
 
         self.short_name = row['short_name']
         self.email = row['email']
-        self.date_created= datetime.strptime(row['date_created'],"%Y-%m-%d %H:%M:%S")
+        self.date_created = datetime.strptime(row['date_created'], "%Y-%m-%d %H:%M:%S")
         if row['last_login']:
-            self.last_login = datetime.strptime(row['last_login'],"%Y-%m-%d %H:%M:%S")
+            self.last_login = datetime.strptime(row['last_login'], "%Y-%m-%d %H:%M:%S")
         else:
             self.last_login = None
-        self.site_admin = row['site_admin']
-        self.admin = row['admin']
-        self.active = row['active']
+        self.site_admin = bool(row['site_admin'])
+        self.admin = bool(row['admin'])
+        self.active = bool(row['active'])
+
+    def serialize(self):
+        return {
+            'short_name': self.short_name,
+            'email': self.email,
+            'date_created': self.date_created,
+            'last_login': self.last_login,
+            'site_admin': self.site_admin,
+            'admin': self.admin,
+            'active': self.active
+        }
 
     def is_authenticated(self):
         return True
@@ -358,13 +381,17 @@ class User(object):
         password = password.encode('utf-8')
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
 
-        cur = db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, self.user_id))
+        db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, self.user_id))
         db.commit()
 
         return 0
 
     def resetUserPass(self):
         db = self.db
+
+        if self.site_admin:
+            # don't allow disabling site admin accounts
+            raise UpdateError("protected", "Cannot disable site admin accounts")
 
         while True:
             token = self.__genResetToken()
@@ -380,22 +407,46 @@ class User(object):
         return token.decode("utf-8")
 
     def setActive(self, active):
-        db = self.db
+        if self.site_admin:
+            # don't allow disabling site admin accounts
+            raise UpdateError("protected", "Cannot disable site admin accounts")
 
-        cur = db.execute("UPDATE users SET active=? WHERE user_id=?", (active, self.user_id,))
+        if not isinstance(active, bool):
+            raise UpdateError("badtype", "Active state must be boolean")
+
+        self.active = active
+
+        db = self.db
+        db.execute("UPDATE users SET active=? WHERE user_id=?", (active, self.user_id,))
         db.commit()
 
-        return 0
+        app.logger.info(f"User update: set {self.user_id} active {active}")
+        return
 
     def setAdmin(self, admin_status):
-        db = self.db
+        if not isinstance(admin_status, bool):
+            raise UpdateError("badtype", "Admin state must be boolean")
+        self.admin = admin_status
 
-        if admin_status:
-            cur = db.execute("UPDATE users SET admin=1 WHERE user_id=?", (self.user_id,))
-            db.commit()
-        else:
-            cur = db.execute("UPDATE users SET admin=0 WHERE user_id=?", (self.user_id,))
-            db.commit()
+        db = self.db
+        db.execute("UPDATE users SET admin=? WHERE user_id=?", (admin_status, self.user_id))
+        db.commit()
+
+        app.logger.info(f"User update: set {self.user_id} admin {admin_status}")
+        return
+
+    def setSiteAdmin(self, admin_status):
+        if not isinstance(admin_status, bool):
+            raise UpdateError("badtype", "Site-admin state must be boolean")
+        self.site_admin = admin_status
+
+        db = self.db
+        db.execute("UPDATE users SET site_admin=? WHERE user_id=?", (admin_status, self.user_id,))
+        db.commit()
+
+        app.logger.info(f"User update: set {self.user_id} site-admin {admin_status}")
+
+        return
 
     def __genUserKey(self):
         return b64encode(urandom(9), b"Aa")

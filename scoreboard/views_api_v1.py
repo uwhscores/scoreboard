@@ -73,7 +73,7 @@ def genToken(user_name):
 
     user_id = u['user_id']
     token = b64encode(urandom(32)).decode('utf-8')
-
+    # TODO: cleanup tokens
     try:
         cur = db.execute("INSERT INTO tokens (user_id, token, valid_til) VALUES (?,?, datetime('now', '+1 day'))", (user_id, token))
         db.commit()
@@ -131,7 +131,7 @@ def apiGetTournament(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -145,7 +145,7 @@ def apiGetGames(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -173,7 +173,7 @@ def apiGetGame1(tid, gid):
     if not t:
         raise InvalidUsage('Unknown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -192,7 +192,7 @@ def apiGetTeams(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -207,7 +207,7 @@ def apiGetTeamInfo(tid, team_id):
     if not t:
         raise InvalidUsage("Unknown tid", status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -229,7 +229,7 @@ def apiGetStandings(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -276,7 +276,7 @@ def apiGetMessages(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -352,7 +352,7 @@ def updateGame(tid, gid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 
@@ -443,7 +443,7 @@ def updateGameTiming(tid):
     if not t:
         raise InvalidUsage('Unkown tid', status_code=404)
 
-    message = t.getDisableMessage()
+    message = t.getBlackoutMessage()
     if message:
         raise InvalidUsage(message, status_code=503)
 

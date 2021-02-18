@@ -3,12 +3,13 @@ from flask import current_app as app
 from jsonschema import validate, ValidationError, RefResolutionError
 import bcrypt
 import json
+import re
 import os
 import sqlite3
 
 from scoreboard.tournament import Tournament
 from scoreboard.models import User, Player
-from scoreboard.exceptions import UserAuthError
+from scoreboard.exceptions import UserAuthError, UpdateError
 
 
 def connectDB():
@@ -210,23 +211,26 @@ def authenticate_user(email, password_try, ip_addr=None):
 def addUser(new_user, db=None):
     """ add a new user to the database
     returns dictionary with the results of the add including their password reset reset_token
-    always returns dictionary, must check 'success' field for True/False """
+    raises UpdateError exception when fails
+    """
     if not db:
         db = getDB()
 
-    result = {'success': False, 'message': ""}
+    # check if email looks like an email, dirty regex but good enough for us
+    if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$', new_user['email']):
+        raise UpdateError("bademail", message="Email address does not pass validation")
+
     # check that email is unique
     cur = db.execute("SELECT user_id FROM users WHERE email=?", (new_user['email'],))
     if cur.fetchone():
-        result['message'] = "Email already exists, maybe try reseeting the password?"
-        return result
+        raise UpdateError("emailexists", message="Email already exists, maybe try reseeting the password?")
 
     cur = db.execute("SELECT user_id FROM users WHERE short_name LIKE ?", (new_user['short_name'],))
     if cur.fetchone():
-        result['message'] = "Short name already in use, sorry"
-        return result
+        raise UpdateError("namexists", message="Short name already in use, sorry")
 
     while True:
+        # need to ensure unique ID, so generate and check until unique
         user_id = b64encode(os.urandom(6), b"Aa").decode("utf-8")
         cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
         if not cur.fetchone():
@@ -245,24 +249,32 @@ def addUser(new_user, db=None):
 
     db.commit()
 
-    if new_user['site-admin']:
+    if 'site_admin' in new_user and new_user['site_admin'] is True:
         cur = db.execute("UPDATE users SET site_admin=1 WHERE user_id=?", (user_id,))
         db.commit()
+    else:
+        new_user['site_admin'] = False
 
-    if new_user['admin']:
+    if 'admin' in new_user and new_user['admin'] is True:
         cur = db.execute("UPDATE users SET admin=1 WHERE user_id=?", (user_id,))
         db.commit()
+    else:
+        new_user['admin'] = False
 
-    result['success'] = True
-    result['token'] = token
-    result['user_id'] = user_id
-    result['message'] = "User successfully created"
+    new_user['success'] = True
+    new_user['token'] = token
+    new_user['user_id'] = user_id
+    new_user['message'] = "User successfully created"
 
-    return result
+    # TODO: Return user model instead of random dictionary
+    return new_user
 
 
 def validateResetToken(token):
     """ validate reset token, returns the user_id if the reset token is found and active """
+    if token is None:
+        return None
+
     db = getDB()
 
     cur = db.execute("SELECT user_id FROM users where reset_token=? AND active=1", (token,))
