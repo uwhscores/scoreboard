@@ -12,7 +12,7 @@
                 "black_id": {"type": "integer"},
                 "white_id": {"type": "integer"},
                 "forfeit_b": {"type": "integer"},
-                "forfiet_w": {"type": "integer"}
+                "forfeit_w": {"type": "integer"}
             },
             "required": ["tid", "gid", "score_w", "score_b", "black_id", "white_id"]
         }

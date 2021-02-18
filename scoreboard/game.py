@@ -1,17 +1,10 @@
 from datetime import datetime
 from flask import current_app as app
 import json
-import re
 
 from scoreboard import functions
+from scoreboard.exceptions import UpdateError
 
-def getPodID(a, b):
-    """ Leftover function from original Nationals Pod Logic """
-    return -1
-
-def getTeam(a):
-    """ Leftover function from original Nationals Pod Logic """
-    return -1
 
 class Game(object):
 
@@ -19,7 +12,9 @@ class Game(object):
         self.tournament = tournament
         self.gid = gid
         self.black_tid = None
+        self.score_b = None
         self.white_tid = None
+        self.score_w = None
         #self.day = day
 
         self.start_datetime = datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S')
@@ -49,14 +44,17 @@ class Game(object):
         cur = db.execute('SELECT black_tid, white_tid, score_b, score_w, forfeit FROM scores WHERE gid=? AND tid=?', (self.gid, tournament.tid))
         score = cur.fetchone()
 
-
         self.style_b = ""
         self.style_w = ""
         self.note_b = None
         self.note_w = None
         self.forfeit = None
 
+        self.played = False     # has the game already been played
+        self.assigned = False   # have both teams been determined
         if score:
+            self.played = True
+            self.assigned = True
             self.black_tid = score['black_tid']
             self.white_tid = score['white_tid']
 
@@ -72,8 +70,6 @@ class Game(object):
                 else:
                     self.note_w = "Forfeit"
         else:
-            self.score_b = "--"
-            self.score_w = "--"
             try:
                 (self.black_tid, self.black, self.style_b) = self.__processGameJSON(black)
             except json.decoder.JSONDecodeError:
@@ -85,6 +81,9 @@ class Game(object):
             except json.decoder.JSONDecodeError:
                 app.logger.debug(f"Failure decoding JSON for white: {self.tournament.short_name}:{self.gid} - {black}")
                 self.white = "Error with Game!"
+
+            if self.black_tid and self.white_tid:
+                self.assigned = True
 
         self.black_flag = tournament.getTeamFlag(self.black_tid)
         self.white_flag = tournament.getTeamFlag(self.white_tid)
@@ -136,6 +135,34 @@ class Game(object):
         expanded = []
 
         return expanded
+
+    def updateScore(self, score):
+        # TODO: update all game scores to go through game object
+        db = self.tournament.db
+        score_w = score['score_w']
+        score_b = score['score_b']
+
+        forfeit = None
+        if score['forfeit_b'] and score['forfeit_w']:
+            raise UpdateError("bothforfeit", message="Both teams cannot forfeit")
+        if score['forfeit_b']:
+            forfeit = "b"
+        elif score['forfeit_w']:
+            forfeit = "w"
+        else:
+            forfeit = None
+        """ Update game result with new score, includes forfiet info """
+        db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)",
+                   (self.black_tid, self.white_tid, score_w, score_b, self.tournament.tid, self.gid, self.pod, forfeit))
+        db.commit()
+
+        db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?",
+                   (score_b, score_w, forfeit, self.tournament.tid, self.gid))
+        db.commit()
+
+        # need to tell tournament update itself due to new data
+        self.tournament.shakeTree()
+        return
 
     def __processGameJSON(self, game_json):
         """ Expand the JSON that defines a game into either a specific team or a description of the game
@@ -192,8 +219,10 @@ class Game(object):
             if (team_id == -1):
                 game_text = f"Winner of {gid}"
                 style = "soft"
+                team_id = None
             elif (team_id == -2):
                 game_text = f"TIE IN GAME {gid}!!"
+                team_id = None
             else:
                 team = self.tournament.getTeam(team_id)
                 game_text = f"{team} (W{gid})"
@@ -204,8 +233,10 @@ class Game(object):
             if (team_id == -1):
                 game_text = f"Loser of {gid}"
                 style = "soft"
+                team_id = None
             elif (team_id == -2):
                 game_text = f"TIE IN GAME {gid}!!"
+                team_id = None
             else:
                 team = self.tournament.getTeam(team_id)
                 game_text = f"{team} (L{gid})"

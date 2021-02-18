@@ -1,0 +1,52 @@
+{% extends "/admin/common/admin_layout.html.j2" %}
+
+{% block nav %}
+	{% include "admin/common/admin_nav.html.j2" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<div id="page_body" class="container">
+	<div class="row mb-2">
+		<div class="col">
+			<div class="page-header tournament-header">
+			<h1 class="tournament-title">Timing Rules</h1>
+			</div>
+            {% with messages = get_flashed_messages() -%}
+                {% if messages %}
+                    {% set last="" -%}
+                    <div class="alert alert-danger" role="alert">
+                    {% for message in messages %}
+                        {% if message != last -%}
+                            {{ message }}</br>
+                        {%- endif %}
+                        {% set last=message %}
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            {%- endwith %}
+		</div>
+	</div>
+
+	<div class="row mb-2">
+		<div class="col-12">
+			<div class="alert alert-warning" role="alert">
+				For advanced users only. Be careful. This should be used only in a pinch.
+			</div>
+			<div>
+				<textarea id="timingJsonBox" tid="{{ tournament.tid }}" rows="24" cols="60" name=timing_json>
+				</textarea>
+				<div id="timingJsonError" class="alert alert-danger" role="alert" hidden>
+					Invalid JSON, please fix and try again
+				</div>
+			</div>
+			<input id="editTimingResetBtn" type='button' class="btn btn-secondary" value=Reset>
+      <input id="editTimingSaveBtn" type='button' class="btn btn-success" value=Save>
+		</div>
+	</div>
+</div>
+{# stash the tournament shortname for use by javascript functions #}
+<script>
+	const tournamentShortName="{{ tournament.short_name }}"
+</script>
+{% endblock main %}

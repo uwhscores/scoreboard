@@ -25,6 +25,10 @@ def click_all_links(brower, url, seen_links, depth=0):
         if link.url in ["/login", "/logout", "/admin"]:
             continue
 
+        # skip player links
+        if re.match(r"\/p\/\w{8}",  link.url):
+            continue
+
         if link.url not in seen_links:
             seen_links.append(link.url)
             new_depth = depth + 1

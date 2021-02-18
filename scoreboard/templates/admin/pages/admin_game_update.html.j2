@@ -1,0 +1,92 @@
+{% extends "/admin/common/admin_layout.html.j2" %}
+
+{% block nav %}
+	{% include "admin/common/admin_nav.html.j2" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<div id="page_body" class="container-md">
+	<div class="row">
+		<div class="col">
+			<h1>{{tournament.name}}</h1>
+			<h3>Update Score</h3>
+			{% for messages in get_flashed_messages() %}
+				<div class=alert alert-warning> {{ message }} </div>
+			{% endfor %}
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<table id=games class=table>
+				<thead>
+					<tr><th>Game</th><th>Start Time</th><th>Pool</th><th>Div</th><th>Pod</th></tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>{{ game.gid}}</td>
+						<td>{{ game.day }} {{ game.start_time }}</td>
+						<td>{{ game.pool }}</td>
+						<td>{{ game.division_name or "--" }}</td>
+						<td>{{ game.pod_name or "--" }}</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		{% if game.forfeit == "b" -%}
+			{% set black_check="checked=checked" %}
+		{%- endif %}
+		{% if game.forfeit == "w" -%}
+			{% set white_check="checked=checked" %}
+		{%- endif %}
+		<div class="row flex-nowrap justify-content-evenly align-items-end mb-3 gx-0">
+				<div class="col-auto text-center score-input">
+					<h3>{{ game.white }}</h3>
+					<h5>White</h5>
+					<button type="button" id="score_w_minus" class="btn btn btn-primary score-input-button" update-for="score_w" direction="down">
+						<i class="bi bi-caret-down-fill"></i>
+					</button>
+					<input type=hidden  name=score_w value='{{ game.score_w or "0"}}'>
+					<span id=score_w class=score>{{ game.score_w or "0" }}</span>
+					<button type="button" id="score_w_plus" class="btn btn-primary score-input-button" update-for="score_w" direction="up">
+						<i class="bi bi-caret-up-fill"></i>
+					</button>
+					<div class="form-check">
+					  <input class="form-check-input forfeit-check" type="checkbox" value="" id="forfeit_w" {{ white_check }}>
+					  <label class="form-check-label" for="flexCheckChecked">
+					    Forfeit White
+					  </label>
+					</div>
+
+				</div>
+				<div class="col-auto text-center score-input">
+					<h3>{{ game.black }}</h3>
+					<h5>Black</h5>
+					<button type="button" id="score_b_minus" class="btn btn-primary score-input-button" update-for="score_b" direction="down">
+						<i class="bi bi-caret-down-fill"></i>
+					</button>
+					<input type=hidden  name=score_b value='{{ game.score_b or "0"}}'>
+					<span id=score_b class=score>{{ game.score_b or "0" }}</span>
+					<button type="button" id="score_b_plus" class="btn btn-primary score-input-button" update-for="score_b" direction="up">
+						<i class="bi bi-caret-up-fill"></i>
+					</button>
+					<div class="form-check">
+					  <input class="form-check-input forfeit-check" type="checkbox" value="" id="forfeit_b" {{ black_check }}>
+					  <label class="form-check-label" for="flexCheckChecked">
+					    Forfeit Black
+					  </label>
+					</div>
+				</div>
+		</div>
+
+		<div class="row justify-content-evenly">
+			<div class="col-auto">
+				<a href="/admin/t/{{tournament.short_name}}/games" role="button" class="btn btn-secondary">Cancel</a>
+				<button  id="scoreSubmitBttn" type="button" class="btn btn-primary">Submit</button>
+			</div>
+		</div>
+</div>
+{% endblock main %}

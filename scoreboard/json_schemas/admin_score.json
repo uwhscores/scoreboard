@@ -1,0 +1,19 @@
+{
+    "title": "Score upate from admin",
+    "type": "object",
+    "properties": {
+        "score": {
+            "type": "object",
+            "properties": {
+                "score_w": {"type": "integer"},
+                "score_b": {"type": "integer"},
+                "forfeit_b": {"type": "boolean"},
+                "forfeit_w": {"type": "boolean"}
+            },
+            "required": ["score_w", "score_b", "forfeit_w", "forfeit_b"],
+            "additionalProperties": false
+        }
+    },
+    "required": ["score"],
+    "additionalProperties": true
+}

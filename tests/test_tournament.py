@@ -89,8 +89,8 @@ def test_tournament_rankings_simple(app):
     location = "Pytest, PY"
     active = True
 
-    with app.app_context() as context:
-        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, mem_db, context)
+    with app.app_context():
+        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, mem_db)
 
     load_schedule("simple", 1, mem_db)
 
@@ -128,8 +128,8 @@ def test_tournament_rankings_ties(mock_flash, app):
     location = "Pytest, PY"
     active = True
 
-    with app.app_context() as context:
-        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, mem_db, context=context)
+    with app.app_context():
+        test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, mem_db)
 
     load_schedule("simple_ties", 1, mem_db)
 
@@ -155,3 +155,31 @@ def test_tournament_rankings_ties(mock_flash, app):
     third_place = standings["A"][2]
     assert third_place.place == 2
     assert third_place.team.name == "Team C"
+
+    ties = test_t.getTies()
+    print(ties)
+    assert len(ties) == 1
+    tie = ties[0]
+    assert tie['id_a'] == 2
+    assert tie['id_b'] == 3
+
+    tie_break = {"teams": [2, 3], "winner": 3}
+    test_t.updateConfig("tie_break", tie_break)
+
+    ties = test_t.getTies()
+    assert ties is None
+
+    standings = test_t.getStandings()
+    print(standings)
+
+    first_place = standings["A"][0]
+    assert first_place.place == 1
+    assert first_place.team.name == "Team A"
+
+    second_place = standings["A"][1]
+    assert second_place.place == 2
+    assert second_place.team.name == "Team C"
+
+    third_place = standings["A"][2]
+    assert third_place.place == 3
+    assert third_place.team.name == "Team B"

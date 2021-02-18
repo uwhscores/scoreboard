@@ -1,0 +1,92 @@
+{% if team_info and team_info.roster -%}
+<div id="roster" class="">
+  <h1>{{ title_text }} Roster</h1>
+  <table id=roster_tbl class="table table-striped roster-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Cap Number</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for player in team_info.roster %}
+      <tr>
+        <td><a href="/p/{{ player.player_id }}">{{ player.name }}</a></td>
+        <td>{{ player.number if player.number != None else "" }}</td>
+      </tr>
+      {% endfor -%}
+    </tbody>
+  </table>
+  {%- if team_info.coaches %}
+  <table id=coaches_tbl class="table table-striped roster-table">
+    <thead>
+      <tr>
+        <th>Coaches and Staff</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for coach in team_info.coaches %}
+      <tr>
+        <td><a href="/p/{{ coach.player_id }}">{{ coach.name }}</a></td>
+        {% if coach.title %}
+        <td>{{ coach.title }}</td>
+        {% endif %}
+      </tr>
+      {% endfor -%}
+    </tbody>
+  </table>
+  {%- endif %}
+</div>
+{%- elif team_infos %}
+<div id="rosters" class=" ">
+  <div>
+    {% for team_id in team_infos %}
+    {% set team = team_infos[team_id] %}
+      {% if team.roster %}
+        {% if team.flag_url %}
+          <img class="team-flag float-end" src="{{ team.flag_url }}">
+        {% endif %}
+        <h2>{{ team.name }}</h2>
+        {% if team.division %}
+          <strong>
+          {% if team.division in group_names %}
+            {{ group_names[team.division] }}
+          {% else %}
+            {{ team.division }}
+          {% endif %}
+          </strong>
+        {% endif %}
+
+          <table class="table table-striped roster-table">
+            <thead class="roster-divider">
+              <tr>
+                <th>Player</th>
+                <th>Cap Number<th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for player in team.roster %}
+                <tr>
+                  <td><a href="/p/{{ player.player_id }}">{{ player.name }}</a></td>
+                  <td>{{ player.number if player.number != None else "" }}</td>
+                </tr>
+            {% endfor %}
+            {% if team.coaches %}
+                <thead>
+                  <tr>
+                    <th colspan=2> Coaches and Staff
+                  </tr>
+                </thead>
+              {% for coach in team.coaches %}
+                <tr>
+                  <td colspan=2><a href="/p/{{ coach.player_id }}">{{ coach.name }}</a></td>
+                </tr>
+              {% endfor %}
+            {% endif %}
+            </tbody>
+          </table>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

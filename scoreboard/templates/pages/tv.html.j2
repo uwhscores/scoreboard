@@ -1,0 +1,140 @@
+{% extends "common/tv_layout.html.j2" %}
+
+{% block tabs %}
+<div id="page_body" class=container style="margin-left:2em">
+{% endblock tabs %}
+
+{% block games %}
+<div class=row>
+	<div id="schedule" class="col-md-8">
+		<h1>{{ tournament.name }}</h1>
+		{% if site_message -%}
+			<div class="alert alert-info" role="alert">
+				<strong>Announcement:</strong>
+				<p>{{ site_message }}</p>
+			</div>
+		{%- endif %}
+		{% with messages = get_flashed_messages() %}
+		  {% if messages %}
+			<ul class=flashes>
+			{% for message in messages %}
+			  <li>{{ message }}</li>
+			{% endfor %}
+			</ul>
+		  {% endif %}
+		{% endwith %}
+	</div>
+</div>
+<div class=row>
+	<div class="col-md-8">
+		<h3>Schedule</h3>
+		<table id=games class="table table-striped">
+			<thead>
+				<tr>
+					<th>Game</th>
+					<th>Start Time</th>
+					<th>Pool</th>
+					<th>Pod</th>
+					<th>Black</th>
+					<th></th>
+					<th>White</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for game in games %}
+				<tr>
+					<td>{{ game.gid }}</td>
+					<td>{{ game.day }} {{ game.start_time }}</td>
+					<td>{{ game.pool }}</td>
+					<td>{{ game.pod }}</td>
+					<td class={{game.style_b}}>{{ game.black }}</td>
+					<td>{{game.score_b}}</td>
+					<td class={{game.style_w}}>{{ game.white }}</td>
+					<td>{{game.score_w}}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+		<p class=note>{{ noteText }}</p>
+	</div>
+		{% endblock games %}
+
+		{% block standings %}
+		<div id="standings" class="col-md-2">
+		<h1>Standings</h1>
+		<table id=standings_tbl class="table table-striped">
+			<thead>
+				<tr>
+					{% if divisions -%}
+					<th>Div</th>
+					{%- endif %}
+					{% if pods -%}
+					<th>Pod</th>
+					{%- endif %}
+					<th>Rank</th>
+					<th>Team</th>
+					<th>Points</th>
+					<th>Record</th>
+					<th>GA</th>
+					<th>GP</th>
+					<th>Overall</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for rank in standings -%}
+			{% set team = rank.team %}
+				{% if not loop.first and (team.pod != lastPod) or (team.division != lastDiv and lastPod == None ) -%}
+			</tbody>
+			<thead>
+				<tr>
+					{% if divisions -%}
+					<th>Div</th>
+					{%- endif %}
+					{% if pods -%}
+					<th>Pod</th>
+					{%- endif %}
+					<th>Rank</th>
+					<th>Team</th>
+					<th>Points</th>
+					<th>Record</th>
+					<th>GA</th>
+					<th>GP</th>
+					<th>Overall</th>
+				</tr>
+			</thead>
+			<tbody>
+				{%- endif %}
+				<tr>
+					{% if divisions -%}
+					<td>{{ team.division}}</td>
+					{%- endif %}
+					{% if team.pod != None -%}
+					<td>{{ team.pod }} </td>
+					{%- endif %}
+					<td>{{ rank.place }}</td>
+					<td>{{ team.name }}</td>
+					<td>{{ team.points }} </td>
+					<td>{{ team.wins }}-{{ team.losses }}-{{ team.ties }}</td>
+					<td>{{ team.goals_allowed }}</td>
+					<td>{{ team.games_played }} </td>
+					<td>{{ team.wins_t }}-{{ team.losses_t }}-{{ team.ties_t }}</td>
+				</tr>
+				{% set lastDiv = team.division %}
+				{% set lastPod = team.pod %}
+			{%- endfor %}
+			<tbody>
+		</table>
+
+
+
+		{% endblock standings %}
+
+		{% block places %}
+		{% if placings %}
+		{% endif %}
+	</div> <!-- Standings -->
+
+	</div> <!-- row -->
+</div> <!-- container -->
+{% endblock places %}
