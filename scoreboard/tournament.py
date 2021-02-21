@@ -778,8 +778,8 @@ class Tournament(object):
         return 0
 
     def genTieFlashes(self):
-        if 'ties' not in self.context:
-            return 0
+        if 'ties' not in self.context or len(self.context.ties) == 0:
+            return
 
         ties = self.context.ties
 
@@ -798,7 +798,7 @@ class Tournament(object):
                 flash("There is a three-way tie with %s, %s and %s" % (name_a, name_b, name_c))
 
         flash("A coin flip is required, please see tournament director or head ref")
-        return 0
+        return
 
     def endRoundRobin(self, division=None, pod=None):
         """ Test if round-robin play for division or pod is finished, true when all games have scores """
