@@ -74,7 +74,6 @@
 		</div>
 		{%- endif %}
 
-
 		<div class="col-md-8 col-12" role="navigation">
 			<ul class="nav nav-pills" id="nav-tab" role="tablist">
 				<li class="nav-item">
@@ -113,9 +112,32 @@
 				</div>
 			</div>
 		</div>
-
-
 	</div>
-
 </div>
 {%endblock main %}
+
+{% block script %}
+<script>
+	window.addEventListener('load', function () {
+		if (location.hash) {
+			console.log(location.hash)
+			var el = document.querySelector(`a[href="${location.hash}"`)
+			var tab = new bootstrap.Tab(el)
+			tab.show()
+		}
+
+		document.querySelectorAll("a[data-bs-toggle=tab]").forEach( el => {
+			el.addEventListener('click', function(event){
+			 location.hash = this.getAttribute("href");
+			})
+		});
+
+		window.addEventListener('popstate', function(){
+			var anchor = location.hash || "#schedule"
+			var el = document.querySelector(`a[href="${anchor}"`)
+			var tab = new bootstrap.Tab(el)
+			tab.show()
+		})
+	});
+</script>
+{% endblock script %}
