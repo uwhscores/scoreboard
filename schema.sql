@@ -33,7 +33,8 @@ CREATE TABLE tournaments(
 	start_date datetime,
 	end_date datetime,
 	location TEXT,
-	active INTEGER
+	active INTEGER,
+	admin_ids TEXT
 );
 CREATE UNIQUE INDEX unique_name on tournaments(short_name);
 
@@ -65,7 +66,8 @@ CREATE TABLE rankings(
 CREATE TABLE params(
 	tid INTEGER NOT NULL,
 	field text NOT NULL,
-	val NOT NULL
+	val NOT NULL,
+	PRIMARY KEY (tid, field)
 );
 
 CREATE TABLE groups(

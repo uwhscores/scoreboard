@@ -1,0 +1,130 @@
+{% extends "common/layout.html.j2" %}
+
+{% block nav %}
+	{% include "common/nav_bar.html.j2" with context %}
+{% endblock nav %}
+
+{% block main %}
+<div id="page_body" class="container">
+	<div class="row">
+		<div class="col-md-8">
+			<div class="row mb-3">
+					<div class="page-header tournament-header">
+						<div class="text-center mb-3">
+						<img id="indexLogo" src="/static/images/logo.png" alt="UWHScores Logo" height="200px">
+						</div>
+						<p class=lead>
+							Welcome to UWHScores.com, the source for underwater hockey tournament schedules, scores and standings.
+						<p>
+					</div>
+				</div>
+			<div class="row">
+				<div class="col">
+
+					{% if live_tournaments -%}
+					<div class="card">
+					  <div class="card-header">
+					   <h3>Tournaments In Progress</h3>
+					  </div>
+						{% for t in live_tournaments %}
+					  <div class="card-body">
+							{% if t.banner %}
+							<a href="/t/{{t.short_name}}"><img class=tournament-banner src="/{{t.banner}}"></a>
+							{% endif %}
+							<h4><a href="/t/{{t.short_name}}">{{t.name}} <i class="fa fa-chevron-right"></i></a></h4>
+							<strong>{{ t.location }}, {{ t.date_string}}</strong>
+					  </div>
+						{% endfor %}
+					</div>
+					{%- endif %}
+					<p>
+						UWHScores.com provides a source for both players and tournament organizers to get valuable information about tournaments
+						as they happen. Players can follow their teams schedule, which is updated continuously throughout the tournament, and standings.
+						As games are played and bracket schedules are filled in based on the standings and game results.
+					</p>
+					<p>
+						For tournament organizers and officials, UWHScores handles all the difficult tasks of tabulating standings
+						automatically in real time. All you need to do is enter the scores from each game, which can be done easily from any
+						device with an internet connection, even your phone. UWHScores takes care of all the points calculations and handles
+						all the tie breakers too. No more frantically doing math on the back of a wet schedule to figure out the first bracket
+						game.
+					</p>
+				</div>
+			</div>
+			<div class="row mb-3">
+				<div class="col">
+					<h2>Features</h2>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-4 text-center">
+					<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="#666" class="bi bi-calendar2-range mx-auto mb-2" viewBox="0 0 16 16">
+					  <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H2z"/>
+					  <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V4zM9 8a1 1 0 0 1 1-1h5v2h-5a1 1 0 0 1-1-1zm-8 2h4a1 1 0 1 1 0 2H1v-2z"/>
+					</svg>
+	        <h3>Populated Schedules</h3>
+					<p>Schedules that update as the tournament unfolds</p>
+	      </div>
+				<div class="col-lg-4 text-center">
+					<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="#666" class="bi bi-sort-numeric-down mb-2" viewBox="0 0 16 16">
+					  <path d="M12.438 1.668V7H11.39V2.684h-.051l-1.211.859v-.969l1.262-.906h1.046z"/>
+					  <path fill-rule="evenodd" d="M11.36 14.098c-1.137 0-1.708-.657-1.762-1.278h1.004c.058.223.343.45.773.45.824 0 1.164-.829 1.133-1.856h-.059c-.148.39-.57.742-1.261.742-.91 0-1.72-.613-1.72-1.758 0-1.148.848-1.835 1.973-1.835 1.09 0 2.063.636 2.063 2.687 0 1.867-.723 2.848-2.145 2.848zm.062-2.735c.504 0 .933-.336.933-.972 0-.633-.398-1.008-.94-1.008-.52 0-.927.375-.927 1 0 .64.418.98.934.98z"/>
+					  <path d="M4.5 2.5a.5.5 0 0 0-1 0v9.793l-1.146-1.147a.5.5 0 0 0-.708.708l2 1.999.007.007a.497.497 0 0 0 .7-.006l2-2a.5.5 0 0 0-.707-.708L4.5 12.293V2.5z"/>
+					</svg>
+	        <h3>Real Time Standings</h3>
+					<p>Standings calculated as games finish reflecting all results and tiebreakers</p>
+	      </div>
+				<div class="col-lg-4 text-center">
+					<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="#666" class="bi bi-trophy-fill mb-2" viewBox="0 0 16 16">
+					  <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5c0 .538-.012 1.05-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33.076 33.076 0 0 1 2.5.5zm.099 2.54a2 2 0 0 0 .72 3.935c-.333-1.05-.588-2.346-.72-3.935zm10.083 3.935a2 2 0 0 0 .72-3.935c-.133 1.59-.388 2.885-.72 3.935z"/>
+					</svg>
+					<h3>Final Results and Awards</h3>
+					<p>Final results from the bracket</p>
+				</div>
+			</div>
+
+			<div class="row bottom-buffer mb-3">
+				<div class="col">
+					<h3>Questions?</h3>
+					<a class="btn btn-primary btn-lg" href="/faq" role="button">Got more questions? Read the FAQ <i class="bi bi-chevron-double-right"></i></a>
+				</div>
+			</div>
+		</div>
+
+		<!-- side bar -->
+		<div class="col-md-4">
+			<div class="tournament-history">
+				{% if future_tournaments -%}
+					<h2>Upcoming Tournaments</h2>
+					<div class="list-group">
+						{% for t in future_tournaments|sort -%}
+							<a href="/t/{{t.short_name}}" class="list-group-item list-group-item-action tournament-card">
+								{% if t.banner_sm %}
+								<img class="tournament-banner" src=/{{t.banner_sm}}>
+	              {% elif t.banner %}
+	              <img class="tournament-banner"  src=/{{t.banner}}>
+								{% endif %}
+								<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
+							</a>
+						{% endfor %}
+					</div>
+					{%- endif %}
+
+					<h2>Past Tournaments</h2>
+					<div class="list-group">
+						{% for t in past_tournaments -%}
+							<a href="/t/{{t.short_name}}" class="list-group-item list-group-item-action tournament-card">
+								{% if t.banner_sm %}
+								<img class="tournament-banner"  src=/{{t.banner_sm}}>
+	              {% elif t.banner %}
+	              <img class="tournament-banner"  src=/{{t.banner}}>
+								{% endif %}
+								<h4>{{ t.name }}</h4> {{ t.location }} {{ t.date_string}}
+							</a>
+						{% endfor %}
+					</div>
+			</div>
+		</div>
+  </div> <!-- row -->
+</div> <!-- container -->
+{%endblock main %}

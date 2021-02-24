@@ -15,7 +15,7 @@ from scoreboard.exceptions import UpdateError
 # main struction for a tournament
 class Tournament(object):
 
-    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db, context=None):
+    def __init__(self, tid, name, short_name, start_date, end_date, location, active, db):
         self.tid = tid
         self.name = name
         self.short_name = short_name
@@ -24,10 +24,7 @@ class Tournament(object):
         self.location = location
         self.is_active = active
         self.db = db
-        if context:
-            self.context = context
-        else:
-            self.context = flask_g
+        self.context = flask_g
 
         self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
         self.end_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -183,7 +180,7 @@ class Tournament(object):
 
         try:
             team_id = int(team_id)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
         db = self.db
@@ -579,18 +576,18 @@ class Tournament(object):
 
     def getSeed(self, seed, division=None, pod=None):
         """ get seed for team in a division or pod from the team ID
-        returns team ID or -1 if not seeded yet, e.g. round-robin isn't finished """
+        returns team ID or None if not seeded yet, e.g. round-robin isn't finished """
         if (self.endRoundRobin(division, pod)):
             standings = self.getStandings(division, pod)
             if len(standings) < 1:
-                return -1
+                return None
             # BUG: used to check pods standings for ties but the pod get lots when net wins gets run so if the teams see eachother again
             # in a later pod then it can get a false positive on a tie in an older pod. This way avoids that but means that no pod can be seeded
             # if any pod has ties
             if self.checkForTies(standings):
-                return -1
-            seed = int(seed) - 1
+                return None
 
+            seed = int(seed) - 1
             try:
                 if pod:
                     team_id = standings[pod][seed].team.team_id
@@ -598,11 +595,11 @@ class Tournament(object):
                     team_id = standings[division][seed].team.team_id
             except IndexError:
                 app.logger.debug("Asking for seed that is out of range: seed %s, div %s, pod %s" % (seed + 1, division, pod))
-                return -1
+                return None
 
             return team_id
         else:
-            return -1
+            return None
 
     def getPlacings(self, div=None):
         """ get list of placings, will be populated with teams if outcome can be determined
@@ -619,85 +616,59 @@ class Tournament(object):
         final = []
         for r in placings:
             entry = {}
-            style = ""
             div = r['division']
             place = r['place']
             match = re.match(r"^\w+?(\d+)$", place)
             if match:
                 place = match.group(1)
-            game = r['game']
+
+            game = json.loads(r['game'])
+            placing_type = game['type']
 
             team_id = 0
-            # Winner of
-            match = re.search('^W(\d+)$', game)
-            if match:
-                gid = match.group(1)
-                team_id = self.getWinner(gid)
-                if (team_id == -1):
-                    game = "Winner of " + gid
-                    style = "soft"
-                elif (team_id == -2):
-                    game = "TIE IN GAME %s!!" % gid
-                else:
+            if placing_type == "winner":
+                team_id = self.getWinner(game['game'])
+                game_text = f"Winner of {game['game']}"
+            elif placing_type == "loser":
+                team_id = self.getLoser(game['game'])
+                game_text = f"Loser of {game['game']}"
+            elif placing_type == "seed":
+                group_abriviation = game['group']
+                seed = game['seed']
+                if group_abriviation in self.getPods():
+                    team_id = self.getSeed(seed, pod=group_abriviation)
+                elif group_abriviation in self.getDivisions():
+                    team_id = self.getSeed(seed, division=group_abriviation)
+
+                group = self.expandGroupAbbr(group_abriviation)
+                if not group:
+                    group = group_abriviation
+
+                if team_id:
                     team = self.getTeam(team_id)
-                    # game = team
-
-            # Loser of
-            match = re.search('^L(\d+)$', game)
-            if match:
-                gid = match.group(1)
-                team_id = self.getLoser(gid)
-                if (team_id == -1):
-                    game = "Loser of " + gid
-                    style = "soft"
-                elif (team_id == -2):
-                    game = "TIE IN GAME %s!!" % gid
+                    if group:
+                        game_text = f"{team} ({group}-{seed})"
                 else:
-                    team = self.getTeam(team_id)
-                    #game = team
+                    game_text = f"{group} Seed {seed}"
 
-            # Seeded div/pod notation, for placing that isn't determined by head-to-head bracket
-            # TODO: this doesn't look right anymore, need to check this still works
-            match = re.search(r"^S([\w])(\d+)$", game)
-            if match:
-                group = match.group(1)
-                seed = match.group(2)
-
-                if group in self.getPods():
-                    team_id = self.getSeed(seed, None, group)
-                elif group in self.getDivisions():
-                    team_id = self.getSeed(seed, group, None)
-                else:
-                    team_id = -1
-
-                # TODO: check if this logic is broken, shouldn't be "Pod" all the time
-                if (team_id < 0):
-                    group_name = self.expandGroupAbbr(group)
-                    if group_name:
-                        game = "%s seed %s" % (group_name, seed)
-                    else:
-                        game = "%s seed %s" % (group, seed)
-                    style = "soft"
-                else:
-                    team = self.getTeam(team_id)
-                    #game = name
-            # broken logic
-            # else:
-            #    app.logger.debug("Failure in getPlacings, no regex match: %s" % game)
+            if team_id and team_id < 0:
+                # temp hack while changing from using -1 for return values all over the place
+                team_id = None
 
             if self.expandGroupAbbr(div):
                 entry['div'] = self.expandGroupAbbr(div)
             else:
                 entry['div'] = div
+
             entry['place'] = functions.ordinalize(place)
-            if team_id > 0:
+            if team_id:
                 entry['team_id'] = team_id
                 entry['name'] = self.getTeam(team_id)
                 entry['flag_url'] = self.getTeamFlag(team_id)
             else:
-                entry['name'] = game
+                entry['name'] = game_text
                 entry['flag_url'] = None
-            entry['style'] = style
+                entry['style'] = "soft"
 
             final.append(entry)
 
@@ -720,48 +691,39 @@ class Tournament(object):
 
     def getParams(self):
         """ retrieve parameters for the tournament
-        Keeps them stashed in the gloabl store for performance"""
-        # if not self.context:
-        #     context = g
-        # if g:
-        #     if not hasattr(g, 'params'):
-        #         g.params = Params(self)
-        #     return g.params
-        # else:
-        #     return Params(self)
-
-        if not hasattr(self.context, 'params'):
+        Keeps them stashed in the context store for performance"""
+        if 'params' not in self.context:
             self.context.params = Params(self)
 
         return self.context.params
 
-    def getCoinFlip(self, tid_a, tid_b):
-        """ Gets winner of coin flip, returns team ID for winner of -1 if no coin flip found """
+    def getTieBreak(self, tid_a, tid_b):
+        """ Gets winner of tie breaker, returns team ID for winner or None if no tie-breaker found """
         params = self.getParams()
         # app.logger.debug("looking for a coin flip between %s and %s " % (tid_a,
         # tid_b))
 
-        if params.getParam('coin_flips'):
-            flips = params.getParam('coin_flips').split(";")
-            for i in flips:
-                (a, b, coin) = i.split(",")
-                a = int(a)
-                b = int(b)
-                if (tid_a == a or tid_a == b) and (tid_b == a or tid_b == b):
-                    # app.logger.debug("returning a coin %s" % coin)
-                    return int(coin)
+        tid_a = int(tid_a)
+        tid_b = int(tid_b)
+        if params.getParam('tie-breaks'):
+            tie_breaks = json.loads(params.getParam('tie-breaks'))
+            for i in tie_breaks['tie-breaks']:
+                team_list = i['teams']
+                winner = i['winner']
+                if tid_a in team_list and tid_b in team_list:
+                    return winner
         else:
-            return -1
+            return None
 
     def getTies(self):
         """ get list of any ties in the standings in the tournament
         Doesn't test that ties required action, e.g. all teams would be tied at start of tournament
         """
         # TODO: Definitely need test case for tournament.getTies, function shouldn't have worked before adding self to getTeam calls
-        if not hasattr(self.context, 'ties'):
+        if 'ties' not in self.context:
             return None
 
-        ties = flask_g.ties
+        ties = self.context.get('ties', default=[])
         seen = set()
         list = [x for x in ties if x not in seen and not seen.add(x)]
 
@@ -786,6 +748,9 @@ class Tournament(object):
         if div_a != div_b:
             return None
 
+        # makes ties a [] if its not already set
+        self.context.setdefault("ties", default=[])
+
         db = self.db
 
         cur = db.execute("SELECT DISTINCT p.pod FROM pods p WHERE (team_id=? OR team_id=?) AND tid=?", (tid_a, tid_b, self.tid))
@@ -803,30 +768,18 @@ class Tournament(object):
             # TODO:  code to add divisional check goes here
 
         if tid_c:
-            if not hasattr(self.context, 'ties'):
-                self.context.ties = []
-                self.context.ties.append((tid_a, tid_b, tid_c))
-            else:
-                self.context.ties.append((tid_a, tid_b, tid_c))
+            self.context.ties.append((tid_a, tid_b, tid_c))
 
         if tid_a < tid_b:
-            if not hasattr(self.context, 'ties'):
-                self.context.ties = []
-                self.context.ties.append((tid_a, tid_b))
-            else:
-                self.context.ties.append((tid_a, tid_b))
+            self.context.ties.append((tid_a, tid_b))
         else:
-            if not hasattr(self.context, 'ties'):
-                self.context.ties = []
-                self.context.ties.append((tid_b, tid_a))
-            else:
-                self.context.ties.append((tid_b, tid_a))
+            self.context.ties.append((tid_b, tid_a))
 
         return 0
 
     def genTieFlashes(self):
-        if not hasattr(self.context, 'ties'):
-            return 0
+        if 'ties' not in self.context or len(self.context.ties) == 0:
+            return
 
         ties = self.context.ties
 
@@ -845,7 +798,7 @@ class Tournament(object):
                 flash("There is a three-way tie with %s, %s and %s" % (name_a, name_b, name_c))
 
         flash("A coin flip is required, please see tournament director or head ref")
-        return 0
+        return
 
     def endRoundRobin(self, division=None, pod=None):
         """ Test if round-robin play for division or pod is finished, true when all games have scores """
@@ -1010,10 +963,10 @@ class Tournament(object):
             return team_b.goals_allowed - team_a.goals_allowed
         else:
             # app.logger.debug("straight up tie")
-            flip = self.getCoinFlip(team_a.team_id, team_b.team_id)
-            if flip == team_a.team_id:
+            winner = self.getTieBreak(team_a.team_id, team_b.team_id)
+            if winner == team_a.team_id:
                 return 1
-            elif flip == team_b.team_id:
+            elif winner == team_b.team_id:
                 return -1
             else:
                 self.addTie(team_a.team_id, team_b.team_id)
@@ -1079,10 +1032,6 @@ class Tournament(object):
                 # TODO: maybe raise an exception?
                 app.logger.debug("I have standings that aren't for my pod")
 
-        # pre-sort required for three-way ties
-        #ordered = sorted(team_stats, cmp=self.cmpTeamsSort)
-        #ordered = sorted(ordered, cmp=self.cmpTeams)
-        # TODO: this is gonna need sorting fixing from the 2->3 converstion
         ordered = sorted(team_stats)
 
         # first go through the list and assign a place to everybody based on only points
@@ -1169,7 +1118,6 @@ class Tournament(object):
                     continue
                 else:
                     # sort teams based on rules w/o head-to-head
-                    # TODO: 2->3 needs to be fixed
                     place_teams = sorted(place_teams)
 
                     last = place_teams[-1].team
@@ -1190,14 +1138,11 @@ class Tournament(object):
             else:
                 app.logger.debug("%s teams tied in pod %s" % (count, pod))
 
-                # TODO: Fix 2->3 compare
-                # place_teams = sorted(place_teams, cmp=self.cmpRankSort)
                 place_teams = sorted(place_teams)
 
                 most_goals = place_teams[-1].team.goals_allowed
                 tied = [x for x in place_teams if x.team.goals_allowed == most_goals]
-                # if pod=="4P":
-                #    b
+
                 if len(tied) == len(place_teams):
                     place += 1
                 else:
@@ -1217,8 +1162,6 @@ class Tournament(object):
     def calcStandings(self):
         """ worker function to calculate the standings of all the teams
         Do not call directly, use getStandings() wrapper to avoid recalculating """
-        # app.logger.debug("calculating standings, pod = %s" , (pod,))
-
         standings = {}
 
         active_pods = self.getPodsActive()
@@ -1240,12 +1183,14 @@ class Tournament(object):
         return standings
 
     def getStandings(self, div=None, pod=None):
-        """ wrapper function for standings, currently doesn't do anything other than call calcStandings
-        # TODO: make tournament.getStandings() cache standings for performance
+        """ wrapper function for standings, uses app context to cache standings calculations
+        since standings are cached filtinging for div or pod has to be done in loops
         """
 
-        if not hasattr(self.context, 'standings'):
+        if 'standings' not in self.context:
             app.logger.debug("Calculating standings")
+            if 'ties' in self.context:
+                self.context.pop('ties')
             self.context.standings = self.calcStandings()
 
         # filter for pod and div
@@ -1270,6 +1215,21 @@ class Tournament(object):
             standings = self.context.standings
 
         return standings
+
+    def shakeTree(self):
+        """ Stupid function that needs to be renamed, but shakes the tree so to speak after
+        updates that would change standings and require any recaluclations
+        """
+        if 'standings' in self.context:
+            self.context.pop('standings')
+        if 'ties' in self.context:
+            self.context.pop('ties')
+        if 'params' in self.context:
+            self.context.pop('params')
+
+        self.popSeededPods()
+
+        return
 
     def splitStandingsByGroup(self, standings):
         """ Helper function that takes in a standings list and groups them into a dictionary
@@ -1396,53 +1356,38 @@ class Tournament(object):
         if row['admin_ids']:
             id_string = row['admin_ids']
         else:
-            return False
+            return []
 
         authorized_ids = id_string.split(",")
 
         return authorized_ids
 
-    def addAuthorizedID(self, user_id):
-        """ add user ID to list of authorized IDs """
-        # user = getUserByID(user_id)
-        # if not user:
-        #    app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
-        #    return 0
+    def updateAdminStatus(self, make_admin, user_id):
+        """ updates the admin status of a given user ID, will either insert or remove (if present) user ID
+        based on is_admin boolean. Removing an ID that is not an admin is considered a success.
+        """
+        user = functions.getUserByID(user_id)
+        if not user:
+            app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
+            raise UpdateError(f"User ID {user_id} does not exist")
 
         authorized_ids = self.getAuthorizedUserIDs()
-        if authorized_ids:
+        if make_admin and user not in authorized_ids:
             authorized_ids.append(user_id)
-        else:
-            authorized_ids = [user_id]
-
-        authorized_ids_string = ",".join(authorized_ids)
-
-        db = self.db
-        cur = db.execute("UPDATE tournaments SET admin_ids=? WHERE tid=?", (authorized_ids_string, self.tid))
-        db.commit()
-
-        return 0
-
-    def removeAuthorizedID(self, user_id):
-        """ remove user ID from list of authorized IDs """
-        # user = getUserByID(user_id)
-        # if not user:
-        #    app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
-        #    return 0
-
-        authorized_ids = self.getAuthorizedUserIDs()
-        if user_id in authorized_ids:
+        elif user_id in authorized_ids:
             authorized_ids.remove(user_id)
         else:
-            return 0
+            # nothing to do
+            return
 
         authorized_ids_string = ",".join(authorized_ids)
-
         db = self.db
-        cur = db.execute("UPDATE tournaments SET admin_ids=? WHERE tid=?", (authorized_ids_string, self.tid))
+        db.execute("UPDATE tournaments SET admin_ids=? WHERE tid=?", (authorized_ids_string, self.tid))
         db.commit()
 
-        return 0
+        audit_logger.info(f"{self.short_name} - Admin status updated: {user.short_name} ({user.user_id}) admin: {make_admin}")
+
+        return
 
     # takes in dictionary from POST and updates/creates score for single game
     # does not provide authorization check, that needs to be done pre-call
@@ -1471,24 +1416,21 @@ class Tournament(object):
             forfeit = None
 
         if not isinstance(score_b, int):
-            return -1
+            raise UpdateError("Black score is not an integer")
+        elif not isinstance(score_w, int):
+            raise UpdateError("White score is not an integer")
+        elif not black_tid:
+            raise UpdateError("Missing black team ID")
+        elif not white_tid:
+            raise UpdateError("Missing white team ID")
 
-        if not isinstance(score_w, int):
-            return -1
-
-        if not (white_tid > 0 and black_tid > 0):
-            return -3
-
-        cur = db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)",
-                         (black_tid, white_tid, score_w, score_b, self.tid, gid, pod, forfeit))
+        db.execute("INSERT OR IGNORE INTO scores (black_tid, white_tid, score_b, score_w,tid, gid, pod, forfeit) VALUES(?,?,?,?,?,?,?,?)",
+                   (black_tid, white_tid, score_w, score_b, self.tid, gid, pod, forfeit))
+        db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?",
+                   (score_b, score_w, forfeit, self.tid, gid))
         db.commit()
 
-        cur = db.execute("UPDATE scores SET score_b=?,score_w=?, forfeit=? WHERE tid=? AND gid=?",
-                         (score_b, score_w, forfeit, self.tid, gid))
-        db.commit()
-
-        # kick of seeded pods logic, will place teams into the next rounds of pods if this game is the last game to be played before that, else does nothing
-        self.popSeededPods()
+        self.shakeTree()
 
         return 1
 
@@ -1520,7 +1462,7 @@ class Tournament(object):
         params = self.getParams()
 
         seeded_pods = params.getParam('seeded_pods')
-        if seeded_pods is None:
+        if not seeded_pods or seeded_pods == "0":   # seeded pods could be none or 0, this should handle both
             return None
 
         if seeded_pods == 1:  # pods already seeded, nothing to do here
@@ -1630,88 +1572,106 @@ class Tournament(object):
         """ update a tournament configuration state. config_id keys the config that is changing, config_optoins is
         a dictionary with the optional necessary paraemters """
 
-        if config_id == "site_active":
-            switch = None
-            if "active_toggle" in config_options:
-                switch = config_options['active_toggle']
-            message = config_options['message']
-            if switch == "on":
-                self.updateSiteStatus(active=False, message=message)
+        if config_id == "blackout":
+            if config_options['enabled']:
+                self.setBlackout(blackout=True, message=config_options['message'])
             else:
-                self.updateSiteStatus(active=True)
+                self.setBlackout(blackout=False)
         elif config_id == "coin_flip":
             id_a = config_options['id_a']
             id_b = config_options['id_b']
             winner = config_options['winner']
             self.addCoinFlip(id_a, id_b, winner)
-        elif config_id == "site_message":
-            switch = None
-            if "active_toggle" in config_options:
-                switch = config_options['active_toggle']
-            message = config_options['message']
-            if switch == "on":
-                self.updateSiteMessage(message=message)
-            else:
-                self.updateSiteMessage(message=None)
-        elif config_id == "finalize":
-            audit_logger.info("Finalizing %s" % self.name)
+        elif config_id == 'tie_break':
+            self.addTieBreak(config_options)
+        elif config_id == "banner":
+            self.updateSiteMessage(enabled=config_options['enabled'], message=config_options['message'])
+        elif config_id == "admin":
+            self.updateAdminStatus(config_options['make_admin'], config_options['user_id'])
+        elif config_id == "timing_rules":
+            self.updateTimingRules(config_options['timing_rule_set'])
+        elif config_id == "finalize" and config_options['finalize']:
+            # nobody should be sending finalize: false but just to be safe
             self.finalize()
+            audit_logger.info("Finalizing %s" % self.name)
         else:
             raise UpdateError("Unknown config_id", message="I don't understand that config option, nothing changed")
 
         return
 
-    def addCoinFlip(self, tid_a, tid_b, winner):
+    def addTieBreak(self, tie_break):
         """ add outcome of coin flip """
-        val = "%s,%s,%s" % (tid_a, tid_b, winner)
+
+        try:
+            teams = list(map(int, tie_break['teams']))
+            tie_break['teams'] = teams
+        except ValueError:
+            raise UpdateError("notint", message="Teams in tie break must be IDs")
 
         params = self.getParams()
-
-        if params.getParam('coin_flips'):
-            val = "%s;%s" % (params.getParam('coin_flips'), val)
-            params.updateParam("coin_flips", val)
+        raw_tie_breaks = params.getParam('tie-breaks')
+        if raw_tie_breaks:
+            tie_break_json = json.loads(raw_tie_breaks)
         else:
-            params.addParam("coin_flips", val)
+            tie_break_json = {'tie-breaks': []}
 
-        self.popSeededPods()
+        # overkill but lets verify that there isn't already a tie for these teams
+        tie_break_list = tie_break_json['tie-breaks']
+        for e in tie_break_list:
+            if sorted(e['teams']) == tie_break['teams']:
+                raise UpdateError("duplicate", "there is already a tie break for these two teams")
 
-        return 0
+        tie_break_json['tie-breaks'].append(tie_break)
+        params.setParam('tie-breaks', json.dumps(tie_break_json))
 
-    def updateSiteStatus(self, active, message=None):
-        """ update site status (active/disbled) and set message if passed
+        self.shakeTree()
+        return
+
+    def setBlackout(self, blackout, message=None):
+        """ Set if tournameent should be blacked out (true/false) and set message if passed
         Used to disable schedule/standings in case where data is wrong and would cause confusion
-        Users will not be able to see schedule/standings until site is re-enabled """
+
+        Users will not be able to see schedule/standings until blackout is lifted
+
+        (used to be called site status)
+        """
         # delete first incase message is being updated
         params = self.getParams()
+        params.clearParam("blackout")
 
-        params.clearParam("site_disabled")
+        if not message:
+            message = "Tournament is temporary blacked out, please check back later."
 
-        if not active:
-            if not message:
-                message = "Site disabled temporarily, please check back later."
+        if blackout:
+            params.addParam("blackout", message)
 
-            params.addParam("site_disabled", message)
-
+        audit_logger.info(f"{self.short_name}: Blackout status set {blackout}")
         return 0
 
-    def getDisableMessage(self):
+    def getBlackoutMessage(self):
         """ Gets message of site is disabled """
         params = self.getParams()
 
-        disable_message = params.getParam("site_disabled")
+        disable_message = params.getParam("blackout")
 
         return disable_message
 
-    def updateSiteMessage(self, message):
-        """ Update site banner message, if message is None clears the message
-        site message should be used for annoucments or info (e.g. what time is beer served?), doesn't disable site """
+    def updateSiteMessage(self, enabled, message):
+        """ Set site message (aka banner) enable/disable and set message
+        site message should be used for annoucments or info (e.g. what time is beer served?), doesn't disable site
+        """
         params = self.getParams()
 
-        if message:
+        if enabled and not message:
+            raise UpdateError("nullvalue", message="Site message cannot be empty")
+
+        if enabled:
             params.clearParam("site_message")
             params.addParam("site_message", message)
+            audit_logger.info(f"{self.short_name}: Banner set: {message}")
         else:
             params.clearParam("site_message")
+            audit_logger.info(f"{self.short_name}: Banner cleared")
 
         return 0
 
@@ -1723,147 +1683,14 @@ class Tournament(object):
 
     def finalize(self):
         """ Finalize the tournament by setting active to 0 which should stop any updates to the tournament """
+        # don't allow finalizing when not all scores have been entered
+        games = self.getGames()
+        for game in games:
+            if not game.played:
+                raise UpdateError("notfinished", message="Cannot finalize without all scores")
+
         db = self.db
         db.execute("UPDATE tournaments SET active=0 WHERE tid=?", (self.tid,))
         db.commit()
 
         return True
-
-    ###########################################################################
-    # Functions for handling tournaments with replacement roundrobins
-    ###########################################################################
-    def redrawTeams(self, group, redraws):
-        """redraws team for replacement round-robin with POST data from `/admin/redraw`
-        # TODO: parse POST data first for redraw and make function generic
-        """
-        app.logger.debug("Redrawing teams for div %s with %s" % (group, redraws))
-
-        # everything looks good, cross your fingers and go
-        for draw in redraws:
-            self.redrawExecute(group, draw['redraw_id'], draw['team_id'])
-
-        # once the redraw is complete, we need to change the type on the played
-        # head to head games to E so they aren't counted towards standings
-        #
-        # TODO:  SHOULD ADD CHECK THAT THIS IS WHAT THE TOURNAMENTS WANTS ###
-        self.__trimRoundRobin(group)
-
-        flash("Redraw Complete!")
-        return 0
-
-    def getRedraw(self, div, pod=None):
-        """ get list of redraws required """
-        db = self.db
-        ids = []
-        # app.logger.debug("Checking for redraws for div=%s, pod=%s" % (div, pod))
-
-        if pod:
-            cur = db.execute('SELECT white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND pod=? AND tid=?', (pod, self.tid))
-        else:
-            cur = db.execute('SELECT white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND division=? AND tid=?', (div, self.tid))
-
-        for r in cur.fetchall():
-            match = re.search('^R(\w)(\d+)', r['white'])
-            if match:
-                if match.group(1) == div or match.group(1) == pod:
-                    ids.append(match.group(2))
-            match = re.search('^R(\w)(\d+)', r['black'])
-            if match:
-                if match.group(1) == div or match.group(1) == pod:
-                    ids.append(match.group(2))
-
-        return list(set(ids))
-
-    def redrawExecute(self, group, redraw_id, team_id):
-        """ executes and individual redraw
-        takes in division ID, redraw_id and team ID
-        # TODO: document how redraws work better
-        """
-        app.logger.debug("Execute redraw for division: %s - R%s is now T%s" % (group, redraw_id, team_id))
-
-        redraw_string = "R%s%s" % (group, redraw_id)
-        team_string = "T%s" % (team_id)
-
-        if not self.getTeam(team_id):
-            app.logger.debug("Team ID doesn't exist, somethings really broke")
-            return 1
-
-        db = self.db
-        cur = db.execute("UPDATE games SET white=? WHERE white=? AND tid=?", (team_string, redraw_string, self.tid))
-        db.commit()
-        cur = db.execute("UPDATE games SET black=? WHERE black=? AND tid=?", (team_string, redraw_string, self.tid))
-        db.commit()
-
-        return 0
-
-    def __getRedrawGameIDs(self, group):
-        """ returns a list of game IDs that are the redraws, currently unused function """
-        db = self.db
-        game_list = []
-
-        if self.isPod(group):
-            cur = db.execute('SELECT gid, white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND pod=? AND tid=?', (group, self.tid))
-        else:
-            cur = db.execute('SELECT gid, white, black FROM games WHERE (white LIKE "R%" or black LIKE "R%") AND division=? AND tid=?', (group, self.tid))
-
-        for r in cur.fetchall():
-            match = re.search('^R(\w)(\d+)', r['white'])
-            if match:
-                if match.group(1) == group:
-                    game_list.append(r['gid'])
-            match = re.search('^R(\w)(\d+)', r['black'])
-            if match:
-                if match.group(1) == group:
-                    game_list.append(r['gid'])
-
-        return list(set(game_list))
-
-    def __trimRoundRobin(self, group):
-        """ trims a round-robin down to only one head-to-head game per team ID
-        run after redraws have been populated and will change first head-to-head game to type E (exhibition) so its not included in standings
-        """
-        # TODO: logic for finding games to be cleaned up could be improved, currently looks in the scores because when finding teams from seeded roundrobins
-        # it got way to complicated
-
-        db = self.db
-
-        app.logger.debug("Trimming round-robin for group %s" % group)
-        if self.isPod(group):
-            team_list = self.getTeams(None, pod=group)
-        else:
-            team_list = self.getTeams(group)
-
-        app.logger.debug("Teams in group: %s" % team_list)
-
-        played_games = []
-        cur = db.execute("SELECT DISTINCT g.gid FROM games g, scores s WHERE g.gid=s.gid AND g.pod=s.pod AND s.pod=? AND g.tid=? ORDER BY g.gid",
-                         (group, self.tid))
-        for r in cur.fetchall():
-            played_games.append(r['gid'])
-
-        pod_games = []
-        cur = db.execute("SELECT gid FROM games where pod=? and tid=?", (group, self.tid))
-        for r in cur.fetchall():
-            pod_games.append(r['gid'])
-
-        for game in played_games:
-            """
-            1) Get the white id and black id from the scores table using the gid
-            2) convert ids int "T#" notation
-            3) select from schedule using that team notation (black and white)
-            4) if that game isn't in played either, then replace current game id with "E"
-            """
-            cur = db.execute("SELECT white_tid, black_tid FROM scores WHERE gid=? and tid=?", (game, self.tid))
-            this_game = cur.fetchone()
-            a = "T%s" % this_game['white_tid']
-            b = "T%s" % this_game['black_tid']
-
-            cur = db.execute("SELECT gid FROM games WHERE ((white=? AND black=?) OR (white=? AND black=?)) AND pod=? AND tid=?",
-                             (a, b, b, a, group, self.tid))
-            other_game = cur.fetchone()
-            if other_game and other_game['gid'] not in played_games:
-                app.logger.debug("Found h2h games between %s and %s, trimming game %s" % (a, b, game))
-                cur = db.execute("UPDATE games SET type='E' WHERE gid=? and tid=?", (game, self.tid))
-                db.commit()
-
-        return 0

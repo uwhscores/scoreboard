@@ -38,7 +38,7 @@ def test_api_connect(test_client):
 def test_api_auth(test_client):
     db = connect_db(test_client.application.config['DATABASE'])
 
-    new_user = {'email': "test_user@pytest.com", "short_name": "pytest", "site-admin": False, "admin": True}
+    new_user = {'email': "test_user@pytest.com", "short_name": "pytest", "site_admin": False, "admin": True}
     res = functions.addUser(new_user, db=db)
 
     assert res["success"] is True

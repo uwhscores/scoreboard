@@ -1,0 +1,204 @@
+{% extends "/admin/common/admin_layout.html.j2" %}
+
+{% block nav %}
+	{% include "admin/common/admin_nav.html.j2" with context %}
+{% endblock nav %}
+
+{% block main %}
+
+<div id="page_body" class="container">
+	<div class="row page-header">
+		<div class="col-8">
+			<div class="">
+			<h1>Users</h1>
+			</div>
+		</div>
+		<div class="col-4">
+			<button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#createUserModal">
+				<i class="bi bi-person-plus-fill" style="font-size: 1.25rem;"></i>  Create User
+			</button>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-12">
+		{% with messages = get_flashed_messages() -%}
+			{% if messages %}
+				{% set last="" -%}
+				<div class="alert alert-danger" role="alert">
+				{% for message in messages %}
+					{% if message != last -%}
+						{{ message }}</br>
+					{%- endif %}
+					{% set last=message %}
+				{% endfor %}
+				</div>
+			{% endif %}
+		{%- endwith %}
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-12">
+			<div class="table-responsive">
+			<table id="usersTable" class="table table-sm table-striped table-hover text-nowrap">
+				<thead>
+					<tr>
+						<th>Short Name</th>
+						<th>Email</th>
+						<th>Site Admin</th>
+						<th>Admin</th>
+						<th>Active</th>
+						<th>Reset</th>
+						<th>Last Login</th>
+						<th>Date Created</th>
+					</tr>
+				</thead>
+				<tbody>
+				{% for u in users -%}
+					<tr>
+						<td><a href="/admin/users/{{u.user_id}}">{{ u.short_name }}</a></td>
+						<td>{{ u.email }}</td>
+						<td>
+							<div class="form-check form-switch">
+								{% if u.site_admin -%}
+								{% set protect_admin="disabled" %}
+								<input class="form-check-input" type="checkbox" id="{{u.user_id}}-site-admin" disabled checked>
+								{% else -%}
+								{% set protect_admin="" %}
+								<input class="form-check-input" type="checkbox" id="{{u.user_id}}-site-admin" disabled>
+								{% endif -%}
+							</div>
+						</td>
+						<td>
+							<div class="form-check form-switch">
+								{% if u.admin -%}
+								<input class="form-check-input admin-toggle" type="checkbox" id="{{u.user_id}}-admin" user-id="{{u.user_id}}" {{protect_admin}} checked>
+								{% else -%}
+								<input class="form-check-input admin-toggle" type="checkbox" id="{{u.user_id}}-admin" user-id="{{u.user_id}}" {{protect_admin}}>
+								{% endif -%}
+							</div>
+						</td>
+						<td>
+							<div class="form-check form-switch">
+								{% if u.active -%}
+								<input class="form-check-input active-toggle" type="checkbox" id="{{u.user_id}}-active" user-id="{{u.user_id}}" {{protect_admin}} checked>
+								{% else -%}
+								<input class="form-check-input active-toggle" type="checkbox" id="{{u.user_id}}-active" user-id="{{u.user_id}}" {{protect_admin}}>
+								{% endif -%}
+							</div>
+						</td>
+						<td>
+							<button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#resetPasswordModal" user-id="{{u.user_id}}">
+								<i class="bi bi-unlock-fill"></i>
+							</button>
+						</td>
+
+						{% if u.last_login -%}
+						<td>{{ u.last_login.strftime('%Y-%m-%d')  }}</td>
+						{% else -%}
+						<td> - - - </td>
+						{% endif -%}
+						<td>{{ u.date_created.strftime('%Y-%m-%d')  }}</td>
+					</tr>
+				{% endfor %}
+				</tbody>
+			</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- add user modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createUserModalLabel">Create User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+				<form id="createUserForm">
+					<div class="mb-3">
+				    <label for="inputEmail" class="form-label">Email address</label>
+				    <input type="email" name="email" class="form-control" id="inputEmail" aria-describedby="emailHelp">
+				  </div>
+					<div class="mb-3">
+						<label for="inputUserName" class="form-label">Short Name</label>
+						<input type="text" name="shortName" class="form-control" id="inputShortName" aria-describedby="userNameHelp">
+					</div>
+				  <div class="mb-3 form-check">
+				    <input type="checkbox" class="form-check-input" name="isSiteAdmin" id="inputSiteAdmin" disabled>
+				    <label class="form-check-label" for="siteAdmin">Make UWHScores Site Admin</label>
+				  </div>
+					<div class="mb-3 form-check">
+						<input type="checkbox" class="form-check-input" name="isAdmin" id="inputTournamentAdmin">
+						<label class="form-check-label" for="tournamentAdmin">Make Tournament Admin</label>
+					</div>
+			</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Create User</button>
+      </div>
+			</form>
+    </div>
+  </div>
+</div>
+
+
+<!-- new user created modal -->
+<div class="modal fade" id="newUserModal" tabindex="-1" aria-labelledby="newUserModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newUserModalLabel">New User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+				<div class="well well-lg" id="newUserMessage">
+					<h3 id="newUserHeader">Welcome to UWH Scores!</h3>
+					<p>
+						To login, you will need to set your password using the link below.
+						After you do that you'll be able to login using your email <span id=newEmail>email</span>
+						and the newly set password.
+					</p>
+					<p>
+						If you are having trouble with your account please email me at
+						<a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+					</p>
+					<p>
+						<a id=newTokenLink href="/login/reset?token=newToken">https://uwhscores.com/login/reset?token=mewToken</a>
+					</p>
+					<p>
+						If you have questions about how the site works please read the <a href="/faq">general FAQ</a>
+						and read the <a href="/admin/welcome">Admin Instructions</a>.
+					</p>
+				</div>
+
+			</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Finish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset user password modal -->
+<div class="modal" id="resetPasswordModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Reset User Password</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Click continue to reset a users password. They will need to follow the new link to setup a new password.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button id="resetPasswordContinue" type="button" class="btn btn-primary">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main %}

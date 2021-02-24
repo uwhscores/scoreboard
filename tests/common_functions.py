@@ -46,6 +46,8 @@ def add_tournament(db, tid, name=None, short_name=None, start_date=None, end_dat
     test_t = Tournament(tid, name, short_name, start_date, end_date, location, active, db)
     test_t.commitToDB()
 
+    return test_t
+
 
 def load_schedule(schedule_name, tid, db):
     """ fill in a tournament shedule """
@@ -83,7 +85,7 @@ def add_game(db, tid, game):
         game['pod'] = None
 
     db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-               (tid, game['game_id'], game['day'], game['start_time'], game['pool'], game['black'], game['white'], game['div'], game['pod'], game['type'], None))
+               (tid, game['game_id'], game['day'], game['start_time'], game['pool'], json.dumps(game['black']), json.dumps(game['white']), game['div'], game['pod'], game['type'], None))
     db.commit()
 
 

@@ -1,0 +1,61 @@
+{
+  "title": "Timing Rules API Post",
+  "type": "object",
+  "definitions": {
+    "banner": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "message": {"type": ["null", "string"]}
+      },
+      "required": ["enabled", "message"],
+      "additionalProperties": false
+    },
+    "blackout": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "message": {"type": ["null", "string"]}
+      },
+      "required": ["enabled", "message"],
+      "additionalProperties": false
+    },
+    "admin": {
+      "type": "object",
+      "properties": {
+        "make_admin": {"type": "boolean"},
+        "user_id": {"type": "string"}
+      },
+      "required": ["make_admin", "user_id"],
+      "additionalProperties": false
+    },
+    "tie-break": {
+      "type": "object",
+      "properties": {
+        "teams": {"type": "array"},
+        "winner": {"type": "integer"}
+      },
+      "required": ["teams", "winner"],
+      "additionalProperties": false
+    },
+    "finalize": {
+      "type": "object",
+      "properties": {
+        "finalize": {"type": "boolean"}
+      },
+      "requred": ["finalize"],
+      "additionalProperties": false
+    }
+  },
+  "properties":{
+    "config_name": {"type": "string"},
+    "banner" : {"type": "object", "$ref": "#/definitions/banner"},
+    "blackout" : {"type": "object", "$ref": "#/definitions/blackout"},
+    "admin":  {"type": "object", "$ref": "#/definitions/admin"},
+    "tie_break": {"type": "object", "$ref": "#/definitions/tie-break"},
+    "finalize": {"type": "object", "$ref": "#/definitions/finalize"},
+    "timing_rules": {"type": "object", "$ref": "file:scoreboard/json_schemas/timing_rule_set.json" }
+  },
+  "required": ["config_name"],
+  "additionalProperties": false
+}
