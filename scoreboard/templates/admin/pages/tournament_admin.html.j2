@@ -45,14 +45,14 @@
 
 		<div class="row mb-3">
 		  <div class="col-md-8">
-
-		    <div class="card mb-3">
+				<div class="card mb-3">
 		      <div class="card-header">
-						<a class="btn btn-primary float-end" href="/admin/t/{{tournament.short_name}}/games" role="button">Update Scores <i class="bi bi-box-arrow-in-right"></i></a>
-		        <h4 class="card-title"><i class="bi bi-pencil-square px-2"></i> Update Scores</h4>
-		      </div>
+						<h4 class="card-title"><i class="bi bi-sliders px-2"></i> Actions</h4>
+					</div>
+					<div class="card-body">
+						<a class="btn btn-primary w-100" href="/admin/t/{{tournament.short_name}}/games" role="button"><i class="bi bi-pencil-square px-2"></i> Update Scores</a>
+					</div>
 		    </div>
-
 		    <div class="card mb-3">
 		      <div class="card-header">
 		        <h4 class="card-title"><i class="bi bi-chat-left-dots px-2"></i> Site Banner</h4>
@@ -120,10 +120,13 @@
 
 				<div class="card mb-3">
 					<div class="card-header">
-						<h4 class="card-title"><i class="bi bi-clock px-2"></i>Manage Game Timing</h4>
+						<h4 class="card-title"><i class="bi bi-clock px-2"></i>Navisjon Integrations</h4>
 					</div>
 					<div class="card-body">
-						<p><a class="btn btn-primary" href="/admin/t/{{tournament.short_name}}/gametiming" role="button">View Timing Rules</a></p>
+						<a class="btn btn-primary w-100 mb-3" href="/admin/t/{{tournament.short_name}}/gametiming" role="button"><i class="bi bi-binoculars px-2"></i>View Timing Rules</a>
+						<p class="text-muted">
+							Configurations for when the Navisjon deck timing is being used.
+						</p>
 					</div>
 				</div>
 
@@ -134,7 +137,7 @@
 					</div>
 
 					<div class="card-body">
-						<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finalizeModal">
+						<button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#finalizeModal">
 						<i class="bi bi-check2-circle px-2"></i> Finalize Tournament
 						</button>
 					</div>

@@ -3,26 +3,29 @@
   --bs-primary: #337ab7;
 }
 
-body {
+/* body {
   min-height: 75rem;
-  padding-top: 4.5rem;
-}
+} */
 
 a {
   color: #337ab7;
   text-decoration: none;
 }
 
+#page_body {
+  padding-top: 1rem;
+}
+
 #indexLogo {
   max-width: 90%;
 }
-.footer {
+/* .footer {
   position: relative;
-  /* margin-top: -3em; /* negative value of footer height */
+  /* margin-top: -3em; /* negative value of footer height 
   height: 2em;
   clear:both;
   padding-top: 1em;
-}
+} */
 
 /* .tournament-header { */
 .page-header {
@@ -199,6 +202,14 @@ pre.timing-json  {
   text-align: left;
 }
 @media screen and (max-width: 992px) {
+  /* #nav-tabTournaments .nav-item { */
+  #nav-tabTournaments a {
+    font-size: 1em;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
   .team-flag {
 		max-width: 160px;
 	}
@@ -207,7 +218,7 @@ pre.timing-json  {
     height: 16px;
   }
 
-  .schedule-table {
+  .schedule-table, .standings-table, .placings-table, .roster-table {
     font-size: .75em;
   }
 

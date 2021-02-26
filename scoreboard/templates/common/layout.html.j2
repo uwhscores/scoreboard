@@ -40,16 +40,18 @@
 
 
 </head>
-<body>
+<body class="d-flex flex-column vh-100">
 	{% autoescape false %}
-	{% block nav %}{% endblock %}
+  <header>
+    {% block nav %}{% endblock %}
+  </header>
 
-  <main>
+  <main class="flex-shrink-0">
     {% block main %}{% endblock %}
   </main>
 
 	{% endautoescape %}
-	<footer class="footer">
+	<footer class="footer mt-auto">
 		<div class="container">
 			<p class="text-muted footer-text">&copy; 2021 UWHScores.com <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
 		</div>
