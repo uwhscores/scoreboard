@@ -2,6 +2,7 @@ import re
 
 from common_functions import connect_db, add_tournament, load_schedule
 from scoreboard import functions
+from scoreboard.models import User
 
 
 def test_admin_connect(test_client):
@@ -15,13 +16,11 @@ def test_admin_connect(test_client):
     test_client.application.config['TESTING'] = True
 
     new_user = {'email': "test_user@pytest.com", "short_name": "pytest", "site_admin": False, "admin": True}
-    res = functions.addUser(new_user, db=db)
+    user = User.create(new_user, db=db)
 
-    assert res["success"] is True
-    user_id = res["user_id"]
-    token = res["token"]
+    assert user is not None
+    user_id = user.user_id
     assert user_id is not None
-    assert token is not None
 
     test_user = functions.getUserByID(user_id)
     test_user.setPassword("pytest123")
@@ -67,7 +66,7 @@ def test_admin_users(test_client):
     response = test_client.post("/admin/users", json={'user': new_user1})
     assert response.status_code == 200
     assert response.json['success'] is True
-    assert response.json['user']['token'] is not None
+    assert response.json['token'] is not None
 
     new_user1_id = functions.getUserID("test01@test.com")
     assert new_user1_id is not None

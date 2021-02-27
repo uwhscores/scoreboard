@@ -8,8 +8,9 @@ import re
 # class used for calculating standings, stat object has all the values
 # for the things standings are calculator against
 
-from scoreboard.exceptions import UpdateError
 from scoreboard import audit_logger
+from scoreboard.exceptions import UpdateError
+
 
 class Stats(object):
     """ Class to hold all the stats for a given team in a given group (division or pod) a single team may have multiple stats
@@ -354,6 +355,7 @@ class User(object):
 
     def serialize(self):
         return {
+            'user_id': self.user_id,
             'short_name': self.short_name,
             'email': self.email,
             'date_created': self.date_created,
@@ -362,6 +364,57 @@ class User(object):
             'admin': self.admin,
             'active': self.active
         }
+
+    @staticmethod
+    def create(new_user, db):
+        """ Static method for creating a new user in the database
+        returns user object for newly created user if succesfull
+        raises UpdateError exception when fails
+        """
+
+        # check if email looks like an email, dirty regex but good enough for us
+        if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$', new_user['email']):
+            raise UpdateError("bademail", message="Email address does not pass validation")
+
+        # check that email is unique
+        cur = db.execute("SELECT user_id FROM users WHERE email=?", (new_user['email'],))
+        if cur.fetchone():
+            raise UpdateError("emailexists", message="Email already exists, maybe try resetting the password?")
+
+        cur = db.execute("SELECT user_id FROM users WHERE short_name LIKE ?", (new_user['short_name'],))
+        if cur.fetchone():
+            raise UpdateError("namexists", message="Short name already in use, sorry")
+
+        while True:
+            # need to ensure unique ID, so generate and check until unique
+            user_id = b64encode(urandom(6), b"Aa").decode("utf-8")
+            cur = db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
+            if not cur.fetchone():
+                break
+
+        while True:
+            token = b64encode(urandom(30), b"-_").decode("utf-8")
+            cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
+            if not cur.fetchone():
+                break
+
+        hashed = bcrypt.hashpw(token.encode("utf-8"), bcrypt.gensalt())
+
+        cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active, reset_token) VALUES (?,?,?,?,1,?)",
+                         (user_id, new_user['short_name'], new_user['email'], hashed, token))
+
+        db.commit()
+
+        if 'site_admin' in new_user and new_user['site_admin'] is True:
+            cur = db.execute("UPDATE users SET site_admin=1 WHERE user_id=?", (user_id,))
+            db.commit()
+
+        if 'admin' in new_user and new_user['admin'] is True:
+            cur = db.execute("UPDATE users SET admin=1 WHERE user_id=?", (user_id,))
+            db.commit()
+
+        user_obj = User(user_id, db)
+        return user_obj
 
     def is_authenticated(self):
         return True
@@ -405,6 +458,15 @@ class User(object):
         db.commit()
 
         return token.decode("utf-8")
+
+    def getResetToken(self):
+        """ returns an existing password reset token for the user if one exists """
+        cur = self.db.execute("SELECT reset_token FROM users WHERE user_id=?", (self.user_id,))
+        token = cur.fetchone()
+        if token:
+            return token['reset_token']
+        else:
+            return None
 
     def setActive(self, active):
         if self.site_admin:

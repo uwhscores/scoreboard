@@ -4,9 +4,10 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 import json
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, addUser, validateResetToken, \
-                                 validateJSONSchema, getPlayerByID
 from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
+from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, validateResetToken, \
+                                 validateJSONSchema, getPlayerByID, getDB
+from scoreboard.models import User
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -374,11 +375,11 @@ def createUser():
         raise InvalidUsage(message, status_code=400)
 
     try:
-        res = addUser(user_json['user'])
+        new_user = User.create(user_json['user'], getDB())
     except UpdateError as e:
         raise InvalidUsage(e.message, status_code=400)
 
-    return jsonify(success=True, user=res)
+    return jsonify(success=True, user=new_user.serialize(), token=new_user.getResetToken())
 
 # update user route
 @app.route("/admin/users/<user_id>", methods=['PUT'])
