@@ -2,7 +2,10 @@ from base64 import b64encode
 from datetime import datetime
 from flask import current_app as app
 from os import urandom
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 import bcrypt
+import os
 import re
 
 # class used for calculating standings, stat object has all the values
@@ -366,7 +369,7 @@ class User(object):
         }
 
     @staticmethod
-    def create(new_user, db):
+    def create(new_user, db, send_welcome_email=False):
         """ Static method for creating a new user in the database
         returns user object for newly created user if succesfull
         raises UpdateError exception when fails
@@ -515,6 +518,64 @@ class User(object):
 
     def __genResetToken(self):
         return b64encode(urandom(30), b"-_")
+
+    def sendWelcomeEmail(self):
+        """ send a new user their welcome email with password reset link, uses sendgrid api """
+
+        if "SENDGRID_API_KEY" not in os.environ:
+            app.logger.info("No sendgrid API key, can't send emails")
+            raise UpdateError("noapikey", message="Unable to send email, api key not configured")
+
+        to_email = self.email
+        if app.config['DEBUG']:
+            app.logger.debug(f"Sending email to info instead of {to_email}")
+            to_email = "info@uwhscores.com"
+
+        welcome_message = Mail(
+            # from_email=Mail.From('welcome@uwhscores.com', 'UWHScores'),
+            from_email="info@uwhscores.com",
+            to_emails=to_email,
+            subject="Welcome to UWHScores.com",
+            html_content=self.__genEmailHTML()
+            )
+
+        try:
+            sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+            app.logger.debug(f"Sending new user email to {to_email}")
+            response = sg.send(welcome_message)
+            app.logger.debug(f"Sendgrid response: {response.status_code}")
+        except Exception as e:
+            app.logger.info(f"Sendgrid email failed {e}")
+            raise UpdateError("failedsent", message="Email failed to send")
+
+    def __genEmailHTML(self):
+        welcome_html = f"""
+        <h3>Welcome to UWH Scores!</h3>
+        <p>
+          An admin account has been created for you on UWHScores for this email: {self.email}. <br/>
+          To login, you will need to set your password using the link below. Once you've set your password
+          you'll be able to login and administer your tournaments.
+        </p>
+        <p>
+          <h4><a href="https://uwhscores.com/login/reset?token={self.getResetToken()}">Set your new password here</a></h4>
+        </p>
+        <p>
+          If you are having trouble with your account please email
+          <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
+        </p>
+        <p>
+          After you've set your password you can login here <a href="https://uwhscores.com/admin">Admin Login</a> or by navigating to the admin page from the
+          top page navigation menu.
+        </p>
+        <p>
+          If you have questions about how the site works please read the <a href="https://uwhscores.com/faq">general FAQ</a>.
+        </p>
+        <p>
+          Welcome to Underwater Hockey Scores. -- Jim
+        </p>
+        """
+
+        return welcome_html
 
 
 class Player(object):

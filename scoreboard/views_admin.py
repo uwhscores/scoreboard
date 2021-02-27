@@ -379,7 +379,13 @@ def createUser():
     except UpdateError as e:
         raise InvalidUsage(e.message, status_code=400)
 
-    return jsonify(success=True, user=new_user.serialize(), token=new_user.getResetToken())
+    try:
+        new_user.sendWelcomeEmail()
+        email_error = None
+    except UpdateError as e:
+        email_error = e.message
+
+    return jsonify(success=True, user=new_user.serialize(), token=new_user.getResetToken(), email_error=email_error)
 
 # update user route
 @app.route("/admin/users/<user_id>", methods=['PUT'])
