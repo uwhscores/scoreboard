@@ -443,7 +443,7 @@ class User(object):
 
     def createResetToken(self, by_admin=False):
         """ Generate a password reset token for the user and return the token
-        Optional squash_password to set the users password to a random value
+        Optional by_admin to set the users password to a random value and active the account
         """
         db = self.db
 
@@ -454,7 +454,7 @@ class User(object):
         audit_logger.info(f"Password Reset Token Requested for {self.short_name}({self.user_id}). By admin: {by_admin}")
         if by_admin:
             # when requestion by admin, squash password and activate account, do this first since setting the password wipes out any existing tokens
-            audit_logger.info(f"Squashing password and activing account {self.short_name}({self.user_id}")
+            audit_logger.info(f"Squashing password and activing account {self.short_name}({self.user_id})")
             self.setPassword(b64encode(urandom(12)).decode('utf-8'))
             self.setActive(True)
 

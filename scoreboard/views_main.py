@@ -373,4 +373,12 @@ def ratelimit_handler(e):
     if request.path.startswith("/api"):
         return jsonify(message="ratelimit exceeded %s" % e.description, code=429), 429
     else:
-        return render_template("errors/error.html.j2", error_code="429", message=e.name), 429
+        return render_template("errors/error.html.j2", error_code="429", error_message=e.description), 429
+
+
+@app.errorhandler(400)
+def clienterror_handler(e):
+    if request.path.startswith("/api"):
+        return jsonify(message=e.description, code=400), 400
+    else:
+        return render_template("errors/error.html.j2", error_code="400", error_message=e.description), 400

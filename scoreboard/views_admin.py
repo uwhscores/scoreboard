@@ -1,7 +1,6 @@
 from flask import current_app as app
 from flask import jsonify, request, redirect, render_template, flash, abort
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-import json
 
 from scoreboard import global_limiter, audit_logger
 from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
@@ -199,6 +198,7 @@ def updateScore(short_name, game_id):
     # return redirect("/admin/t/%s/games" % short_name, code=302)
     return jsonify(success=True, url=f"/admin/t/{short_name}/games")
 
+
 @app.route('/admin/t/<short_name>/gametiming')
 @login_required
 def view_gametimerules(short_name):
@@ -288,9 +288,11 @@ def pw_reset():
         token = request.args.get('token')
         user_id = validateResetToken(token)
 
-    # token wasn't supplied or doesn't belong to a user
-    if not token or not user_id:
-        return render_template('errors/error.html.j2', error_message="Invalid or missing token")
+    if not token:
+        abort(400, "Missing or invalid reset token")
+
+    if not user_id:
+        return render_template('admin/pages/forgot_password.html.j2', message="Can't find token, it may be expired. You can request a new one below.")
 
     return render_template('admin/pages/password_reset.html.j2', token=token)
 

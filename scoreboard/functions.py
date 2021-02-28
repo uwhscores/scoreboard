@@ -103,8 +103,6 @@ def getUserID(email):
     row = cur.fetchone()
     cur.close()
 
-    user_id = None
-
     if row:
         return row['user_id']
     else:
@@ -125,6 +123,7 @@ def getUserByID(user_id):
 
 
 def getUserByEmail(email):
+    """ gets user Object from email """
     db = getDB()
 
     cur = db.execute("SELECT user_id FROM users WHERE email=?", (email,))
