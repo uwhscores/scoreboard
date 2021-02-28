@@ -380,7 +380,7 @@ def createUser():
         raise InvalidUsage(e.message, status_code=400)
 
     try:
-        new_user.sendWelcomeEmail()
+        new_user.sendUserEmail(template="welcome")
         email_error = None
     except UpdateError as e:
         email_error = e.message
@@ -424,12 +424,18 @@ def updateUser(user_id):
 
     token = None
     if 'reset_password' in user_json['user'] and user_json['user']['reset_password'] is True:
-        token = user.resetUserPass()
+        token = user.createResetToken(by_admin=True)
+        try:
+            user.sendUserEmail(template="pwreset", pwreset_by_admin=True)
+            email_error = None
+        except UpdateError as e:
+            email_error = e.message
         audit_logger.info("Password reset for %s(%s) by %s(%s)" % (user.short_name, user.user_id, current_user.short_name, current_user.user_id))
 
     response = {'success': True, 'user': user.serialize()}
     if token:
         response['token'] = token
+        response['email_error'] = email_error
     return jsonify(response)
 
 

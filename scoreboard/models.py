@@ -395,17 +395,11 @@ class User(object):
             if not cur.fetchone():
                 break
 
-        while True:
-            token = b64encode(urandom(30), b"-_").decode("utf-8")
-            cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
-            if not cur.fetchone():
-                break
+        # Generate a bcrypt hash of some randomness to store as the users password, don't want password=null
+        random_password = bcrypt.hashpw(b64encode(urandom(18)), bcrypt.gensalt())
 
-        hashed = bcrypt.hashpw(token.encode("utf-8"), bcrypt.gensalt())
-
-        cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active, reset_token) VALUES (?,?,?,?,1,?)",
-                         (user_id, new_user['short_name'], new_user['email'], hashed, token))
-
+        cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active) VALUES (?,?,?,?,1)",
+                         (user_id, new_user['short_name'], new_user['email'], random_password))
         db.commit()
 
         if 'site_admin' in new_user and new_user['site_admin'] is True:
@@ -417,13 +411,14 @@ class User(object):
             db.commit()
 
         user_obj = User(user_id, db)
+        user_obj.createResetToken()  # generate an initial reset token
         return user_obj
 
     def is_authenticated(self):
         return True
 
     def is_active(self):
-        return True
+        return self.active
 
     def is_anonymous(self):
         return False
@@ -434,40 +429,54 @@ class User(object):
     def setPassword(self, password):
         db = self.db
 
+        if len(password) < 8:
+            raise UpdateError("toshort", message="Password must be at least 8 characters")
+
         password = password.encode('utf-8')
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
 
-        db.execute("UPDATE users SET password=?, reset_token=null, failed_logins=0 WHERE user_id=?", (hashed, self.user_id))
+        db.execute("UPDATE users SET password=?, reset_token=null, reset_token_valid_til=null, reset_token_create_on=null, failed_logins=0 WHERE user_id=?",
+                   (hashed, self.user_id))
         db.commit()
 
         return 0
 
-    def resetUserPass(self):
+    def createResetToken(self, by_admin=False):
+        """ Generate a password reset token for the user and return the token
+        Optional squash_password to set the users password to a random value
+        """
         db = self.db
 
         if self.site_admin:
             # don't allow disabling site admin accounts
             raise UpdateError("protected", "Cannot disable site admin accounts")
 
+        audit_logger.info(f"Password Reset Token Requested for {self.short_name}({self.user_id}). By admin: {by_admin}")
+        if by_admin:
+            # when requestion by admin, squash password and activate account, do this first since setting the password wipes out any existing tokens
+            audit_logger.info(f"Squashing password and activing account {self.short_name}({self.user_id}")
+            self.setPassword(b64encode(urandom(12)).decode('utf-8'))
+            self.setActive(True)
+
         while True:
-            token = self.__genResetToken()
+            token = b64encode(urandom(18), b"-_").decode("utf-8")
             cur = db.execute("SELECT user_id FROM users WHERE reset_token=?", (token,))
             if not cur.fetchone():
                 break
 
-        hashed = bcrypt.hashpw(token, bcrypt.gensalt())
+        self.db.execute("UPDATE users SET reset_token=?, reset_token_create_on=datetime('now'), reset_token_valid_til=datetime('now','+1 day') WHERE user_id=?",
+                        (token, self.user_id))
 
-        cur = db.execute("UPDATE users SET password=?, reset_token=?, active=1 WHERE user_id=?", (hashed, token.decode('utf-8'), self.user_id))
         db.commit()
 
-        return token.decode("utf-8")
+        return token
 
     def getResetToken(self):
-        """ returns an existing password reset token for the user if one exists """
+        """ retrieve an existing password reset token if one exists """
         cur = self.db.execute("SELECT reset_token FROM users WHERE user_id=?", (self.user_id,))
-        token = cur.fetchone()
-        if token:
-            return token['reset_token']
+        row = cur.fetchone()
+        if row:
+            return row['reset_token']
         else:
             return None
 
@@ -485,7 +494,7 @@ class User(object):
         db.execute("UPDATE users SET active=? WHERE user_id=?", (active, self.user_id,))
         db.commit()
 
-        app.logger.info(f"User update: set {self.user_id} active {active}")
+        audit_logger.info(f"User update: set {self.user_id} active {active}")
         return
 
     def setAdmin(self, admin_status):
@@ -497,7 +506,7 @@ class User(object):
         db.execute("UPDATE users SET admin=? WHERE user_id=?", (admin_status, self.user_id))
         db.commit()
 
-        app.logger.info(f"User update: set {self.user_id} admin {admin_status}")
+        audit_logger.info(f"User update: set {self.user_id} admin {admin_status}")
         return
 
     def setSiteAdmin(self, admin_status):
@@ -509,17 +518,14 @@ class User(object):
         db.execute("UPDATE users SET site_admin=? WHERE user_id=?", (admin_status, self.user_id,))
         db.commit()
 
-        app.logger.info(f"User update: set {self.user_id} site-admin {admin_status}")
+        audit_logger.info(f"User update: set {self.user_id} site-admin {admin_status}")
 
         return
 
     def __genUserKey(self):
         return b64encode(urandom(9), b"Aa")
 
-    def __genResetToken(self):
-        return b64encode(urandom(30), b"-_")
-
-    def sendWelcomeEmail(self):
+    def sendUserEmail(self, template, pwreset_by_admin=False):
         """ send a new user their welcome email with password reset link, uses sendgrid api """
 
         if "SENDGRID_API_KEY" not in os.environ:
@@ -531,24 +537,40 @@ class User(object):
             app.logger.debug(f"Sending email to info instead of {to_email}")
             to_email = "info@uwhscores.com"
 
-        welcome_message = Mail(
-            # from_email=Mail.From('welcome@uwhscores.com', 'UWHScores'),
-            from_email="info@uwhscores.com",
-            to_emails=to_email,
-            subject="Welcome to UWHScores.com",
-            html_content=self.__genEmailHTML()
-            )
+        if template == "welcome":
+            app.logger.debug(f"Building new user email for {to_email}")
+            email_message = Mail(
+                from_email="info@uwhscores.com",
+                to_emails=to_email,
+                subject="Welcome to UWHScores.com",
+                html_content=self.__genWelcomeEmailHTML()
+                )
+        elif template == "pwreset":
+            app.logger.debug(f"Building password reset email for {to_email}")
+            email_message = Mail(
+                from_email="info@uwhscores.com",
+                to_emails=to_email,
+                subject="UWHScores Password Reset Request",
+                html_content=self.__genResetEmailHTML(by_admin=pwreset_by_admin)
+                )
+        else:
+            raise UpdateError("unknowntemplate", message=f"Template {template} not found")
 
         try:
             sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-            app.logger.debug(f"Sending new user email to {to_email}")
-            response = sg.send(welcome_message)
+            app.logger.debug(f"Sending email to {to_email}")
+            response = sg.send(email_message)
             app.logger.debug(f"Sendgrid response: {response.status_code}")
         except Exception as e:
             app.logger.info(f"Sendgrid email failed {e}")
             raise UpdateError("failedsent", message="Email failed to send")
 
-    def __genEmailHTML(self):
+    def __genWelcomeEmailHTML(self):
+        """ Welcome email HTML body helper function """
+        token = self.getResetToken()
+        if not token:
+            raise UpdateError("notoken", message="Cannot find password reset token for welcome email")
+
         welcome_html = f"""
         <h3>Welcome to UWH Scores!</h3>
         <p>
@@ -557,7 +579,7 @@ class User(object):
           you'll be able to login and administer your tournaments.
         </p>
         <p>
-          <h4><a href="https://uwhscores.com/login/reset?token={self.getResetToken()}">Set your new password here</a></h4>
+          <h4><a href="https://uwhscores.com/login/reset?token={token}">Set your new password here</a></h4>
         </p>
         <p>
           If you are having trouble with your account please email
@@ -576,6 +598,34 @@ class User(object):
         """
 
         return welcome_html
+
+    def __genResetEmailHTML(self, by_admin=False):
+        """ Password reset HTML body helper function """
+        token = self.getResetToken()
+        if not token:
+            raise UpdateError("notoken", message="Cannot find password reset token for welcome email")
+
+        reset_html = "<h3>UWHScores Password Reset</h3>\n"
+
+        if by_admin:
+            reset_html += f"""
+            <p>The password  for this email ({self.email}) has be reset by an administrator.
+            You <strong>must</strong> set a new password at the link below, your existing password has been disabled.</p>
+            """
+        else:
+            reset_html += f"""
+            <p>A password reset was requested for this email ({self.email}). You can follow the link below to set a new UWHScores password</p>
+            """
+        reset_html += f"""
+        <p><h4><a href="https://uwhscores.com/login/reset?token={token}">Click here to reset your password</a></h4></p>
+        """
+
+        if not by_admin:
+            reset_html += f"""
+            <p>If you did not request a password reset please contact <a href="mailto:info@uwhscores.com">info@uwhscores.com</a> </p>
+            """
+
+        return reset_html
 
 
 class Player(object):

@@ -91,7 +91,7 @@ CREATE TABLE users (
 	site_admin INTEGER NOT NULL DEFAULT 0,
 	admin INTEGER NOT NULL DEFAULT 0,
 	passwd_reset INTEGER NOT NULL DEFAULT 0,
-    reset_token TEXT
+  reset_token TEXT
 );
 
 CREATE TABLE tokens (
@@ -119,3 +119,6 @@ CREATE TABLE rosters (
 );
 
 ALTER TABLE players ADD COLUMN date_updated timestamp;
+
+ALTER TABLE users ADD COLUMN reset_token_create_on timestamp NULL DEFAULT NULL;
+ALTER TABLE users ADD COLUMN reset_token_valid_til timestamp NULL DEFAULT NULL;

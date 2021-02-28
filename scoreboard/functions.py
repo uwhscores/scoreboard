@@ -1,14 +1,13 @@
-from base64 import b64encode
+from datetime import datetime
 from flask import current_app as app
 from jsonschema import validate, ValidationError, RefResolutionError
 import bcrypt
 import json
 import os
-import re
 import sqlite3
 from scoreboard.tournament import Tournament
 from scoreboard.models import User, Player
-from scoreboard.exceptions import UserAuthError, UpdateError
+from scoreboard.exceptions import UserAuthError
 
 
 def connectDB():
@@ -214,14 +213,18 @@ def validateResetToken(token):
 
     db = getDB()
 
-    cur = db.execute("SELECT user_id FROM users where reset_token=? AND active=1", (token,))
+    cur = db.execute("SELECT user_id, reset_token_valid_til FROM users WHERE reset_token=? AND active=1", (token,))
     row = cur.fetchone()
     cur.close()
-
-    if row:
-        return row['user_id']
-    else:
+    if not row:
         return None
+
+    app.logger.debug(f"Now is {datetime.now()}")
+    token_exipres = datetime.strptime(row['reset_token_valid_til'], '%Y-%m-%d %H:%M:%S')
+    app.logger.debug(f"Token expires: {token_exipres}")
+    if token_exipres < datetime.utcnow():
+        return None
+    return row['user_id']
 
 
 def validateJSONSchema(source, schema_name):

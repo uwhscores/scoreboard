@@ -162,6 +162,18 @@ def test_admin_users(test_client):
     new_user1_obj = functions.getUserByID(new_user1_id)
     assert new_user1_obj.active is False
 
+    # test activate user1
+    new_user1 = {
+                "user_id": new_user1_id,
+                "active": True
+                }
+    assert new_user1_obj.active is False
+    response = test_client.put(f"/admin/users/{new_user1_id}", json={'user': new_user1})
+    assert response.status_code == 200
+    assert response.json['success'] is True
+    new_user1_obj = functions.getUserByID(new_user1_id)
+    assert new_user1_obj.active is True
+
     # test password reset
     new_user1 = {
                 "user_id": new_user1_id,
@@ -175,13 +187,11 @@ def test_admin_users(test_client):
     reset_token = response.json['token']
     assert reset_token is not None
 
+    print(reset_token)
     reset_id = functions.validateResetToken(reset_token)
     assert reset_id is not None
     assert reset_id == new_user1_id
 
-    # kidnof a random test case but make sure that a None token doesn't resolve to any user ID
-    reset_id = functions.validateResetToken(None)
-    assert reset_id is None
 
 def test_score_update(test_client):
     # need a tournament with some games to update
