@@ -9,7 +9,7 @@
 <!-- Page Content -->
 <div class="container">
 	<main class="form-signin">
-	  <form action="/login" method="post" name="login">
+	  <form class="mb-3" action="/login" method="post" name="login">
 	    <img class="mb-4" src="/static/images/logo.png" alt="" width="300px">
 			{% with messages = get_flashed_messages() %}
 				{% if messages %}
@@ -32,10 +32,8 @@
 	    </div> -->
 	    <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
 	  </form>
-		<div class="alert alert-info mt-3" role="alert">
-			<p>If you are having trouble with your account please email me at
-			 <a href="mailto:info@uwhscores.com">info@uwhscores.com</a>
-			</p>
+		<div>
+			<a href="/login/forgot">Forgot your password?</a>
 		</div>
 	</main>
 </div>

@@ -5,7 +5,7 @@ import pytest
 from common_functions import connect_db
 from scoreboard import functions
 from scoreboard.models import User
-from scoreboard.exceptions import UpdateError
+from scoreboard.exceptions import UpdateError, UserAuthError
 
 
 def test_user_creates(test_client):
@@ -54,6 +54,48 @@ def test_user_creates(test_client):
 
     new_obj = functions.getUserByID(user_id)
     assert new_obj.user_id == user.user_id
+
+
+def test_user_authentication(test_client):
+    db = connect_db(test_client.application.config['DATABASE'])
+
+    test_email = "auth_test@pytest.com"
+    new_user = {'email': test_email, "short_name": "authtest", "site_admin": False, "admin": False}
+    user = User.create(new_user, db=db)
+
+    test_password = "testingpassword"
+    user.setPassword(test_password)
+
+    authed_id = functions.authenticate_user(test_email, test_password)
+    assert authed_id == user.user_id
+
+    with pytest.raises(UserAuthError) as auth_error:
+        authed_id = functions.authenticate_user(test_email, "badpassword")
+
+    assert auth_error.value.error == "FAIL"
+    assert auth_error.value.message == "Incorrect password"
+
+    # test user lockout
+    # first log the user in succesfully to reset counters
+    authed_id = functions.authenticate_user(test_email, test_password)
+    assert authed_id == user.user_id
+    for x in range(0, 11):
+        with pytest.raises(UserAuthError) as auth_error:
+            authed_id = functions.authenticate_user(test_email, "badpassword")
+
+        assert auth_error.value.error == "FAIL"
+        assert auth_error.value.message == "Incorrect password"
+
+    with pytest.raises(UserAuthError) as auth_error:
+        authed_id = functions.authenticate_user(test_email, "badpassword")
+
+    assert auth_error.value.error == "LOCKED"
+    assert "Account locked" in auth_error.value.message
+
+    # resetting the user password should reset the lock
+    user.setPassword("mynewpassword")
+    authed_id = functions.authenticate_user(test_email, "mynewpassword")
+    assert authed_id == user.user_id
 
 
 def test_password_resets(test_client):

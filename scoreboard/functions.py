@@ -124,6 +124,18 @@ def getUserByID(user_id):
         return None
 
 
+def getUserByEmail(email):
+    db = getDB()
+
+    cur = db.execute("SELECT user_id FROM users WHERE email=?", (email,))
+    row = cur.fetchone()
+
+    if row:
+        return User(row['user_id'], db)
+    else:
+        return None
+
+
 def getUserList():
     """ get list of all users as user objects """
     db = getDB()

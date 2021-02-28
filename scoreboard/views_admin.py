@@ -6,7 +6,7 @@ import json
 from scoreboard import global_limiter, audit_logger
 from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
 from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, validateResetToken, \
-                                 validateJSONSchema, getPlayerByID, getDB
+                                 validateJSONSchema, getPlayerByID, getDB, getUserByEmail
 from scoreboard.models import User
 
 login_manager = LoginManager()
@@ -311,25 +311,55 @@ def set_password():
         password1 = form.get('password1')
         password2 = form.get('password2')
 
-        if len(password1) < 6:
-            flash("Password too short, must be at least 6 characters")
-            return redirect("/login/reset?token=%s" % token)
-
         if password1 != password2:
             flash("Passwords do not match, try again")
             return redirect("/login/reset?token=%s" % token)
 
         user = getUserByID(user_id)
-        if user:
+        try:
             user.setPassword(password1)
-        else:
-            flash("Something went wrong")
-            return redirect("/login")
+        except UpdateError as e:
+            flash(f"{e.message}")
+            return redirect("/login/reset?token=%s" % token)
 
-        audit_logger.info("User password reset for %s" % user_id)
+        audit_logger.info(f"User {user.short_name}({user.user_id}) succesfully reset their password")
         flash("New password set, please login")
 
         return redirect("/login")
+
+
+@app.route('/login/forgot', methods=['GET'])
+def show_forgot():
+    return render_template('admin/pages/forgot_password.html.j2')
+
+
+@app.route('/login/forgot', methods=['POST'])
+def send_forgot():
+    form = request.form
+    if form.get('email'):
+        email = form.get('email')
+
+    if not email:
+        abort(400, "Missing email")
+
+    user = getUserByEmail(email)
+
+    message = "An email as been sent to the email address you've entered, assuming we found it."
+    if user:
+        try:
+            user.createResetToken()
+            user.sendUserEmail(template="pwreset")
+            audit_logger.info(f"Password reset email sent to {email}")
+        except UpdateError as e:
+            if e.error == "protected":
+                # don't reveal protected accounts
+                audit_logger.info(f"Password reset attempted on protected account {email}")
+                pass
+            else:
+                audit_logger.info(f"Error sending email {e}")
+                message = "There was an issue sending emails. Sorry. Please contact info@uwhscores.com"
+
+    return render_template('admin/pages/forgot_password.html.j2', message=message)
 
 
 #######################################
