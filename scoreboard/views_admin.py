@@ -1,4 +1,5 @@
 from flask import current_app as app
+from flask import g as flask_g
 from flask import jsonify, request, redirect, render_template, flash, abort
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
@@ -18,8 +19,10 @@ def ip_whitelist():
     return request.remote_addr == "127.0.0.1"
 
 
+flask_g.current_user_id = None
 @login_manager.user_loader
 def load_user(user_id):
+    flask_g.current_user_id = user_id
     return getUserByID(user_id)
 
 
