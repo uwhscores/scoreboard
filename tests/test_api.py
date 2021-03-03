@@ -1,7 +1,6 @@
 import base64
 
-from scoreboard import functions
-from scoreboard.models import Player
+from scoreboard.models import Player, User
 from common_functions import connect_db, add_tournament, load_schedule
 
 
@@ -39,11 +38,11 @@ def test_api_auth(test_client):
     db = connect_db(test_client.application.config['DATABASE'])
 
     new_user = {'email': "test_user@pytest.com", "short_name": "pytest", "site_admin": False, "admin": True}
-    res = functions.addUser(new_user, db=db)
+    user = User.create(new_user, db=db)
 
-    assert res["success"] is True
-    user_id = res["user_id"]
-    token = res["token"]
+    assert user is not None
+    user_id = user.user_id
+    token = user.getResetToken()
     assert user_id is not None
     assert token is not None
 

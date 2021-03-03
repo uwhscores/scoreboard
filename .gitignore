@@ -17,3 +17,4 @@ db_dumps/*
 .tox
 MANIFEST
 scoreboard.egg-info/
+sendgrid.env

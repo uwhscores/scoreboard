@@ -2,6 +2,7 @@ import re
 
 from common_functions import connect_db, add_tournament, load_schedule
 from scoreboard import functions
+from scoreboard.models import User
 
 
 def test_admin_connect(test_client):
@@ -15,13 +16,11 @@ def test_admin_connect(test_client):
     test_client.application.config['TESTING'] = True
 
     new_user = {'email': "test_user@pytest.com", "short_name": "pytest", "site_admin": False, "admin": True}
-    res = functions.addUser(new_user, db=db)
+    user = User.create(new_user, db=db)
 
-    assert res["success"] is True
-    user_id = res["user_id"]
-    token = res["token"]
+    assert user is not None
+    user_id = user.user_id
     assert user_id is not None
-    assert token is not None
 
     test_user = functions.getUserByID(user_id)
     test_user.setPassword("pytest123")
@@ -67,7 +66,7 @@ def test_admin_users(test_client):
     response = test_client.post("/admin/users", json={'user': new_user1})
     assert response.status_code == 200
     assert response.json['success'] is True
-    assert response.json['user']['token'] is not None
+    assert response.json['token'] is not None
 
     new_user1_id = functions.getUserID("test01@test.com")
     assert new_user1_id is not None
@@ -163,6 +162,18 @@ def test_admin_users(test_client):
     new_user1_obj = functions.getUserByID(new_user1_id)
     assert new_user1_obj.active is False
 
+    # test activate user1
+    new_user1 = {
+                "user_id": new_user1_id,
+                "active": True
+                }
+    assert new_user1_obj.active is False
+    response = test_client.put(f"/admin/users/{new_user1_id}", json={'user': new_user1})
+    assert response.status_code == 200
+    assert response.json['success'] is True
+    new_user1_obj = functions.getUserByID(new_user1_id)
+    assert new_user1_obj.active is True
+
     # test password reset
     new_user1 = {
                 "user_id": new_user1_id,
@@ -176,13 +187,11 @@ def test_admin_users(test_client):
     reset_token = response.json['token']
     assert reset_token is not None
 
+    print(reset_token)
     reset_id = functions.validateResetToken(reset_token)
     assert reset_id is not None
     assert reset_id == new_user1_id
 
-    # kidnof a random test case but make sure that a None token doesn't resolve to any user ID
-    reset_id = functions.validateResetToken(None)
-    assert reset_id is None
 
 def test_score_update(test_client):
     # need a tournament with some games to update

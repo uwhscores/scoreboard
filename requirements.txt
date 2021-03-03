@@ -20,6 +20,7 @@ py==1.10.0
 pycparser==2.20
 pyparsing==2.4.7
 pyrsistent==0.17.3
+sendgrid==6.6.0
 six==1.15.0
 toml==0.10.2
 virtualenv==20.4.0

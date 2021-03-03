@@ -259,23 +259,56 @@ uwhScoresAdmin = function(){
         },
         body: JSON.stringify({'user': newUser})
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) { throw response }
+        return response.json()
+      })
       .then(data => {
-        if (! data['success']) {
-          throw data['message']
-        }
         user = data['user']
         let title = document.getElementById('newUserModalLabel')
-        title.innerText = `New User ${user['short_name']} Created`
-        let link = document.getElementById('newTokenLink')
-        link.href=`${window.location.origin}/login/reset?token=${user['token']}`
-        link.text=`${window.location.origin}/login/reset?token=${user['token']}`
-
+        title.innerText = `New User ${user['short_name']}`
+        let modalBody = document.getElementById("newUserMessage")
+        while (modalBody.firstChild) {
+          modalBody.removeChild(modalBody.lastChild);
+        }
+        let messageTile = document.createElement("h5")
+        messageTile.innerText = "User Succesfully Created"
+        modalBody.appendChild(messageTile)
+        let message = document.createElement("p")
+        modalBody.appendChild(message)
+        if ( ! data['email_error'] ) {
+          message.innerText = `A welcome email was successfully sent to ${user['email']}`
+        } else {
+          message.innerText = "Unfortunetly, there was an issue sending the welcome email. You can send the user the link bellow to allow them to set their new password:"
+          let linkP = document.createElement("p")
+          let resetLink = document.createElement("a")
+          resetLink.href=`${window.location.origin}/login/reset?token=${data['token']}`
+          resetLink.text=`${window.location.origin}/login/reset?token=${data['token']}`
+          linkP.appendChild(resetLink)
+          message.after(linkP)
+          let error_message = document.createElement("p")
+          error_message.classList.add("soft")
+          error_message.innerText = `Error: ${data['email_error']}`
+          linkP.after(error_message)
+        }
         createModal.hide()
         newUserModal.show()
       })
-      .catch((error) => {
-        console.error('Error:', error);
+      .catch( error => {
+        console.log(error)
+        try {
+          error.json().then( message => {
+            //Here is already the payload from API
+            if (message['message']) {
+              console.error("UWHScores API Error:", message)
+              window.alert(message['message'])
+            } else {
+              throw(message)
+            }
+          })
+        } catch(e) {
+          console.error("Unkown Error:", e)
+        }
       })
     })
   }
@@ -358,15 +391,38 @@ uwhScoresAdmin = function(){
         },
         body: JSON.stringify({'user': {'user_id': user_id, 'reset_password': true}})
       })
-      .then(response => response.json())
-      .then(result => {
-        let modalTitle = document.getElementById('newUserModalLabel')
-        modalTitle.innerText = "Password Succesfully Reset"
-        let messageHeader = document.getElementById('newUserHeader')
-        messageHeader.innerText = 'Your Password has Been Reset'
-        let link = document.getElementById('newTokenLink')
-        link.href=`${window.location.origin}/login/reset?token=${result['token']}`
-        link.text=`${window.location.origin}/login/reset?token=${result['token']}`
+      .then(response => {
+        if (!response.ok) { throw response }
+        return response.json()
+      })
+      .then(data => {
+        user = data['user']
+        let title = document.getElementById('newUserModalLabel')
+        title.innerText = `Password Reset For ${user['short_name']}`
+        let modalBody = document.getElementById("newUserMessage")
+        while (modalBody.firstChild) {
+          modalBody.removeChild(modalBody.lastChild);
+        }
+        let messageTile = document.createElement("h5")
+        messageTile.innerText = "User Password Succesfully Reset"
+        modalBody.appendChild(messageTile)
+        let message = document.createElement("p")
+        modalBody.appendChild(message)
+        if ( ! data['email_error'] ) {
+          message.innerText = `A password reset request email was sent to ${user['email']}`
+        } else {
+          message.innerText = "Unfortunetly, there was an issue sending the reset email. You can send the user the link bellow to allow them to set their new password:"
+          let linkP = document.createElement("p")
+          let resetLink = document.createElement("a")
+          resetLink.href=`${window.location.origin}/login/reset?token=${data['token']}`
+          resetLink.text=`${window.location.origin}/login/reset?token=${data['token']}`
+          linkP.appendChild(resetLink)
+          message.after(linkP)
+          let error_message = document.createElement("p")
+          error_message.classList.add("soft")
+          error_message.innerText = `Error: ${data['email_error']}`
+          linkP.after(error_message)
+        }
 
         resetModal.hide()
         newUserModal.show()

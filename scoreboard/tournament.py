@@ -1369,7 +1369,11 @@ class Tournament(object):
         user = functions.getUserByID(user_id)
         if not user:
             app.logger.debug("Tried to add non-existant ID %s to tournament %s" % (user_id, self.short_name))
-            raise UpdateError(f"User ID {user_id} does not exist")
+            raise UpdateError("notfound", message=f"User ID {user_id} does not exist")
+
+        if flask_g.current_user_id == user_id:
+            app.logger.debug("User tried to change their own status")
+            raise UpdateError("self", message="Can't change admin status of yourself")
 
         authorized_ids = self.getAuthorizedUserIDs()
         if make_admin and user not in authorized_ids:

@@ -1,12 +1,13 @@
 from flask import current_app as app
+from flask import g as flask_g
 from flask import jsonify, request, redirect, render_template, flash, abort
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-import json
 
 from scoreboard import global_limiter, audit_logger
-from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, addUser, validateResetToken, \
-                                 validateJSONSchema, getPlayerByID
 from scoreboard.exceptions import UserAuthError, UpdateError, InvalidUsage
+from scoreboard.functions import getTournaments, getTournamentByShortName, getUserByID, getUserList, authenticate_user, validateResetToken, \
+                                 validateJSONSchema, getPlayerByID, getDB, getUserByEmail
+from scoreboard.models import User
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -18,8 +19,10 @@ def ip_whitelist():
     return request.remote_addr == "127.0.0.1"
 
 
+flask_g.current_user_id = None
 @login_manager.user_loader
 def load_user(user_id):
+    flask_g.current_user_id = user_id
     return getUserByID(user_id)
 
 
@@ -198,6 +201,7 @@ def updateScore(short_name, game_id):
     # return redirect("/admin/t/%s/games" % short_name, code=302)
     return jsonify(success=True, url=f"/admin/t/{short_name}/games")
 
+
 @app.route('/admin/t/<short_name>/gametiming')
 @login_required
 def view_gametimerules(short_name):
@@ -287,9 +291,11 @@ def pw_reset():
         token = request.args.get('token')
         user_id = validateResetToken(token)
 
-    # token wasn't supplied or doesn't belong to a user
-    if not token or not user_id:
-        return render_template('errors/error.html.j2', error_message="Invalid or missing token")
+    if not token:
+        abort(400, "Missing or invalid reset token")
+
+    if not user_id:
+        return render_template('admin/pages/forgot_password.html.j2', message="Can't find token, it may be expired. You can request a new one below.")
 
     return render_template('admin/pages/password_reset.html.j2', token=token)
 
@@ -310,25 +316,55 @@ def set_password():
         password1 = form.get('password1')
         password2 = form.get('password2')
 
-        if len(password1) < 6:
-            flash("Password too short, must be at least 6 characters")
-            return redirect("/login/reset?token=%s" % token)
-
         if password1 != password2:
             flash("Passwords do not match, try again")
             return redirect("/login/reset?token=%s" % token)
 
         user = getUserByID(user_id)
-        if user:
+        try:
             user.setPassword(password1)
-        else:
-            flash("Something went wrong")
-            return redirect("/login")
+        except UpdateError as e:
+            flash(f"{e.message}")
+            return redirect("/login/reset?token=%s" % token)
 
-        audit_logger.info("User password reset for %s" % user_id)
+        audit_logger.info(f"User {user.short_name}({user.user_id}) succesfully reset their password")
         flash("New password set, please login")
 
         return redirect("/login")
+
+
+@app.route('/login/forgot', methods=['GET'])
+def show_forgot():
+    return render_template('admin/pages/forgot_password.html.j2')
+
+
+@app.route('/login/forgot', methods=['POST'])
+def send_forgot():
+    form = request.form
+    if form.get('email'):
+        email = form.get('email')
+
+    if not email:
+        abort(400, "Missing email")
+
+    user = getUserByEmail(email)
+
+    message = "An email as been sent to the email address you've entered, assuming we found it."
+    if user:
+        try:
+            user.createResetToken()
+            user.sendUserEmail(template="pwreset")
+            audit_logger.info(f"Password reset email sent to {email}")
+        except UpdateError as e:
+            if e.error == "protected":
+                # don't reveal protected accounts
+                audit_logger.info(f"Password reset attempted on protected account {email}")
+                pass
+            else:
+                audit_logger.info(f"Error sending email {e}")
+                message = "There was an issue sending emails. Sorry. Please contact info@uwhscores.com"
+
+    return render_template('admin/pages/forgot_password.html.j2', message=message)
 
 
 #######################################
@@ -374,11 +410,17 @@ def createUser():
         raise InvalidUsage(message, status_code=400)
 
     try:
-        res = addUser(user_json['user'])
+        new_user = User.create(user_json['user'], getDB())
     except UpdateError as e:
         raise InvalidUsage(e.message, status_code=400)
 
-    return jsonify(success=True, user=res)
+    try:
+        new_user.sendUserEmail(template="welcome")
+        email_error = None
+    except UpdateError as e:
+        email_error = e.message
+
+    return jsonify(success=True, user=new_user.serialize(), token=new_user.getResetToken(), email_error=email_error)
 
 # update user route
 @app.route("/admin/users/<user_id>", methods=['PUT'])
@@ -417,12 +459,18 @@ def updateUser(user_id):
 
     token = None
     if 'reset_password' in user_json['user'] and user_json['user']['reset_password'] is True:
-        token = user.resetUserPass()
+        token = user.createResetToken(by_admin=True)
+        try:
+            user.sendUserEmail(template="pwreset", pwreset_by_admin=True)
+            email_error = None
+        except UpdateError as e:
+            email_error = e.message
         audit_logger.info("Password reset for %s(%s) by %s(%s)" % (user.short_name, user.user_id, current_user.short_name, current_user.user_id))
 
     response = {'success': True, 'user': user.serialize()}
     if token:
         response['token'] = token
+        response['email_error'] = email_error
     return jsonify(response)
 
 
