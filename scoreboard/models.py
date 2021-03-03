@@ -398,8 +398,8 @@ class User(object):
         # Generate a bcrypt hash of some randomness to store as the users password, don't want password=null
         random_password = bcrypt.hashpw(b64encode(urandom(18)), bcrypt.gensalt())
 
-        cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active) VALUES (?,?,?,?,1)",
-                         (user_id, new_user['short_name'], new_user['email'], random_password))
+        cur = db.execute("INSERT INTO users(user_id, short_name, email, password, active) VALUES (?,?,?,?,?)",
+                         (user_id, new_user['short_name'], new_user['email'], random_password, True))
         db.commit()
 
         if 'site_admin' in new_user and new_user['site_admin'] is True:
@@ -521,9 +521,6 @@ class User(object):
         audit_logger.info(f"User update: set {self.user_id} site-admin {admin_status}")
 
         return
-
-    def __genUserKey(self):
-        return b64encode(urandom(9), b"Aa")
 
     def sendUserEmail(self, template, pwreset_by_admin=False):
         """ send a new user their welcome email with password reset link, uses sendgrid api """
