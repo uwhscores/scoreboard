@@ -85,9 +85,11 @@
 				<li class="nav-item">
 					<a class="nav-link" data-bs-toggle="tab" href="#placings">Placings</a>
 				</li>
+				{% if (team_info and team_info.roster) or team_infos -%}
 				<li class="nav-item">
 					<a class="nav-link" data-bs-toggle="tab" href="#roster">Roster</a>
 				</li>
+				{%- endif -%}
 			</ul>
 			<div class="tab-content" id="nav-tabContent">
 			  <div class="tab-pane fade show active" role="tabpanel" id="schedule">
@@ -100,11 +102,13 @@
         	{% include "pages/include_tournament/include_standings.html.j2" with context %}
       		{% endblock standings %}
 				</div>
+				{% if (team_info and team_info.roster) or team_infos -%}
 				<div class="tab-pane fade" role="tabpanel" id="roster">
 					{% block rosters %}
 	        {% include "pages/include_tournament/include_rosters.html.j2" with context %}
 		      {% endblock rosters %}
 				</div>
+				{%- endif -%}
 			  <div class="tab-pane fade" role="tabpanel" id="placings">
 					{% block placings %}
 	        {% include "pages/include_tournament/include_placings.html.j2" with context %}
