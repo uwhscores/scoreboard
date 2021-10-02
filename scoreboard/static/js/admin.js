@@ -78,12 +78,12 @@ uwhScoresAdmin = function(){
   };
 
   // activte/deactive user as tournament admin
-  var adminUserRows = document.querySelectorAll('.active-admin, .inactive-admin')
+  var adminUserRows = document.querySelectorAll('.active-admin-button, .inactive-admin-button')
   adminUserRows.forEach( el => {
     el.addEventListener('click', function(e) {
-      const curEl = e.currentTarget
-      const userId = curEl.getAttribute('user-id')
-      const parentId = curEl.parentElement.id
+      const userEl = e.currentTarget.parentElement
+      const userId = userEl.getAttribute('user-id')
+      const parentId = userEl.parentElement.id
       //  baseed on what list the  user is on, flip the admin status
       if (parentId == "activeAdminsList") {
         makeAdmin = false
@@ -99,16 +99,16 @@ uwhScoresAdmin = function(){
         if ( response['success'] ) {
           const active_list = document.getElementById("activeAdminsList")
           const inactive_list = document.getElementById("inactiveAdminsList")
-          curEl.classList.add("list-group-item-info")
-          let childEl = curEl.children[0]
+          userEl.classList.add("list-group-item-info")
+          let childEl = userEl.children[0]
           if (makeAdmin) {
             childEl.classList.remove("bi-plus-circle")
             childEl.classList.add("bi-dash-circle")
-            active_list.insertBefore(curEl, active_list.childNodes[0])
+            active_list.insertBefore(userEl, active_list.childNodes[0])
           } else {
             childEl.classList.remove("bi-dash-circle")
             childEl.classList.add("bi-plus-circle")
-            inactive_list.insertBefore(curEl, inactive_list.childNodes[0])
+            inactive_list.insertBefore(userEl, inactive_list.childNodes[0])
           }
         }
       })

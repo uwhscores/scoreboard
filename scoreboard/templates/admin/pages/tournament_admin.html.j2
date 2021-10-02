@@ -157,7 +157,7 @@
 							{% if authorized_users -%}
 							{% for u in authorized_users -%}
 							<li class="list-group-item active-admin" user-id="{{ u.user_id}}">
-								{{ u.short_name }} <i class="bi bi-dash-circle float-end"></i>
+								{{ u.short_name }} <i class="bi bi-dash-circle float-end active-admin-button "></i>
 							</li>
 							{%- endfor %}
 							{% else -%}
@@ -172,7 +172,7 @@
 						<ul id="inactiveAdminsList" class="list-group list-group-flush" is-admin=false>
 							{% for u in unauthorized_users -%}
 							<li class="list-group-item inactive-admin" user-id="{{ u.user_id}}">
-								{{ u.short_name }} <i class="bi bi-plus-circle float-end"></i>
+								{{ u.short_name }} <i class="bi bi-plus-circle float-end inactive-admin-button"></i>
 							</li>
 							{%- endfor %}
 						</ul>
