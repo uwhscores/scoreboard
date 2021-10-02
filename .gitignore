@@ -18,3 +18,6 @@ db_dumps/*
 MANIFEST
 scoreboard.egg-info/
 sendgrid.env
+.coverage
+htmlcov/*
+tools/*
