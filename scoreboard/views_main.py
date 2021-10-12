@@ -46,7 +46,7 @@ def renderTourament(short_name):
     for team in team_list:
         team_id = team["team_id"]
         team_info = t.getTeamInfo(team_id)
-        if team_info["roster"]:
+        if team_info and team_info["roster"]:
             team_infos[team_id] = team_info
 
     pod_names = t.getPodNamesActive()

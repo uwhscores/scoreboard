@@ -26,7 +26,7 @@ def load_user(user_id):
     return getUserByID(user_id)
 
 
-@app.route("/admin")
+@app.route("/admin", strict_slashes=False)
 @login_required
 def renderAdmin():
     ts = getTournaments()
