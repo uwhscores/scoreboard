@@ -357,6 +357,7 @@ def updateGame(tid, gid):
         raise InvalidUsage(message, status_code=503)
 
     current_user = getUserByID(g.user_id)
+    app.logger.debug(f"Found current user: {current_user}")
     if not t.isAuthorized(current_user):
         message = "user %s is not authorized" % g.user_id
         raise InvalidUsage(message, status_code=404)

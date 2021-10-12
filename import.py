@@ -1,18 +1,18 @@
-#!/usr/bin/python
-
+#!env python3
 """ Import script
 """
 
+from base64 import b64encode
+from datetime import datetime
+from os import urandom
+import configparser
+import csv
+import json
 import os
-import sys
+import re
 import sqlite3
 import string
-import csv
-import re
-from datetime import datetime
-import ConfigParser
-from base64 import b64encode
-from os import urandom
+import sys
 
 class Import(object):
 
@@ -65,18 +65,18 @@ class Import(object):
                 try:
                     tid = int(line)
                 except ValueError:
-                    print "TID file has something other than an integer"
+                    print("TID file has something other than an integer")
                     # sys.exit(1)
                     return None
         elif os.path.isfile(tournament_cfg):
-            t_config = ConfigParser.RawConfigParser()
+            t_config = configparser.RawConfigParser()
             t_config.read(tournament_cfg)
 
             name = t_config.get("tournament", "name")
             short_name = t_config.get("tournament", "short_name")
             start_date = t_config.get("tournament", "start_date")
             end_date = t_config.get("tournament", "end_date")
-            location = t_config.get("tournament", "location").decode("utf-8")
+            location = t_config.get("tournament", "location")
 
             if not name or not short_name or not start_date or not end_date or not location:
                 raise Exception("Tournaments cfg missing reuqired field")
@@ -99,7 +99,7 @@ class Import(object):
                 else:
                     raise Exception("Unknown error inserting tournament into DB")
         else:
-            print "You need a tid file!"
+            print("You need a tid file!")
             # sys.exit(1)
             return None
 
@@ -107,19 +107,19 @@ class Import(object):
         res = cur.fetchone()
 
         if res:
-            print "\n-- %s --\n" % res['name']
+            print("\n-- %s --\n" % res['name'])
             return tid
         else:
-            print "Unkown TID"
+            print("Unkown TID")
             # sys.exit(1)
             return None
 
     def __clearScores(self, tid):
-        print "Clearing out scores ..."
+        print("Clearing out scores ...")
         self.db.execute('DELETE FROM scores WHERE tid=?', (tid,))
         self.db.commit()
 
-        print ("Clearing out parameters ...")
+        print("Clearing out parameters ...")
         self.db.execute('DELETE FROM params WHERE tid=?', (tid,))
         self.db.commit()
 
@@ -128,11 +128,11 @@ class Import(object):
         if not os.path.isfile(sched_file):
             return None
 
-        print ("Found a schedule ...")
+        print("Found a schedule ...")
         cur = self.db.execute('DELETE FROM games WHERE tid=?', (tid,))
         self.db.commit()
 
-        with open(sched_file, 'rb') as f:
+        with open(sched_file, 'r') as f:
             schedule = csv.DictReader(f)
             for row in schedule:
                 # print "%s %s vs %s" % (row['gid'], row['black'],
@@ -153,6 +153,9 @@ class Import(object):
                 #print "Working on game %s" % gid
                 if re.match('^\d\:\d\d', row['time']) is not None:
                     row['time'] = "0%s" % row['time']
+
+                if row['white'].lower() == "no game" or row['black'].lower() == "no game":
+                    continue
 
                 white = self.__processGame(row['white'], teams, row['div'])
                 if not white:
@@ -193,12 +196,14 @@ class Import(object):
                 elif re.match(r"^\d\d:\d\d:\d\d$", row['time']):
                     time = datetime.strptime(row['time'], '%H:%M:%S')
                 else:
-                    print "Error parsing time for gid %s" % gid
+                    print("Error parsing time for gid %s" % gid)
                     continue
 
                 start_time = datetime.combine(
                     datetime.date(date), datetime.time(time))
 
+                if not row['div']:
+                    raise Exception(f"missing division for game: {gid}")
                 cur = self.db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                                       (tid, gid, row['day'], start_time, row['pool'], black, white, div, pod, row['type'], row['desc']))
                 self.db.commit()
@@ -206,22 +211,42 @@ class Import(object):
     def __processGame(self, game_string, teams=None, division=None):
         orig_string = game_string
 
+        # print(game_string)
+        m = re.match("^(\d+)\s*[sS]eed\s*(\w+)", game_string)
+        if m:
+            seed = m.group(1)
+            group = m.group(2)
+            group = group[:1]
+            parsed = json.dumps({"type": "seed", "group": group, "seed": seed})
+            return parsed
+            # return "S%s%s" % (pod, seed)
+
         m = re.match("^(\w+)\s*[sS]eed\s*(\d+)", game_string)
         if m:
             pod = m.group(1)
             #pod = pod[:1] # nations 2019, you should remove this
             seed = m.group(2)
-            return "S%s%s" % (pod, seed)
+            parsed = json.dumps({"type": "seed", "group": pod, "seed": seed})
+            return parsed
+            # return "S%s%s" % (pod, seed)
+
+        m = re.match("^Open(\d+)$", game_string)
+        if m:
+            seed = m.group(1)
+            parsed = json.dumps({"type": "seed", "group": "O", "seed": seed})
+            return parsed
 
         m = re.match("^[l|L].*?(\d+)", game_string)
         if m:
-            game_string = "L%s" % m.group(1)
-            return game_string
+            # game_string = "L%s" % m.group(1)
+            return json.dumps({"type": "loser", "game": m.group(1)})
+            # return game_string
 
         m = re.match("^[w|W].*?(\d+)", game_string)
         if m:
             game_string = "W%s" % m.group(1)
-            return game_string
+            return json.dumps({"type": "winner", "game": m.group(1)})
+            # return game_string
 
 
         # worlds logic, just keeping around cause
@@ -252,18 +277,25 @@ class Import(object):
         # game_string = division + " " + game_string
         team_id = self.__findTeam(game_string, teams)
         if team_id:
-            return   "T%s" % team_id
+            return json.dumps({"type": "team", "team_id": team_id})
 
         # Seed notation "group #"
         m = re.match(r"^(\w+)\s(\d+)$", game_string)
         if m:
             group = m.group(1)
-            rank = m.group(2)
+            seed = m.group(2)
 
-            return "S%s%s" % (group, rank)
+            return json.dumps({"type": "seed", "group": group, "seed": seed})
+            # return "S%s%s" % (group, rank)
+
+        m = re.match(r"^(\w+)(\d)$", game_string)
+        if m:
+            seed = m.group(1)
+            group = m.group(2)
+            return json.dumps({"type": "seed", "group": group, "seed": seed})
 
         #import pdb; pdb.set_trace()
-        return game_string
+        raise Exception(f"Unable to process game string {game_string}")
 
     def __isUnique(self, game_string):
         """ Tests if a team assignement already exists in the schedule, mostly for like W## or L## """
@@ -287,11 +319,9 @@ class Import(object):
         team_file = os.path.join(self.src_folder, "teams.csv")
         if not os.path.isfile(team_file):
             return None
-
-        print "Found list of teams ..."
+        print("Found list of teams ...")
         cur = self.db.execute('DELETE FROM teams WHERE tid=?', (tid,))
         self.db.commit()
-
 
         cur = self.db.execute("SELECT short_name FROM tournaments WHERE tid=?", (tid,))
         tournament = cur.fetchone()
@@ -302,24 +332,26 @@ class Import(object):
             short_name = tid
 
         teams_dict = {}
-        with open(team_file, 'rb') as f:
+        with open(team_file, 'r') as f:
             teams = csv.DictReader(f)
             for row in teams:
                 team_id = row['team_id']
+                if not team_id:
+                    continue
                 flag_file = None
 
                 # worlds hack, delete me!!
-                #team_name = "%s %s" % (row['div'], row['name'])
-                team_name = row['name']
-                teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
-
-                country = string.join(team_name.split(" ")[1:], " ")
-                country = country.lower().replace(" ", "_")
+                # team_name = "%s %s" % (row['div'], row['name'])
+                # team_name = row['name']
+                # teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
+                #
+                # # country = string.join(team_name.split(" ")[1:], " ")
+                # country = country.lower().replace(" ", "_")
                 flag_file = "/static/flags/%s/%s.png" % (short_name, team_id)
 
+                teams_dict[team_id] = {'name': row['name'], 'short_name': row['short_name'], 'div': row['div']}
                 cur = self.db.execute("INSERT INTO teams(tid, team_id, name, short_name, division, flag_file) VALUES(?,?,?,?,?,?)",
-                                      (tid, row['team_id'], team_name, row['short_name'], row['div'], flag_file))
-                self.db.commit()
+                                      (tid, row['team_id'], row['name'], row['short_name'], row['div'], flag_file))
 
         return teams_dict
 
@@ -328,15 +360,16 @@ class Import(object):
         if not os.path.isfile(rankings_file):
             return None
 
-        print "Found rankings file ...."
+        print("Found rankings file ....")
         cur = self.db.execute("DELETE FROM rankings WHERE tid=?", (tid,))
         self.db.commit()
 
-        with open(rankings_file, 'rb') as f:
+        with open(rankings_file, 'r') as f:
             rankings = csv.DictReader(f)
             for row in rankings:
+                game = self.__processGame(row['game'])
                 cur = self.db.execute("INSERT INTO rankings(tid, place, game, division) VALUES(?,?,?,?)",
-                                      (tid, row['place'], row['game'], row['div']))
+                                      (tid, row['place'], game, row['div']))
                 self.db.commit()
 
     def __importGroups(self, tid, groups_file=None):
@@ -344,11 +377,11 @@ class Import(object):
         if not os.path.isfile(groups_file):
             return None
 
-        print "Found groups file ...."
+        print("Found groups file ....")
         cur = self.db.execute("DELETE FROM groups WHERE tid=?", (tid,))
         self.db.commit()
 
-        with open(groups_file, 'rb') as f:
+        with open(groups_file, 'r') as f:
             groups = csv.DictReader(f)
             for row in groups:
                 if 'group_color' in row:
@@ -370,11 +403,11 @@ class Import(object):
         if not os.path.isfile(pods_file):
             return None
 
-        print "Found pods file ..."
+        print("Found pods file ...")
         cur = self.db.execute("DELETE FROM pods WHERE tid=?", (tid,))
         self.db.commit()
 
-        with open(pods_file, 'rb') as f:
+        with open(pods_file, 'r') as f:
             pods = csv.DictReader(f)
             for row in pods:
                 cur = self.db.execute("INSERT INTO pods(tid, team_id, pod) VALUES(?,?,?)",
@@ -394,8 +427,8 @@ class Import(object):
         if not os.path.isfile(params_file):
             return None
 
-        print "Found params.cfg ..."
-        params = ConfigParser.RawConfigParser()
+        print("Found params.cfg ...")
+        params = configparser.RawConfigParser()
         params.read(params_file)
 
         for p in params.items('params'):
@@ -409,11 +442,11 @@ class Import(object):
         if not os.path.isfile(roster_file):
             return None
 
-        print "Found rosters file ..."
+        print("Found rosters file ...")
         cur = self.db.execute("DELETE FROM rosters WHERE tid=?", (tid,))
         self.db.commit()
 
-        with open(roster_file, 'rb') as f:
+        with open(roster_file, 'r') as f:
             rosters = csv.DictReader(f)
             team_name = None
             team_id = None
@@ -444,7 +477,7 @@ class Import(object):
                 # first_name = " ".join(name_parts[:-1])
                 # player_name = "%s, %s" % (last_name, first_name)
                 try:
-                    player_name = player_name.decode("utf-8")
+                    player_name = player_name
                 except UnicodeDecodeError as e:
                     import pdb; pdb.set_trace()
                     raise(e)
@@ -468,8 +501,9 @@ class Import(object):
 
                 cap_number = None
                 if re.match(r"\d+", row['cap_number']):
-                    if row['cap_number'] > 0:
-                        cap_number = row['cap_number']
+                    cap_number = int(row['cap_number'])
+                    # if row['cap_number'] > 0:
+                    #     cap_number = row['cap_number']
 
                 is_coach = False
                 coach_title = None
@@ -482,11 +516,11 @@ class Import(object):
                     cur = self.db.execute("INSERT INTO rosters (tid, player_id, team_id, cap_number, is_coach, coach_title) VALUES (?,?,?,?,?,?)", (tid, player_id, team_id, cap_number, is_coach, coach_title))
                     self.db.commit()
                 except sqlite3.IntegrityError as e:
-                    print "Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, team_id, cap_number)
+                    print("Error inserting player %s due to duplicate, team: %s, cap_number: %s" % (player_name, team_id, cap_number))
                     sys.exit(1)
 
     def __genID(self):
-        return b64encode(urandom(6), "Aa")
+        return b64encode(urandom(6), b"Aa").decode("utf-8")
 
 if __name__ == "__main__":
     """ Main function, uses sys.argv to pull in a directory, defaults to clear contents and full import
@@ -495,13 +529,13 @@ if __name__ == "__main__":
     try:
         src_folder = sys.argv[1].strip("/")
     except IndexError:
-        print "Must give me a directory to import"
+        print("Must give me a directory to import")
         sys.exit(1)
 
     if os.path.isdir(src_folder):
-        print "Importing from directory %s" % src_folder
+        print("Importing from directory %s" % src_folder)
     else:
-        print "Directory doesn't exist %s" % src_folder
+        print("Directory doesn't exist %s" % src_folder)
         sys.exit(1)
 
     db_file = os.path.join('scoreboard/scores.db')

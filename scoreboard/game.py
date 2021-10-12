@@ -245,6 +245,7 @@ class Game(object):
             game_text = game['text']
             style = "nongame"
         else:
+            app.logger.debug(f"Unknown game type: {game_type}")
             game_text = "Error with game!"
 
         if team_id:

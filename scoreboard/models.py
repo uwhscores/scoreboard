@@ -356,6 +356,9 @@ class User(object):
         self.admin = bool(row['admin'])
         self.active = bool(row['active'])
 
+    def __repr__(self):
+        return f"{self.short_name} ({self.user_id})"
+
     def serialize(self):
         return {
             'user_id': self.user_id,
