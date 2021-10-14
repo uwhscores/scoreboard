@@ -1,16 +1,22 @@
 <table class="table">
     <tr>
-        <td>Half Duration</td> <td>{{ r.half_duration }} seconds</td>
+        <td>Half Duration</td> <td>{{ r.half_duration | format_seconds }}</td>
     </tr>
     <tr>
-        <td>Half Time Duration</td> <td>{{ r.half_time_duration }} seconds</td>
+        <td>Half Time Duration</td> <td>{{ r.half_time_duration| format_seconds  }}</td>
     </tr>
     <tr>
-        <td>Minimum time between games</td><td>{{ r.min_game_break}} seconds</td>
+        <td>Minimum time between games</td><td>{{ r.min_game_break | format_seconds }}</td>
     </tr>
     {% if r.game_timeouts %}
     <tr>
-        <td>Timeouts Allowed</td><td>{% if r.game_timeouts.allowed %}Yes, {{r.game_timeouts.duration}} seconds {% else %} No {% endif %}</td>
+        <td>Timeouts Allowed</td><td>
+          {% if r.game_timeouts.allowed %}
+            {{r.game_timeouts.allowed}}, {{r.game_timeouts.duration | format_seconds }} {% if r.game_timeouts.per_half %} per half {% else%} per game {% endif -%}
+          {% else %}
+            No
+          {% endif %}
+        </td>
     </tr>
     {% endif %}
     <tr>
@@ -18,17 +24,17 @@
     </tr>
     {% if r.overtime_allowed %}
     <tr>
-        <td>Overtime Duration</td><td>{{ r.overtime_duration }}</td>
+        <td>Overtime Duration</td><td>{{ r.overtime_duration| format_seconds }}</td>
     </tr>
     <tr>
-        <td>Overtime Half Break Length</td><td>{{ r.overtime_break_duration }}</td>
+        <td>Overtime Half Break Length</td><td>{{ r.overtime_break_duration | format_seconds }}</td>
     </tr>
     <tr>
-        <td>Pre-overtime Break</td><td>{{ r.pre_overtime_break}}</td>
+        <td>Pre-overtime Break</td><td>{{ r.pre_overtime_break| format_seconds }}</td>
     </tr>
     {% if r.overtime_tiemouts %}
     <tr>
-        <td>Overtime Timeouts Allowed</td><td>{% if r.overtime_tiemouts.allowed %}Yes, {{r.overtime_tiemouts.duration}} seconds {% else %} No {% endif %}</td>
+        <td>Overtime Timeouts Allowed</td><td>{% if r.overtime_tiemouts.allowed %}Yes, {{r.overtime_tiemouts.duration | format_seconds}} seconds {% else %} No {% endif %}</td>
     </tr>
     {% endif %}
     {% endif %}
@@ -37,16 +43,16 @@
     </tr>
     {% if r.sudden_death_allowed %}
     <tr>
-        <td>Pre Sudden Death Break</td><td>{{ r.pre_sudden_death_break }}</td>
+        <td>Pre Sudden Death Break</td><td>{{ r.pre_sudden_death_break | format_seconds }}</td>
     </tr>
     {% if max_sudden_death_duration %}
     <tr>
-        <td>Max suddend death durration</td><td>{{r.max_sudden_death_duration}}</td>
+        <td>Max suddend death durration</td><td>{{r.max_sudden_death_duration | format_seconds}}</td>
     </tr>
     {% endif %}
     {% if r.sudden_death_timeouts %}
     <tr>
-        <td>Sudden Timeouts Allowed</td><td>{% if r.sudden_death_timeouts.allowed %}Yes, {{r.sudden_death_timeouts.duration}} seconds {% else %} No {% endif %}</td>
+        <td>Sudden Timeouts Allowed</td><td>{% if r.sudden_death_timeouts.allowed %}Yes, {{r.sudden_death_timeouts.duration | format_seconds}} seconds {% else %} No {% endif %}</td>
     </tr>
     {% endif %}
     {% endif %}

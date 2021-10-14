@@ -382,3 +382,29 @@ def clienterror_handler(e):
         return jsonify(message=e.description, code=400), 400
     else:
         return render_template("errors/error.html.j2", error_code="400", error_message=e.description), 400
+
+
+#######################################
+# Jinja formatters
+#######################################
+@app.template_filter()
+def format_seconds(value):
+    try:
+        value = int(value)
+    except ValueError:
+        app.logger.debug(f"Unabel to time format string: {value}")
+        return value
+    if value < 60:
+        return f"{value} seconds"
+
+    minutes, seconds = divmod(value, 60)
+    if minutes == 0:
+        return f"{seconds} seconds"
+    if minutes == 1 and seconds == 0:
+        return "1 minute"
+    elif minutes == 1:
+        return f"1 minute, {seconds} seconds"
+    elif seconds == 0:
+        return f"{minutes} minutes"
+    else:
+        return f"{minutes} minutes, {seconds} seconds"
