@@ -159,13 +159,11 @@ class Import(object):
 
                 white = self.__processGame(row['white'], teams, row['div'])
                 if not white:
-                    print("Cannot parse white: %s for game %s" % (row['white'], row['gid']))
-                    sys.exit(1)
+                    raise Exception(f"Cannot parse white: {row['white']} for {row['gid']}")
 
                 black = self.__processGame(row['black'], teams, row['div'])
                 if not black:
-                    print("Cannot parse black: %s for game %s" % (row['black'], row['gid']))
-                    sys.exit(1)
+                    raise Exception(f"Cannot parse black: {row['black']} for {row['gid']}")
 
                 if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
                     white_id = white.split("T")[1]
@@ -188,7 +186,7 @@ class Import(object):
                     try:
                         date = datetime.strptime(row['date'], '%m/%d/%y')
                     except ValueError:
-                        print("Couldn't convert date with either attempt")
+                        print(f"[Error]\tGame {gid} couldn't convert date with either attempt")
                         sys.exit(1)
 
                 if re.match(r"^\d\d:\d\d$", row['time']):
@@ -196,7 +194,7 @@ class Import(object):
                 elif re.match(r"^\d\d:\d\d:\d\d$", row['time']):
                     time = datetime.strptime(row['time'], '%H:%M:%S')
                 else:
-                    print("Error parsing time for gid %s" % gid)
+                    print(f"[Error]\tUnable to parse time for game {gid}")
                     continue
 
                 start_time = datetime.combine(
@@ -204,6 +202,10 @@ class Import(object):
 
                 if not row['div']:
                     raise Exception(f"missing division for game: {gid}")
+
+                if not row['game_type']:
+                    print(f"[Warn]\tGame {gid} has no type", file=sys.stderr)
+
                 cur = self.db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                                       (tid, gid, row['day'], start_time, row['pool'], black, white, div, pod, row['type'], row['desc']))
                 self.db.commit()
