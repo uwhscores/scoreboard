@@ -90,7 +90,7 @@ def renderTAdmin(short_name):
                 continue
             unauthorized_users.append(u)
 
-    return render_template('admin/pages/tournament_admin.html.j2', tournament=t, ties=ties, blackout_message=t.getBlackoutMessage(), site_message=t.getSiteMessage(),
+    return render_template('admin/pages/tournament_admin.html.j2', tournament=t, ties=ties, blackout_message=t.getBlackoutMessage(), site_message=t.getSiteMessage(html=False),
                            authorized_users=authorized_users, unauthorized_users=unauthorized_users)
 
 

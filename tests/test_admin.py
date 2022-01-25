@@ -298,6 +298,32 @@ def test_tournament_config(test_client):
     assert response.json['success'] is False
     assert "message" in response.json
 
+    # html markdown banner
+    banner = {"config_name": "banner", "banner": {"enabled": True, "message": "This banner has a [link](https://www.reddit.com)"}}
+    response = test_client.put(f"/admin/t/{test_t.short_name}", json=banner)
+    assert response.status_code == 200
+    assert response.json['success'] is True
+    site_message = test_t.getSiteMessage(html=False)
+    assert site_message ==  "This banner has a [link](https://www.reddit.com)"
+    site_message = test_t.getSiteMessage()
+    assert site_message ==  'This banner has a <a href="https://www.reddit.com">link</a>'
+    response = test_client.get(f"/t/{test_t.short_name}")
+    assert response.status_code == 200
+    assert b'<a href="https://www.reddit.com">link</a>' in response.data
+
+    # html markdown banner multiple links
+    banner = {"config_name": "banner", "banner": {"enabled": True, "message": "This banner has a [link](https://www.reddit.com) and [another](https://www.stackoverflow.com) link"}}
+    response = test_client.put(f"/admin/t/{test_t.short_name}", json=banner)
+    assert response.status_code == 200
+    assert response.json['success'] is True
+    site_message = test_t.getSiteMessage(html=False)
+    assert site_message ==  "This banner has a [link](https://www.reddit.com) and [another](https://www.stackoverflow.com) link"
+    site_message = test_t.getSiteMessage()
+    assert site_message ==  'This banner has a <a href="https://www.reddit.com">link</a> and <a href="https://www.stackoverflow.com">another</a> link'
+    response = test_client.get(f"/t/{test_t.short_name}")
+    assert response.status_code == 200
+    assert b'<a href="https://www.reddit.com">link</a>' in response.data
+
     # normal tournameent blackout
     blackout_message = "adifferentuniquestringthaticansearchfor"
     blackout = {"config_name": "blackout", "blackout": {"enabled": True, "message": blackout_message}}

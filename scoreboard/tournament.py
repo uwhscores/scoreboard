@@ -1655,11 +1655,27 @@ class Tournament(object):
 
         return 0
 
-    def getSiteMessage(self):
-        """ get site_message if set, returns None if no message """
+    def getSiteMessage(self, html=True):
+        """ get site_message if set, returns None if no message
+        supports expanding markdown link notation to HML when html=True, default
+        """
         params = self.getParams()
 
-        return params.getParam("site_message")
+        site_message = params.getParam("site_message")
+        if not site_message:
+            return None
+
+        if not html:
+            return site_message
+        else:
+            # look for markdown notation links and expand to HTML
+            links = re.findall(r"\[(.*?)\]\((.*?)\)", site_message)
+            for link in links:
+                text = link[0]
+                url = link[1]
+                site_message = site_message.replace(f"[{text}]({url})", f"<a href=\"{url}\">{text}</a>")
+
+        return site_message
 
     def finalize(self):
         """ Finalize the tournament by setting active to 0 which should stop any updates to the tournament """
