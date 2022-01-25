@@ -165,16 +165,19 @@ class Import(object):
                 if not black:
                     raise Exception(f"Cannot parse black: {row['black']} for {row['gid']}")
 
-                if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
-                    white_id = white.split("T")[1]
-                    div = teams[white_id]['div']
-                    if 'pod' in teams[white_id]:
-                        pod = teams[white_id]['pod']
-                    else:
-                        pod = None
-                else:
-                    div = row['div']
-                    pod = row['pod']
+                pod = None
+                # this is broke from the conversion to JSON, if I need this again I need to fix it
+                # white var is like  '{"type": "team", "team_id": "2"}' !! string
+                # if re.match(r"T[\d+]", white) and re.match(r"T[\d+]", black):
+                #     white_id = white.split("T")[1]
+                #     div = teams[white_id]['div']
+                #     if 'pod' in teams[white_id]:
+                #         pod = teams[white_id]['pod']
+                #     else:
+                #         pod = None
+                # else:
+                #     div = row['div']
+                #     pod = row['pod']
 
                 date = None
                 try:
@@ -200,10 +203,17 @@ class Import(object):
                 start_time = datetime.combine(
                     datetime.date(date), datetime.time(time))
 
-                if not row['div']:
-                    raise Exception(f"missing division for game: {gid}")
+                div = row['div']
+                if not div:
+                    if row['type'] == "RR":
+                        white_team = json.loads(white)
+                        white_id = white_team['team_id']
+                        div = teams[white_id]['div']
 
-                if not row['game_type']:
+                # if not div:
+                    # raise Exception(f"missing division for game: {gid}")
+
+                if not row['type']:
                     print(f"[Warn]\tGame {gid} has no type", file=sys.stderr)
 
                 cur = self.db.execute("INSERT INTO games(tid, gid, day, start_time, pool, black, white, division, pod, type, description) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
