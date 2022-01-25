@@ -268,48 +268,24 @@ class Tournament(object):
         """ Get all games, allows for filter by division or pod and offset which was used for legacy TV display
         division and pod should be short names as would appear in DB
 
-        returns list of games as dictionaries
+        returns list of games as objects
         """
-        db = self.db
-
-        # strftime(\"%H:%M\", start_time) as
-        if (offset):
-            cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                               WHERE tid=? ORDER BY start_time LIMIT ?,45",
-                             (self.tid, offset))
+        if offset:
+            cur = self.db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
+                                   WHERE tid=? ORDER BY start_time LIMIT ?,45", (self.tid, offset))
         # whole schedule
-        elif (division is None and pod is None):
-            cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE tid=? ORDER BY start_time", (self.tid,))
+        elif not (division or pod):
+            cur = self.db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
+                                   WHERE tid=? ORDER BY start_time", (self.tid,))
         # division schedule
-        elif (pod is None):
-            cur = db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
-                                WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY start_time",
-                             (division, self.tid))
+        elif not pod:
+            cur = self.db.execute("SELECT gid, day, start_time, pool, black, white, pod, division, type, description FROM games \
+                                   WHERE (division LIKE ? or type='CO') AND tid=? ORDER BY start_time", (division, self.tid))
         # pod schedule
-        elif (division is None):
-            # trickery to see if it is a division pod and get crossover games
-            # or not
-            if pod in self.getDivisions():
-                cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE (pod like ? or type='CO') AND tid=? ORDER BY start_time",
-                                 (pod, self.tid))
-            else:
-                cur = db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
-                                    WHERE pod like ? AND tid=? ORDER BY start_time",
-                                 (pod, self.tid))
+        elif not devision:
+            cur = self.db.execute("SELECT gid, day, start_time, pool, black, white, division, pod, type, description FROM games \
+                                   WHERE (pod like ? or type='CO') AND tid=? ORDER BY start_time", (pod, self.tid))
 
-        # TODO: remove is this is really dead
-        # if (division == None and pod==None and offset):
-        #    cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
-        #                    WHERE tid=? ORDER BY day, start_time LIMIT ?,40",\
-        #                    (self.tid, offset))
-        # else:
-        #    cur = db.execute("SELECT gid, day, strftime(\"%H:%M\", start_time) as start_time, pool, black, white, pod FROM games \
-        #                    WHERE tid=? ORDER BY day, start_time",\
-        #                    (self.tid))
-
-        # games = self.expandGames(cur.fetchall())
         games = []
         for game in cur.fetchall():
             games.append(Game(self, game['gid'], game['day'], game['start_time'], game['pool'], game['black'], game['white'],
