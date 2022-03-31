@@ -410,6 +410,12 @@ uwhScoresAdmin = function(){
         modalBody.appendChild(message)
         if ( ! data['email_error'] ) {
           message.innerText = `A password reset request email was sent to ${user['email']}`
+          let linkP = document.createElement("p")
+          let resetLink = document.createElement("a")
+          resetLink.href=`${window.location.origin}/login/reset?token=${data['token']}`
+          resetLink.text=`${window.location.origin}/login/reset?token=${data['token']}`
+          linkP.appendChild(resetLink)
+          message.after(linkP)
         } else {
           message.innerText = "Unfortunetly, there was an issue sending the reset email. You can send the user the link bellow to allow them to set their new password:"
           let linkP = document.createElement("p")
