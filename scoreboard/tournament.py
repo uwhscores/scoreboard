@@ -380,7 +380,7 @@ class Tournament(object):
         """ list of divisions by ID as appears in database """
         db = self.db
         cur = db.execute(
-            "SELECT DISTINCT division FROM games WHERE tid=?", (self.tid,))
+            "SELECT DISTINCT division FROM games WHERE tid=? ORDER BY division", (self.tid,))
 
         divisions = []
         for r in cur.fetchall():
