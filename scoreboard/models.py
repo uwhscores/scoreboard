@@ -435,6 +435,13 @@ class User(object):
         if len(password) < 8:
             raise UpdateError("toshort", message="Password must be at least 8 characters")
 
+        # some basic safety checks on passwords
+        if self.email.lower() in password.lower():
+            raise UpdateError("badpassword", message="Cannot use email address in password")
+
+        if "uwhscores" in password.lower() and len(password) < 16:
+             raise UpdateError("badpassword", message="Cannot use uwhscores in password")
+
         password = password.encode('utf-8')
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
 

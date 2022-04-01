@@ -148,3 +148,20 @@ def test_password_resets(test_client):
     token = user.createResetToken(by_admin=True)
     found_user_id = functions.validateResetToken(token)
     assert found_user_id == user.user_id
+
+    # teest bad passwords
+    # test_pwreset@pytest.com
+    with pytest.raises(UpdateError) as e:
+        user.setPassword("test_pwreset@pytest.com")
+    assert e.value.error == "badpassword"
+    assert e.value.message == "Cannot use email address in password"
+
+    with pytest.raises(UpdateError) as e:
+        user.setPassword("Test_PWreset@pytest.com1!")
+    assert e.value.error == "badpassword"
+    assert e.value.message == "Cannot use email address in password"
+
+    with pytest.raises(UpdateError) as e:
+        user.setPassword("uwhscoresRocks!")
+    assert e.value.error == "badpassword"
+    assert e.value.message == "Cannot use uwhscores in password"
