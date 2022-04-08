@@ -4,35 +4,31 @@ using the Flask framework and a SQLite database. Below are the very rough steps 
 setup an instance and run it. These steps are likely not complete.
 
 ## Setup
-1. Start by installing virtualenv if you have not already, Python 3.6:
+1. Create a new virtualenv:
 
-    `sudo pip3 install virtualenv`
+    `python3 -m venv venv`
 
-2. Clone the repository:
-
-    `git clone git@github.com:notroot/scoreboard.git`
-
-3. Create a new virtualenv:
-
-    `cd scoreboard; virtualenv -p $( which python3.6 ) venv`
-
-4. Step into your virtualenv:
+2. Step into your virtualenv:
 
     `. venv/bin/activate`
 
-5. Install Flask and dependancies.
+3. Install Flask and dependancies.
 
     `pip install -r requirements.txt`
 
-6. Build the database, ideally from a populate file, or from the schema.sql file, you may need to install sqlite3 first:
+4. Build the database, ideally from a populate file, or from the schema.sql file, you may need to install sqlite3 first:
 
-    `sqlite3 app/scores.db < backup_file.sql`
+    `sqlite3 scoreboard/scores.db < schema.sql`
 
-7. Start the web service:
+    or
+
+    `sqlite3 scoreboard/scores.db < backup_file.sql`
+
+5. Start the web service:
 
     `python scoreboard.py`
 
-8. Connect at http://localhost:5000
+6. Connect at http://localhost:5000
 
 
 ## Build and Test
@@ -46,4 +42,4 @@ That's it, tox does everything else and you'll get an output if all the tests pa
 ### Adding Tests
 Tests are defined in the `/tests` folder along with supporting files. Automated tests should be contained in files starting with `test_` anything else should not have the test prefix. Individual tests are defined in the `test_*.py` files and are functions also starting with the `test_` prefix. Again any helper functions should be named not starting with the test prefix.
 
-New tests can either be added to an existing `test_*.py` if it makes sens to group it with those tests, or can start a new file. 
+New tests can either be added to an existing `test_*.py` if it makes sens to group it with those tests, or can start a new file.
